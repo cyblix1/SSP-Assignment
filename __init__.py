@@ -9,7 +9,7 @@ app = Flask(__name__)
 def home():
     pass
 
-
+# @loginrequired here
 @app.route('/dashboard')
 def dashboard():
     return render_template('dashboard.html')
@@ -20,12 +20,10 @@ def dashboard():
 def page_not_found(e):
     return render_template('404.html'), 404
 
-
 # Internal Server Error
 @app.errorhandler(500)
 def error500(e):
     return render_template('500.html'), 500
-
 
 # Internal Server Error
 @app.errorhandler(403)
