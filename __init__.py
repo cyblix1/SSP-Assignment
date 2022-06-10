@@ -7,7 +7,7 @@ app = Flask(__name__)
 @app.route('/')
 @app.route('/home')
 def home():
-    return render_template('500.html')
+    pass
 
 
 @app.route('/dashboard')
