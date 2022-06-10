@@ -4,6 +4,7 @@ import MySQLdb.cursors
 
 app = Flask(__name__)
 
+print("HELLO")
 @app.route('/')
 @app.route('/home')
 def home():
