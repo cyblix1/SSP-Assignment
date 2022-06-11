@@ -247,14 +247,14 @@
                         {% for order in order_list %}
                         <div class="card" >
                             <ul class="list-group list-group-flush ">
-                                <li class="list-group-item" style="background-color: rgb(104, 255, 117); "> Order {{ order.get_order_id() }} has been created </li>
+                                <li class="list-group-item" style="background-color: rgb(104, 255, 117); "> Order {{ order.get_order_id() }}  </li>
                             </ul>
                             </div>
                         {% endfor %}
                         {% for product in product_list %}
                         <div class="card" >
                             <ul class="list-group list-group-flush ">
-                                <li class="list-group-item" style="background-color: rgb(104, 255, 117); "> Product {{ product.get_product_name() }} has been created </li>
+                                <li class="list-group-item" style="background-color: rgb(104, 255, 117); "> '#' </li>
                             </ul>
                             </div>
                         {% endfor %}
@@ -264,7 +264,7 @@
                         {% for del_order in del_order_list %}
                         <div class="card" >
                             <ul class="list-group list-group-flush ">
-                              <li class="list-group-item" style="background-color: rgb(104, 255, 117); "> Order {{ del_order.get_order_id() }} has been deleted </li>
+                              <li class="list-group-item" style="background-color: rgb(104, 255, 117); "> '#' </li>
                             </ul>
                           </div>
                         {% endfor %}
