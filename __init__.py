@@ -19,7 +19,7 @@ bcrypt = Bcrypt()
 @app.route('/')
 @app.route('/home')
 def home():
-    pass
+    return render_template('about.html')
 
 #base template
 @app.route('/dashboard')
