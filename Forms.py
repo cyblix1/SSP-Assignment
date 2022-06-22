@@ -18,7 +18,7 @@ class CreateAdminForm(FlaskForm):
     phone = StringField("Phone No", validators=[Length(min=8, max=8, message='Please enter a real number'),DataRequired()])
     password1 = PasswordField("Password:", validators=[Length(min=8), DataRequired()])
     password2 = PasswordField("Confirm Password", validators=[EqualTo('password1'), DataRequired()])
-    submit = SubmitField("Submit")
+    submit = SubmitField("Add Employee")
 
 
 class UpdateAdminForm(FlaskForm):

@@ -26,15 +26,18 @@ def home():
 def dashboard():
     return render_template('base_admin.html')
 
-@app.route('/admins' ,methods=['POST','GET'])
+@app.route('/admins')
 def admins():
     form = CreateAdminForm(request.form)
     cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
     cursor.execute('SELECT * FROM admin_accounts')
     all_data = cursor.fetchall()
+    return render_template('admins.html', employees = all_data, form = form)
 
-    #create employee
-    if request.method == 'POST':
+@app.route('/admins/create_admin', methods=['POST'])
+def create_admin():
+    form = CreateAdminForm()
+    if request.method == 'POST' and form.validate_on_submit():
         name = request.form['name']
         email = request.form['email']
         phone = request.form['phone']
@@ -48,27 +51,6 @@ def admins():
         db.connection.commit()
         flash("Employee Inserted Successfully")
         return redirect(url_for('admins'))
-
-    return render_template('admins.html', employees = all_data,form=form)
-
-# @app.route('/create_admin', methods=['POST'])
-# def create_admin():
-#     form = CreateAdminForm(request.form)
-#     if request.method == 'POST':
-#         name = request.form['name']
-#         email = request.form['email']
-#         phone = request.form['phone']
-#         password = request.form['password']
-#         hashedpw = bcrypt.generate_password_hash(password)
-#         date_created = datetime.utcnow()
-#         #simple first later check is exists
-#         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-#         #make account
-#         cursor.execute('INSERT INTO admin_accounts VALUES (NULL, %s, %s, %s, %s, %s)', (name,email,phone,hashedpw,date_created))
-#         db.connection.commit()
-#         flash("Employee Inserted Successfully")
-#         return redirect(url_for('admins'),form=form)
-    
 
 
 @app.route('/update_admin', methods=['GET','POST'])
