@@ -4,14 +4,20 @@ import MySQLdb.cursors
 from flask_bcrypt import Bcrypt
 from datetime import datetime
 from Forms import *
+from configparser import ConfigParser
+
 app = Flask(__name__)
 
+#properities
+file = 'config.properities'
+config = ConfigParser()
+config.read(file)
+
 app.secret_key = "SSP"
-app.config['MYSQL_HOST'] = 'localhost'
-app.config['MYSQL_USER'] = 'root'
-#change to ur own password
-app.config['MYSQL_PASSWORD'] = '5zbhihcxqxeS'
-app.config['MYSQL_DB'] = 'sspassignment'
+app.config['MYSQL_HOST'] = config['account']['host']
+app.config['MYSQL_USER'] = config['account']['user']
+app.config['MYSQL_PASSWORD'] = config['account']['password']
+app.config['MYSQL_DB'] = config['account']['db']
 db = MySQL(app)
 bcrypt = Bcrypt()
 
