@@ -6,18 +6,14 @@ from wtforms.widgets import TextArea
 from flask_ckeditor import CKEditorField
 from flask_wtf.file import FileField
 
-# Example
-# class LoginForm(FlaskForm):
-# 	username = StringField("Username", validators=[DataRequired()])
-# 	password = PasswordField("Password", validators=[DataRequired()])
-# 	submit = SubmitField("Submit")
 
 class CreateAdminForm(FlaskForm):
     name = StringField("Name", validators=[Length(min=1, max=50),DataRequired()])
     email = EmailField("Email", validators=[Length(min=5, max=100),DataRequired()])
     phone = StringField("Phone No", validators=[Length(min=8, max=8, message='Please enter a real number'),DataRequired()])
-    password1 = PasswordField("Password:", validators=[Length(min=8), DataRequired()])
-    password2 = PasswordField("Confirm Password", validators=[EqualTo('password1'), DataRequired()])
+    description = TextAreaField("description",validators=[Length(max=200)])
+    password1 = PasswordField("Password:", validators=[Length(min=8), DataRequired(),EqualTo('password2')])
+    password2 = PasswordField("Confirm Password", validators=[DataRequired()])
     submit = SubmitField("Add Employee")
 
 
@@ -25,5 +21,6 @@ class UpdateAdminForm(FlaskForm):
     name = StringField("Name", validators=[Length(min=1, max=50),DataRequired()])
     email = EmailField("Email", validators=[Length(min=5, max=100),DataRequired()])
     phone = StringField("Phone No", validators=[Length(min=8, max=8, message='Please enter a real number'),DataRequired()])
-    submit = SubmitField("Submit")
+    description = TextAreaField("description",validators=[Length(max=200)])
+    submit = SubmitField("Save Changes")
 

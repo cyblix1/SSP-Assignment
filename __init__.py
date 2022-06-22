@@ -28,40 +28,44 @@ def dashboard():
 
 @app.route('/admins')
 def admins():
-    form = CreateAdminForm(request.form)
+    form = CreateAdminForm()
+    form2 = UpdateAdminForm()
     cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
     cursor.execute('SELECT * FROM admin_accounts')
     all_data = cursor.fetchall()
-    return render_template('admins.html', employees = all_data, form = form)
+    return render_template('admins.html', employees = all_data, form = form, form2=form2)
 
-@app.route('/admins/create_admin', methods=['POST'])
+@app.route('/create_admin', methods=['POST'])
 def create_admin():
     form = CreateAdminForm()
-    if request.method == 'POST' and form.validate_on_submit():
-        name = request.form['name']
-        email = request.form['email']
-        phone = request.form['phone']
-        password = request.form['password']
+    if request.method == 'POST':
+        name = form.name.data
+        email = form.email.data
+        phone = form.phone.data
+        description = form.description.data
+        password = form.password1.data
         hashedpw = bcrypt.generate_password_hash(password)
         date_created = datetime.utcnow()
         #simple first later check is exists
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
         #make account
-        cursor.execute('INSERT INTO admin_accounts VALUES (NULL, %s, %s, %s, %s, %s)', (name,email,phone,hashedpw,date_created))
+        cursor.execute('INSERT INTO admin_accounts VALUES (NULL, %s, %s, %s, %s, %s, %s)', (name,email,phone,hashedpw,date_created,description))
         db.connection.commit()
-        flash("Employee Inserted Successfully")
+        flash("Employee Added Successfully!")
         return redirect(url_for('admins'))
 
 
-@app.route('/update_admin', methods=['GET','POST'])
-def update():
+@app.route('/update_admin', methods=['POST'])
+def update_admin():
+    form = UpdateAdminForm()
     if request.method == 'POST':
         id = request.form.get('id')
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        name = request.form['name']
-        email = request.form['email']
-        phone = request.form['phone']
-        cursor.execute('UPDATE admin_accounts SET name = %s, email = %s, phone=%s WHERE id = %s', (name,email,phone,id))
+        name = form.name.data
+        email = form.email.data
+        phone = form.phone.data
+        description = form.description.data
+        cursor.execute('UPDATE admin_accounts SET name = %s, email = %s, phone=%s, description=%s WHERE id = %s', (name,email,phone,description,id))
         db.connection.commit()
         flash("Employee updated successfully")
         return redirect(url_for('admins'))
@@ -69,7 +73,7 @@ def update():
 @app.route('/delete_admin/<id>/',  methods=['GET','POST'])
 def delete(id):
     cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-    cursor.execute('DELETE FROM admin_accounts WHERE id = %s', (id))
+    cursor.execute('DELETE FROM admin_accounts WHERE id = %s', [id])
     db.connection.commit()
     flash("Employee deleted successfully")
     return redirect(url_for('admins'))
