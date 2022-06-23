@@ -13,15 +13,13 @@ file = 'config.properities'
 config = ConfigParser()
 config.read(file)
 
-app.secret_key = "SSP"
+app.secret_key = "SSPAssignment"
 app.config['MYSQL_HOST'] = config['account']['host']
 app.config['MYSQL_USER'] = config['account']['user']
 app.config['MYSQL_PASSWORD'] = config['account']['password']
 app.config['MYSQL_DB'] = config['account']['db']
 db = MySQL(app)
 bcrypt = Bcrypt()
-
-
 @app.route('/')
 @app.route('/home')
 def home():
