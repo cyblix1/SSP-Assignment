@@ -21,6 +21,7 @@ class UpdateAdminForm(FlaskForm):
     name = StringField("Name", validators=[Length(min=1, max=50),DataRequired()])
     email = EmailField("Email", validators=[Length(min=5, max=100),DataRequired()])
     phone = StringField("Phone No", validators=[Length(min=8, max=8, message='Please enter a real number'),DataRequired()])
-    description = TextAreaField("description",validators=[Length(max=200)])
+    description = StringField("description",validators=[Length(max=200)])
     submit = SubmitField("Save Changes")
+
 

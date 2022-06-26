@@ -20,6 +20,12 @@ app.config['MYSQL_PASSWORD'] = config['account']['password']
 app.config['MYSQL_DB'] = config['account']['db']
 db = MySQL(app)
 bcrypt = Bcrypt()
+
+# def check():
+#     cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+
+
+
 @app.route('/')
 @app.route('/home')
 def home():
@@ -39,10 +45,11 @@ def admins():
     all_data = cursor.fetchall()
     return render_template('admins.html', employees = all_data, form = form, form2=form2)
 
-@app.route('/create_admin', methods=['POST'])
+@app.route('/admins/create_admin', methods=['POST','GET'])
 def create_admin():
-    form = CreateAdminForm()
+    form = CreateAdminForm(request.form)
     if request.method == 'POST':
+        form.validate_on_submit()
         name = form.name.data
         email = form.email.data
         phone = form.phone.data
@@ -59,7 +66,7 @@ def create_admin():
         return redirect(url_for('admins'))
 
 
-@app.route('/update_admin', methods=['POST'])
+@app.route('/admins/update_admin', methods=['POST'])
 def update_admin():
     form = UpdateAdminForm()
     if request.method == 'POST':
@@ -74,8 +81,8 @@ def update_admin():
         flash("Employee updated successfully")
         return redirect(url_for('admins'))
 
-@app.route('/delete_admin/<id>/',  methods=['GET','POST'])
-def delete(id):
+@app.route('/admins/delete_admin/<int:id>/',  methods=['GET','POST'])
+def delete_admin(id):
     cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
     cursor.execute('DELETE FROM admin_accounts WHERE id = %s', [id])
     db.connection.commit()

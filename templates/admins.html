@@ -98,7 +98,7 @@
                                 <button type="button" class="btn btn-info btn-sm" data-toggle="modal" data-target="#admininfo{{employee.id}}">Info</button>
                                 <button type="button" class="btn btn-warning btn-sm">History</button>
                                 <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#adminedit{{employee.id}}" >Edit</button>
-                                <a href="/delete_admin/{{employee.id}}" class="btn btn-danger btn-xs btn-sm" onclick="return confirm('Are you sure to delete?')">Delete</a>
+                                <a href="/admins/delete_admin/{{employee.id}}" class="btn btn-danger btn-xs btn-sm" onclick="return confirm('Are you sure to delete?')">Delete</a>
                             </td>
                         </tr>
                         <!-- start of modal (view Information) -->
@@ -141,21 +141,18 @@
                                         <form action="{{url_for('update_admin')}}" method="POST">
                                             <div class="modal-body">
                                                     <input type="hidden" name="id" value="{{employee.id}}">
+                                                    {{ }}
                                                     <div class="form-group">
-                                                        {{ form2.name(class='form-control') }}
-                                                        <p>{{employee.name}}</p>
+                                                        {{ form2.name(class='form-control', placeholder='Name',value=employee.name) }}
                                                     </div>
                                                     <div class="form-group">
-                                                        {{ form2.email(class='form-control' ,value='{{employee.email}}') }}
-                                                        <p>{{employee.email}}</p>
+                                                        {{ form2.email(class='form-control', placeholder='Email Address', value=employee.email) }}
                                                     </div>
                                                     <div class="form-group">
-                                                        {{ form2.phone(class='form-control') }}
-                                                        <p>{{employee.phone}}</p>
+                                                        {{ form2.phone(class='form-control',  placeholder='Phone Number',value=employee.phone) }}
                                                     </div>
                                                     <div class="form-group">
-                                                        {{ form2.description(class='form-control') }}
-                                                        <p>{{employee.description}}</p>
+                                                        {{ form2.description(class='form-control',  placeholder='Description',value=employee.description) }}
                                                     </div>
                                             </div>
                                             <div class="modal-footer">
