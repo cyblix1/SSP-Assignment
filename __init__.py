@@ -42,7 +42,7 @@ def admins():
     form = CreateAdminForm()
     form2 = UpdateAdminForm()
     cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-    cursor.execute('SELECT * FROM admin_accounts')
+    cursor.execute('SELECT * FROM staff_accounts')
     all_data = cursor.fetchall()
     if request.form == 'POST'and form.validate_on_submit():
         return redirect(url_for('create_admin'))
@@ -67,7 +67,7 @@ def create_admin():
     #simple first later check is exists
     cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
     #make account
-    cursor.execute('INSERT INTO admin_accounts VALUES (NULL, %s, %s, %s, %s, %s, %s)', (name,email,phone,hashedpw,date_created,description))
+    cursor.execute('INSERT INTO staff_accounts VALUES (NULL, %s, %s, %s, %s, %s, %s)', (name,email,phone,hashedpw,date_created,description))
     db.connection.commit()
     flash("Employee Added Successfully!")
     return redirect(url_for('admins'))
@@ -82,7 +82,7 @@ def update_admin():
     email = form.email.data
     phone = form.phone.data
     description = form.description.data
-    cursor.execute('UPDATE admin_accounts SET name = %s, email = %s, phone=%s, description=%s WHERE id = %s', (name,email,phone,description,id))
+    cursor.execute('UPDATE staff_accounts SET name = %s, email = %s, phone=%s, description=%s WHERE id = %s', (name,email,phone,description,id))
     db.connection.commit()
     flash("Employee updated successfully")
     return redirect(url_for('admins'))
@@ -90,7 +90,7 @@ def update_admin():
 @app.route('/admins/delete_admin/<int:id>/',  methods=['GET','POST'])
 def delete_admin(id):
     cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-    cursor.execute('DELETE FROM admin_accounts WHERE id = %s', [id])
+    cursor.execute('DELETE FROM staff_accounts WHERE id = %s', [id])
     db.connection.commit()
     flash("Employee deleted successfully")
     return redirect(url_for('admins'))
