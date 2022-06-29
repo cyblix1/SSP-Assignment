@@ -12,18 +12,17 @@ app = Flask(__name__)
 file = 'config.properities'
 config = ConfigParser()
 config.read(file)
-
-app.secret_key = "SSPAssignment"
+app.config['SECRET_KEY']= 'SSP Assignment'
+SECRET_KEY = 'SSP Assignment'
 app.config['MYSQL_HOST'] = config['account']['host']
 app.config['MYSQL_USER'] = config['account']['user']
 app.config['MYSQL_PASSWORD'] = config['account']['password']
 app.config['MYSQL_DB'] = config['account']['db']
+    
+
 app.permanent_session_lifetime = timedelta(minutes=10)
 db = MySQL(app)
 bcrypt = Bcrypt()
-
-# def check():
-#     cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
 
 
 
@@ -46,8 +45,12 @@ def admins():
     all_data = cursor.fetchall()
     if request.form == 'POST'and form.validate_on_submit():
         return redirect(url_for('create_admin'))
-    if request.form == 'POST' and form2.validate_on_submit():
+    elif request.form == 'POST' and form2.validate_on_submit():
         return redirect(url_for('update_admin'))
+    elif form.csrf_token.errors or form2.csrf_token.errors:
+        pass
+    else:
+        pass
     return render_template('admins.html', employees = all_data, form = form, form2=form2)
 
 @app.route('/admins/create_admin', methods=['POST'])
