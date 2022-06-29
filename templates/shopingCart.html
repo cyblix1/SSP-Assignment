@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block title %}Shopping Cart{% endblock %}
+
+{% block content %}
+<section class="section-content padding-y">
+<div class="container" style="margin: 100px auto 100px auto;">
+
+<div class="row">
+    <main class="col-md-9">
+<div class="card" style="padding: 20px 20px 5px 20px; box-shadow: rgb(209, 209, 209) 1px 1px 25px 1px; border-top: 10px solid #2A27A2;">
+
+<table class="table table-borderless table-shopping-cart">
+<thead class="text-muted">
+<tr class="small text-uppercase">
+  <th scope="col">Product</th>
+  <th scope="col" width="120">Quantity</th>
+  <th scope="col" width="120">Price</th>
+  <th scope="col" class="text-right" width="200"> </th>
+</tr>
+</thead>
+<tbody>
+{% for i in cart_items %}
+<tr>
+
+    <td>
+        <figure class="itemside">
+            <div class="aside"><img src="{{url_for('get_img' , id = cart_items[i].get_image())}}" class="img-sm" style="height:40px"></div>
+            <figcaption class="info" style="margin: 10px auto auto auto;">
+                <a href=""></a>
+                <a href=""></a>
+                <a href="#" class="title text-dark">{{cart_items[i].get_name()}}</a>
+            </figcaption>
+        </figure>
+    </td>
+    <td>
+        <var class="price">{{cart_items[i].get_qty_purchased()}}</var>
+    </td>
+    <td>
+        <div class="price-wrap">
+            <var class="price">${{ "{:.2f}".format(cart_items[i].get_total_cost()) }}</var>
+
+        </div> <!-- price-wrap .// -->
+    </td>
+    <td class="text-right">
+        <button class="btn btn-light" data-toggle="modal" data-target="#Modal-MoreInfo--{{i}}"><i class="fas fa-info-circle"></i></button>
+            <form action="{{ url_for('remove_from_cart') }}" class="d-inline-block" method="POST">
+                <input type="hidden" name="uuid" value="{{i}}">
+                <input type="hidden" name="uuid2" value="{{cart_items[i].get_id()}}">
+                <input type="hidden" name="uuid3" value="{{cart_items[i].get_owner_id()}}">
+                <button type="submit" class="btn btn-light">Remove</button>
+            </form>
+        </td>
+
+</tr>
+{% endfor %}
+</tbody>
+</table>
+
+<div class="card-body border-top">
+    <form method="POST" action="{{ url_for('Receipt') }}">
+    <button type="submit" href="#" class="btn btn-primary float-md-right"> Proceed To Checkout <i class="fa fa-chevron-right"></i> </button>
+    </form>
+    <form method="POST" action="{{ url_for('Edit_Shopping_Cart') }}">
+    <button type="submit" href="#" class="btn btn-secondary float-md-right" style="margin-right:10px"> Edit Cart <i class="fa fa-chevron-right"></i> </button>
+    </form>
+    <a href="{{ url_for('market_page') }}" class="btn btn-light"> <i class="fa fa-chevron-left"></i> Continue shopping </a>
+</div>
+</div> <!-- card.// -->
+
+<div class="alert alert-success mt-3">
+    <p class="icontext"><i class="icon text-success fa fa-truck"></i> Free Delivery within 1-2 weeks</p>
+</div>
+
+    </main> <!-- col.// -->
+    <aside class="col-md-3" style="box-shadow: rgb(209, 209, 209) 1px 1px 25px 1px; border-top: 10px solid #2A27A2;">
+        <div class="card mb-3">
+<!--            <div class="card-body">-->
+<!--            <form>-->
+<!--                <div class="form-group">-->
+<!--                    <label>Have coupon?</label>-->
+<!--                    <div class="input-group">-->
+<!--                        <input type="text" class="form-control" name="" placeholder="Coupon code">-->
+<!--                        <span class="input-group-append">-->
+<!--                            <button class="btn btn-primary">Apply</button>-->
+<!--                        </span>-->
+<!--                    </div>-->
+<!--                </div>-->
+<!--            </form>-->
+<!--            </div> &lt;!&ndash; card-body.// &ndash;&gt;-->
+        </div>  <!-- card .// -->
+        <div class="card">
+            <div class="card-body">
+                    <dl class="dlist-align">
+                      <dt>Total price:</dt>
+                      <dd class="text-right">${{"{:.2f}".format(total)}}</dd>
+                    </dl>
+                    <dl class="dlist-align">
+                      <dt>Discount:</dt>
+                      <dd class="text-right">SGD 0</dd>
+                    </dl>
+                    <dl class="dlist-align">
+                      <dt>Total:</dt>
+                      <dd class="text-right  h5"><strong>${{"{:.2f}".format(total)}}</strong></dd>
+                    </dl>
+                    <hr>
+                    <p class="text-center mb-3">
+                        <img src="../static/images/Swiss_Logo.png" height="26">
+                    </p>
+
+            </div> <!-- card-body.// -->
+        </div>  <!-- card .// -->
+    </aside> <!-- col.// -->
+</div>
+
+</div> <!-- container .//  -->
+</section>
+
+<!-- More Info Modal -->
+{% for i in cart_items %}
+<div class="modal fade" id="Modal-MoreInfo--{{i}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content" style=" left: auto; max-width: 700px; margin: 100px auto auto auto;">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">{{cart_items[i].get_name()}}</h5>
+                    <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">×</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <img class="card-img-top" style="max-height:300px" src="{{url_for('get_img' , id = cart_items[i].get_image())}}" alt="Item Image" />
+                    <hr>
+                    <p>Barcode: {{cart_items[i].get_id()}}</p>
+                    <p>Name: {{cart_items[i].get_name()}}</p>
+                    <p>Description: {{cart_items[i].get_description()}}</p>
+                    <p>Price: ${{ "{:.2f}".format(cart_items[i].get_price()) }}</p>
+                    <p>Quantity Purchased: {{cart_items[i].get_qty_purchased()}}</p>
+                    <p>Seller: {{cart_items[i].get_owner()}}</p>
+                  </div>
+                   <div class="modal-footer">
+                    <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
+
+                    </div>
+                </div>
+
+            </div>
+</div>
+
+{% endfor %}
+
+{% endblock %}
