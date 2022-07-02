@@ -25,7 +25,7 @@
                         </div>
                         <form action="{{url_for('create_admin')}}" method="POST">
                             <div class="modal-body">
-                                        {{ form.csrf_token }}
+                                        {{ form.csrf_token(type='hidden') }}
                                         {% if form.csrf_token.errors %}
                                             <div class="warning">
                                                 You have submited an invalid csrf token 
@@ -147,7 +147,7 @@
                                         <form action="{{url_for('update_admin')}}" method="POST">
                                             <div class="modal-body">
                                                     <input type="hidden" name="id" value="{{employee.id}}">
-                                                        {{ form2.csrf_token }}
+                                                        {{ form2.csrf_token(type='hidden') }}
                                                         {{ form2.id(type='hidden',value=employee.id)}}
                                                     <div class="form-group">
                                                         {{ form2.name(class='form-control', placeholder='Name',value=employee.name) }}

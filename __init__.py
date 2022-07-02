@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from Forms import *
 from configparser import ConfigParser
 import re
+from csrf import csrf, CSRFError
 app = Flask(__name__)
 
 #properities
@@ -23,7 +24,12 @@ app.config['MYSQL_DB'] = config['account']['db']
 app.permanent_session_lifetime = timedelta(minutes=10)
 db = MySQL(app)
 bcrypt = Bcrypt()
+csrf.init_app(app)
 
+@app.errorhandler(CSRFError)
+def handle_csrf_error(e):
+    flash('CSRF token was not found')
+    return render_template('#something')
 
 
 @app.route('/')
@@ -125,9 +131,9 @@ def delete_admin(id):
     return redirect(url_for('admins'))
 
 
-@app.route('/staff')
-def staff():
-    return render_template('staff.html')
+@app.route('/customers')
+def customers():
+    return render_template('customers.html')
 
 
 # Invalid URL
