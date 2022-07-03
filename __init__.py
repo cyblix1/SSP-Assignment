@@ -86,6 +86,8 @@ def register():
 
 @app.route('/home')
 def home():
+    # userID = User.query.filter_by(id=current_user.id).first()
+    # admin_user()
     return render_template('about.html')
 
 #base template
