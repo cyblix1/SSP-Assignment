@@ -1,25 +1,99 @@
-<html>
-    <head>
-        <meta charset="UTF-8">
-        <title> Register </title>
-        <link href="static/css/register.css" rel="stylesheet" type="text/css" media="all" />
-    </head>
-    <body></br></br></br></br></br>
-        <div align="center">
-          <div align="center" class="border">
-             <div class="header">
-                <h1 class="word">Register</h1>
-             </div></br></br></br>
-            <h2 class="word">
-                <form action="{{ url_for('register') }}" method="post">
-                  <div class="msg">{{ msg }}</div>
-                    <input id="username" name="username" type="text" placeholder="Enter Your Username" class="textbox"/></br></br>
-                    <input id="password" name="password" type="password" placeholder="Enter Your Password" class="textbox"/></br></br>
-                    <input id="email" name="email" type="text" placeholder="Enter Your Email ID" class="textbox"/></br></br>
-                    <input type="submit" class="btn" value="Sign Up"></br>
-                </form>
-            </h2>
-          </div>
+<!--<html>-->
+<!--    <head>-->
+<!--        <meta charset="UTF-8">-->
+<!--        <title> Register </title>-->
+<!--        <link href="static/css/register.css" rel="stylesheet" type="text/css" media="all" />-->
+<!--    </head>-->
+<!--    <body></br></br></br></br></br>-->
+<!--        <div align="center">-->
+<!--          <div align="center" class="border">-->
+<!--             <div class="header">-->
+<!--                <h1 class="word">Register</h1>-->
+<!--             </div></br></br></br>-->
+<!--            <h2 class="word">-->
+<!--                <form action="{{ url_for('register') }}" method="post">-->
+<!--                  <div class="msg">{{ msg }}</div>-->
+<!--                    <input id="username" name="username" type="text" placeholder="Enter Your Username" class="textbox"/></br></br>-->
+<!--                    <input id="password" name="password" type="password" placeholder="Enter Your Password" class="textbox"/></br></br>-->
+<!--                    <input id="email" name="email" type="text" placeholder="Enter Your Email ID" class="textbox"/></br></br>-->
+<!--                    <input type="submit" class="btn" value="Sign Up"></br>-->
+<!--                </form>-->
+<!--            </h2>-->
+<!--          </div>-->
+<!--        </div>-->
+<!--    </body>-->
+<!--</html>-->
+
+{% extends "base_register.html" %}
+<!-- Custom fonts for this template-->
+<link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
+<link
+    href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i"
+    rel="stylesheet">
+
+<!-- Custom styles for this template-->
+<link href="css/sb-admin-2.min.css" rel="stylesheet">
+
+{% block content %}
+<body class="bg-gradient-primary">
+
+    <div class="container">
+
+        <div class="card o-hidden border-0 shadow-lg my-5">
+            <div class="card-body p-0">
+                <!-- Nested Row within Card Body -->
+                <div class="row">
+                    <div class="col-lg-5 d-none d-lg-block bg-register-image"></div>
+                    <div class="col-lg-7">
+                        <div class="p-5">
+                            <div class="text-center">
+                                <h1 class="h4 text-gray-900 mb-4">Create an Account!</h1>
+                            </div>
+                            <form class="user" method="POST">
+                                <!--This flask built in tag protects our site
+                                from Cross Site Request Forgery (CSRF) Attack -->
+                                <!--this attack basically may attack or steal
+                                your database -->
+                                <div class="form-group row">
+                                    <!--userName-->
+                                    {{ form.username.label() }}
+                                    {{ form.username(class='form-control form-control-user', placeholder='Username') }}
+                                    <!-- Flask Forms Feature -->
+                                </div>
+                                <div class="form-group row">
+                                    <!--Password1-->
+                                    <div class="col-sm-6 mb-3 mb-sm-0">
+                                        {{ form.password1.label() }}
+                                        {{ form.password1(class='form-control form-control-user', placeholder='Password') }}
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <!--Password2-->
+                                        {{ form.password2.label() }}
+                                        {{ form.password2(class='form-control form-control-user', placeholder='Repeat Password') }}
+                                    </div>
+                                </div>
+                                {{ form.submit(class='btn btn-primary btn-user btn-block') }}
+                            </form>
+                            <hr>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-    </body>
-</html>
+
+    </div>
+
+    <!-- Bootstrap core JavaScript-->
+    <script src="vendor/jquery/jquery.min.js"></script>
+    <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Core plugin JavaScript-->
+    <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
+
+    <!-- Custom scripts for all pages-->
+    <script src="js/sb-admin-2.min.js"></script>
+
+</body>
+
+{% endblock %}
