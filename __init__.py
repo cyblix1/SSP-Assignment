@@ -35,7 +35,7 @@ def handle_csrf_error(e):
 @app.route('/')
 @app.route('/register',methods =['GET', 'POST'])
 def register():
-    msg = ''
+    form = Register_Users()
     if request.method == 'POST' and 'username' in request.form and 'password' in request.form and 'email' in request.form:
         username = request.form['username']
         password = request.form['password']
@@ -57,10 +57,37 @@ def register():
             msg = 'You have successfully registered !'
     elif request.method == 'POST':
         msg = 'Please fill out the form !'
-    return render_template('register.html', msg=msg)
+    return render_template('register.html',form=form)
+
+    # db.create_all()
+    # form = Register_Users()
+    # if form.validate_on_submit():
+    #     user_to_create = User(username=form.username.data,
+    #                           email_address=form.email_address.data,
+    #                           password=form.password1.data)
+    #     # 'password' = form.password1.data this is entering the hashed
+    #     # version of the password. Check models.py,
+    #     # @password.setter hashes the passwords
+    #     db.session.add(user_to_create)
+    #     db.session.commit()
+    #     login_user(user_to_create)
+    #     flash(f"Success! You are logged in as: {user_to_create.username}", category='success')
+    #
+    #     return redirect(url_for('home_page'))
+    # if form.errors != {}:  # If there are not errors from the validations
+    #     errors = []
+    #     for err_msg in form.errors.values():
+    #         errors.append(err_msg)
+    #     err_message = '<br/>'.join([f'({number}){error[0]}' for number, error in enumerate(errors, start=1)])
+    #     flash(f'{err_message}', category='danger')
+    #
+    # return render_template('register.html', form=form)
+
 
 @app.route('/home')
 def home():
+    # userID = User.query.filter_by(id=current_user.id).first()
+    # admin_user()
     return render_template('about.html')
 
 #base template
