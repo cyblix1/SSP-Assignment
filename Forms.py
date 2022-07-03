@@ -25,6 +25,3 @@ class UpdateAdminForm(FlaskForm):
     description = StringField("description",validators=[Length(max=200)])
     submit = SubmitField("Save Changes")
 
-class AdminChangePassword(FlaskForm):
-
-
