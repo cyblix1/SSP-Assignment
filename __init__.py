@@ -123,6 +123,7 @@ def create_admin():
     name = form.name.data
     email = form.email.data
     phone = form.phone.data
+    gender = 'M'
     description = form.description.data
     password = form.password1.data
     password2 = form.password2.data
@@ -134,7 +135,7 @@ def create_admin():
     #simple first later check is exists
     cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
     #make account
-    cursor.execute('INSERT INTO staff_accounts VALUES (NULL, %s, %s, %s, %s, %s, %s)', (name,email,phone,hashedpw,date_created,description))
+    cursor.execute('INSERT INTO staff_accounts VALUES (NULL, %s, %s, %s, %s, %s, NULL, %s, %s)', (name,email,phone,gender,hashedpw,date_created,description))
     db.connection.commit()
     flash("Employee Added Successfully!")
     return redirect(url_for('admins'))
@@ -182,6 +183,8 @@ def error500(e):
 @app.errorhandler(403)
 def error403(e):
     return render_template('403.html'), 403
+
+
 
 
 if __name__ == '__main__':
