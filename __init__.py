@@ -90,6 +90,11 @@ def home():
     # admin_user()
     return render_template('about.html')
 
+@app.route('/checkout')
+def checkout_purchase():
+    return render_template('checkout.html')
+
+
 #base template
 @app.route('/dashboard')
 def dashboard():
