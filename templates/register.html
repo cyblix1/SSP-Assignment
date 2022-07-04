@@ -56,8 +56,14 @@
                                 your database -->
                                 <div class="form-group row">
                                     <!--userName-->
-                                    {{ form.username.label() }}
-                                    {{ form.username(class='form-control form-control-user', placeholder='Username') }}
+                                    {{ form.name.label() }}
+                                    {{ form.name(class='form-control form-control-user', placeholder='Username') }}
+                                    <!-- Flask Forms Feature -->
+                                </div>
+                                <div class="form-group row">
+                                    <!--userName-->
+                                    {{ form.email.label() }}
+                                    {{ form.email(class='form-control form-control-user', placeholder='Email') }}
                                     <!-- Flask Forms Feature -->
                                 </div>
                                 <div class="form-group row">
