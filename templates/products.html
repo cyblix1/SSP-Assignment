@@ -1,0 +1,199 @@
+{% extends "base_admin.html" %}
+{% block title %} Admins {% endblock %}
+<!-- Custom styles for this page -->
+{% block content %}
+<!-- Begin Page Content -->
+<div class="container-fluid">
+
+    <!-- Page Heading -->
+    <h1 class="h3 mb-2 text-gray-800">STAFF RECORDS</h1>
+    <!-- DataTales Example -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Staff <button type="button" class="btn btn-success float-right"
+                data-toggle="modal" data-target="#createadmin">Add New Employees</button></h6>       
+                        
+            <!-- start of modal -->
+            <div class="modal fade" style="margin-top:100px;" id="createadmin" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="exampleModalLabel">ADD EMPLOYEE</h5>
+                            <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">×</span>
+                            </button>
+                        </div>
+                        <form action="{{url_for('create_admin')}}" method="POST">
+                            <div class="modal-body">
+                                        {{ form.csrf_token(type='hidden') }}
+                                        {% if form.csrf_token.errors %}
+                                            <div class="warning">
+                                                You have submited an invalid csrf token 
+                                            </div>
+                                        {% endif %}
+                                    <div class="form-group">
+                                        {{ form.name(class='form-control form-control-user', placeholder='name') }}
+                                    </div>
+                                    <div class="form-group">
+                                        {{ form.email(class='form-control form-control-user', placeholder='email') }}
+                                    </div>
+                                    <div class="form-group">
+                                        {{ form.phone(class='form-control form-control-user', placeholder='phone Number') }}
+                                    </div>
+                                    <div class="form-group">
+                                        {{ form.description(class='form-control form-control-user', placeholder='description') }}
+                                    </div>
+                                    <div class="form-group">
+                                        {{ form.password1(class='form-control form-control-user', placeholder='password') }}
+                                    </div>
+                                    <div class="form-group">
+                                        {{ form.password2(class='form-control form-control-user', placeholder='confirm password') }}
+                                    </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
+                                {{ form.submit(class="btn btn-primary" ,type="submit") }}
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <!-- End of modal -->
+        </div>
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-success alert-dismissable" role="alert">
+            <button type="button" class="close" data-dismiss="alert" aria-label="close">
+                <span aria-hidden="true">x</span>
+            </button>
+        {{message}}
+        </div> 
+        {% endfor %}
+        {% endif %}
+        {% endwith%}
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Staff ID</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>phone Number</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tfoot>
+                        <tr>
+                            <th>Staff ID</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>phone Number</th>
+                            <th>Actions</th>
+                        </tr>
+                    </tfoot>
+                    <tbody>
+                        {% for employee in employees %}
+                        <tr>
+                            <td>{{employee.staff_id}}</td>
+                            <td>{{employee.full_name}}</td>
+                            <td>{{employee.email}}</td>
+                            <td>{{employee.phone_no}}</td>
+                            <td>
+                                <button type="button" class="btn btn-info btn-sm" data-toggle="modal" data-target="#admininfo{{employee.staff_id}}">Info</button>
+                                <button type="button" class="btn btn-warning btn-sm">History</button>
+                                <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#adminedit{{employee.staff_id}}" >Edit</button>
+                                <a href="/admins/delete_admin/{{employee.staff_id}}" class="btn btn-danger btn-xs btn-sm" onclick="return confirm('Are you sure to delete?')">Delete</a>
+                            </td>
+                        </tr>
+                        <!-- start of modal (view Information) -->
+                        <div class="modal fade" style="margin-top:100px;" id="admininfo{{employee.staff_id}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                            <div class="modal-dialog" role="document">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Employee Information</h5>
+                                        <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                                            <span aria-hidden="true">×</span>
+                                        </button>
+                                    </div>
+                                        <div class="modal-body">
+                                            <p>Staff ID: <b>{{employee.staff_id}}</b></p>
+                                            <p>Name: <b>{{employee.full_name}}</b></p>
+                                            <p>Email: <b>{{employee.email}}</b></p>
+                                            <p>Phone Number: <b>{{employee.phone_no}}</b></p>
+                                            <p>Description: <b>{{employee.description}}</b></p>
+                                            <p>Date Created: <b>{{employee.date_created}}</b></p>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button class="btn btn-success" type="button" data-dismiss="modal">Change Password</button>
+                                            <button class="btn btn-primary" type="button" data-dismiss="modal">Edit</button>
+                                            <button class="btn btn-secondary" type="button" data-dismiss="modal">Close</button>
+                                        </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- End of modal -->
+                        <!-- start of modal (edit Information)-->
+                        <div class="modal fade" style="margin-top:100px;" id="adminedit{{employee.staff_id}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                            <div class="modal-dialog" role="document">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Edit Employee Information</h5>
+                                        <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                                            <span aria-hidden="true">×</span>
+                                        </button>
+                                    </div>
+                                        <form action="{{url_for('update_admin')}}" method="POST">
+                                            <div class="modal-body">
+                                                        {{ form2.csrf_token }}
+                                                        {{ form2.id(type='hidden',value=employee.staff_id)}}
+                                                    <div class="form-group">
+                                                        {{ form2.name(class='form-control', placeholder='Name',value=employee.full_name) }}
+                                                    </div>
+                                                    <div class="form-group">
+                                                        {{ form2.email(class='form-control', placeholder='Email Address', value=employee.email) }}
+                                                    </div>
+                                                    <div class="form-group">
+                                                        {{ form2.phone(class='form-control',  placeholder='Phone Number',value=employee.phone_no) }}
+                                                    </div>
+                                                    <div class="form-group">
+                                                        {{ form2.description(class='form-control',  placeholder='Description',value=employee.description) }}
+                                                    </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button class="btn btn-success" type="button" data-dismiss="modal">Change Password</button>
+                                                {{ form2.submit(class="btn btn-primary" ,type="submit") }}
+                                            </div>
+                                        </form>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- End of modal -->
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+<!-- /.container-fluid -->
+
+            <!-- Footer -->
+            <footer class="sticky-footer bg-white">
+                <div class="container my-auto">
+                    <div class="copyright text-center my-auto">
+                        <span>Copyright &copy; Your Website 2020</span>
+                    </div>
+                </div>
+            </footer>
+            <!-- End of Footer -->
+
+        </div>
+        <!-- End of Content Wrapper -->
+
+    </div>
+    <!-- End of Page Wrapper -->
+
+{% endblock %}

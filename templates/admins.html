@@ -96,34 +96,34 @@
                     <tbody>
                         {% for employee in employees %}
                         <tr>
-                            <td>{{employee.id}}</td>
-                            <td>{{employee.name}}</td>
+                            <td>{{employee.staff_id}}</td>
+                            <td>{{employee.full_name}}</td>
                             <td>{{employee.email}}</td>
-                            <td>{{employee.phone}}</td>
+                            <td>{{employee.phone_no}}</td>
                             <td>
-                                <button type="button" class="btn btn-info btn-sm" data-toggle="modal" data-target="#admininfo{{employee.id}}">Info</button>
+                                <button type="button" class="btn btn-info btn-sm" data-toggle="modal" data-target="#admininfo{{employee.staff_id}}">Info</button>
                                 <button type="button" class="btn btn-warning btn-sm">History</button>
-                                <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#adminedit{{employee.id}}" >Edit</button>
-                                <a href="/admins/delete_admin/{{employee.id}}" class="btn btn-danger btn-xs btn-sm" onclick="return confirm('Are you sure to delete?')">Delete</a>
+                                <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#adminedit{{employee.staff_id}}" >Edit</button>
+                                <a href="/admins/delete_admin/{{employee.staff_id}}" class="btn btn-danger btn-xs btn-sm" onclick="return confirm('Are you sure to delete?')">Delete</a>
                             </td>
                         </tr>
                         <!-- start of modal (view Information) -->
-                        <div class="modal fade" style="margin-top:100px;" id="admininfo{{employee.id}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                        <div class="modal fade" style="margin-top:100px;" id="admininfo{{employee.staff_id}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
                             <div class="modal-dialog" role="document">
                                 <div class="modal-content">
                                     <div class="modal-header">
-                                        <h5 class="modal-title" id="exampleModalLabel">Employee Information</h5>
+                                        <h5 class="modal-title">Employee Information</h5>
                                         <button class="close" type="button" data-dismiss="modal" aria-label="Close">
                                             <span aria-hidden="true">×</span>
                                         </button>
                                     </div>
                                         <div class="modal-body">
-                                            <p>Staff ID: <b>{{employee.id}}</b></p>
-                                            <p>Name: <b>{{employee.name}}</b></p>
+                                            <p>Staff ID: <b>{{employee.staff_id}}</b></p>
+                                            <p>Name: <b>{{employee.full_name}}</b></p>
                                             <p>Email: <b>{{employee.email}}</b></p>
-                                            <p>Phone Number: <b>{{employee.phone}}</b></p>
+                                            <p>Phone Number: <b>{{employee.phone_no}}</b></p>
                                             <p>Description: <b>{{employee.description}}</b></p>
-                                            <p>Date Created: <b>{{employee.dateCreated}}</b</p>
+                                            <p>Date Created: <b>{{employee.date_created}}</b></p>
                                         </div>
                                         <div class="modal-footer">
                                             <button class="btn btn-success" type="button" data-dismiss="modal">Change Password</button>
@@ -135,28 +135,27 @@
                         </div>
                         <!-- End of modal -->
                         <!-- start of modal (edit Information)-->
-                        <div class="modal fade" style="margin-top:100px;" id="adminedit{{employee.id}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                        <div class="modal fade" style="margin-top:100px;" id="adminedit{{employee.staff_id}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
                             <div class="modal-dialog" role="document">
                                 <div class="modal-content">
                                     <div class="modal-header">
-                                        <h5 class="modal-title" id="exampleModalLabel">Edit Employee Information</h5>
+                                        <h5 class="modal-title">Edit Employee Information</h5>
                                         <button class="close" type="button" data-dismiss="modal" aria-label="Close">
                                             <span aria-hidden="true">×</span>
                                         </button>
                                     </div>
                                         <form action="{{url_for('update_admin')}}" method="POST">
                                             <div class="modal-body">
-                                                    <input type="hidden" name="id" value="{{employee.id}}">
-                                                        {{ form2.csrf_token(type='hidden') }}
-                                                        {{ form2.id(type='hidden',value=employee.id)}}
+                                                        {{ form2.csrf_token }}
+                                                        {{ form2.id(type='hidden',value=employee.staff_id)}}
                                                     <div class="form-group">
-                                                        {{ form2.name(class='form-control', placeholder='Name',value=employee.name) }}
+                                                        {{ form2.name(class='form-control', placeholder='Name',value=employee.full_name) }}
                                                     </div>
                                                     <div class="form-group">
                                                         {{ form2.email(class='form-control', placeholder='Email Address', value=employee.email) }}
                                                     </div>
                                                     <div class="form-group">
-                                                        {{ form2.phone(class='form-control',  placeholder='Phone Number',value=employee.phone) }}
+                                                        {{ form2.phone(class='form-control',  placeholder='Phone Number',value=employee.phone_no) }}
                                                     </div>
                                                     <div class="form-group">
                                                         {{ form2.description(class='form-control',  placeholder='Description',value=employee.description) }}
