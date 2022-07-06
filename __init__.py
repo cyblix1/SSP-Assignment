@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from Forms import *
 from configparser import ConfigParser
 import re
-# from csrf import csrf, CSRFError
+from csrf import csrf, CSRFError
 app = Flask(__name__)
 
 #properities
@@ -123,14 +123,29 @@ def update_admin():
 @app.route('/admins/delete_admin/<int:id>/',  methods=['GET','POST'])
 def delete_admin(id):
     cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-    cursor.execute('DELETE FROM staff_accounts WHERE staff_id = %s', [id])
-    db.connection.commit()
-    flash("Employee deleted successfully")
+    #checks if exists 
+    cursor.execute('SELECT * FROM staff_accounts WHERE staff_id = %s', [id])
+    hi = cursor.fetchone()
+    if hi:
+        cursor.execute('DELETE FROM staff_accounts WHERE staff_id = %s', [id])
+        db.connection.commit()
+        flash("Employee deleted successfully",'error')
+    else:
+        flash("Employee does not exist")
     return redirect(url_for('admins'))
 
+#customers section
 @app.route('/customers')
 def customers():
-    return render_template('customers.html')
+    cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor.execute('SELECT * FROM customer_accounts')
+    customers = cursor.fetchall()
+    return render_template('customers.html',customers=customers)
+
+@app.route('/customers/delete/<int:id>/', methods=['GET','POST'])
+def delete_customer():
+    cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor.execute
 
 
 @app.route('/products')

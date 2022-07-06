@@ -30,7 +30,6 @@
                             <th>Customer ID</th>
                             <th>Name</th>
                             <th>Email</th>
-                            <th>phone Number</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -39,41 +38,37 @@
                             <th>Customer ID</th>
                             <th>Name</th>
                             <th>Email</th>
-                            <th>phone Number</th>
                             <th>Actions</th>
                         </tr>
                     </tfoot>
                     <tbody>
                         {% for customer in customers %}
                         <tr>
-                            <td>1</td>
-                            <td>bob</td>
-                            <td>bob@gmail.com</td>
-                            <td>99191911</td>
+                            <td>{{ customer.customer_id }}</td>
+                            <td>{{ customer.full_name}}</td>
+                            <td>{{ customer.email}}</td>
                             <td>
-                                <button type="button" class="btn btn-info btn-sm" data-toggle="modal" data-target="#customerinfo{{employee.id}}">Info</button>
+                                <button type="button" class="btn btn-info btn-sm" data-toggle="modal" data-target="#customerinfo{{customer.id}}">Info</button>
                                 <button type="button" class="btn btn-warning btn-sm">History</button>
-                                <button type="button" class="btn btn-warning btn-sm">Orders</button>
-                                <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#customeredit{{employee.id}}" >Edit</button>
+                                <button type="button" class="btn btn-secondary btn-sm">Orders</button>
+                                <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#customeredit{{customer.id}}" >Disable Account</button>
                                 <a href="" class="btn btn-danger btn-xs btn-sm" onclick="return confirm('Are you sure to delete?')">Delete</a>
                             </td>
                         </tr>
                         <!-- start of modal (view Information) -->
-                        <div class="modal fade" style="margin-top:100px;" id="customerinfo{{employee.id}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                        <div class="modal fade" style="margin-top:100px;" id="customerinfo{{customer.id}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
                             <div class="modal-dialog" role="document">
                                 <div class="modal-content">
                                     <div class="modal-header">
-                                        <h5 class="modal-title" id="exampleModalLabel">Employee Information</h5>
+                                        <h5 class="modal-title" id="exampleModalLabel">customer Information</h5>
                                         <button class="close" type="button" data-dismiss="modal" aria-label="Close">
                                             <span aria-hidden="true">×</span>
                                         </button>
                                     </div>
                                         <div class="modal-body">
-                                            <p>Staff ID: <b>{{customer.id}}</b></p>
-                                            <p>Name: <b>{{customer.name}}</b></p>
+                                            <p>Customer_ID: <b>{{customer.id}}</b></p>
+                                            <p>Name: <b>{{customer.full_name}}</b></p>
                                             <p>Email: <b>{{customer.email}}</b></p>
-                                            <p>Phone Number: <b>{{customer.phone}}</b></p>
-                                            <p>Description: <b>{{customer.description}}</b></p>
                                             <p>Date Created: <b>{{customer.dateCreated}}</b</p>
                                         </div>
                                         <div class="modal-footer">
@@ -84,44 +79,6 @@
                                 </div>
                             </div>
                         </div>
-                        <!-- End of modal -->
-                        <!-- start of modal (edit Information)-->
-                        <div class="modal fade" style="margin-top:100px;" id="customeredit{{employee.id}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-                            <div class="modal-dialog" role="document">
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title" id="exampleModalLabel">Edit Employee Information</h5>
-                                        <button class="close" type="button" data-dismiss="modal" aria-label="Close">
-                                            <span aria-hidden="true">×</span>
-                                        </button>
-                                    </div>
-                                        <form action="{{url_for('update_admin')}}" method="POST">
-                                            <div class="modal-body">
-                                                    <input type="hidden" name="id" value="{{employee.id}}">
-                                                        {{ form2.csrf_token }}
-                                                        {{ form2.id(type='hidden',value=customer.id)}}
-                                                    <div class="form-group">
-                                                        {{ form2.name(class='form-control', placeholder='Name',value=customer.name) }}
-                                                    </div>
-                                                    <div class="form-group">
-                                                        {{ form2.email(class='form-control', placeholder='Email Address', value=customer.email) }}
-                                                    </div>
-                                                    <div class="form-group">
-                                                        {{ form2.phone(class='form-control',  placeholder='Phone Number',value=customer.phone) }}
-                                                    </div>
-                                                    <div class="form-group">
-                                                        {{ form2.description(class='form-control',  placeholder='Description',value=customer.description) }}
-                                                    </div>
-                                            </div>
-                                            <div class="modal-footer">
-                                                <button class="btn btn-success" type="button" data-dismiss="modal">Change Password</button>
-                                                {{ form2.submit(class="btn btn-primary" ,type="submit") }}
-                                            </div>
-                                        </form>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- End of modal -->
                         {% endfor %}
                     </tbody>
                 </table>
