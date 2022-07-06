@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session,flash
+from flask import Flask, render_template, request, make_response, redirect, url_for, session,flash
 from flask_mysqldb import MySQL
 import MySQLdb.cursors
 from flask_bcrypt import Bcrypt
@@ -6,8 +6,12 @@ from datetime import datetime, timedelta
 from Forms import *
 from configparser import ConfigParser
 import re
+from numpy import real
+from freecaptcha import captcha
+import uuid
 from csrf import csrf, CSRFError
 app = Flask(__name__)
+
 
 #properities
 file = 'config.properities'
@@ -19,6 +23,44 @@ app.config['MYSQL_HOST'] = config['account']['host']
 app.config['MYSQL_USER'] = config['account']['user']
 app.config['MYSQL_PASSWORD'] = config['account']['password']
 app.config['MYSQL_DB'] = config['account']['db']
+captcha_solutions = {}
+captcha_solved = []
+
+
+@app.route('/captcha')
+def login():
+    # This means they just submitted a CAPTCHA
+    # We need to see if they got it right
+    incorrect_captcha = False
+    if request.method == 'POST':
+        captcha_quess = request.form.get('captcha', None)
+        captcha_cookie = request.cookies.get('captcha_cookie')
+        real_answer = captcha_solutions.get(captcha_cookie, None)
+        if real_answer is not None:
+            if int(captcha_quess) == int(real_answer):
+                captcha_solved.append(captcha_cookie)
+                return redirect("/", code=302)
+            else:
+                incorrect_captcha = True
+
+    # Select an image
+    image_path = captcha.random_image()
+
+    # Generate list of rotated versions of image
+    # and save which one is correct
+    answer, options = captcha.captchafy(image_path)
+
+    # Provide the CAPTCHA options to the web page using the CAPTCHA
+    resp = make_response(render_template("captcha.html", captcha_options=options, incorrect_captcha=incorrect_captcha))
+
+    # Track this user with a cookie and store the correct answer
+    # by linking the cookie with the answer, we can check their answer
+    # later
+    freecaptcha_cookie = str(uuid.uuid4())
+    resp.set_cookie('captcha_cookie', freecaptcha_cookie)
+    captcha_solutions[freecaptcha_cookie] = answer
+
+    return resp
     
 
 app.permanent_session_lifetime = timedelta(minutes=10)
