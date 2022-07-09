@@ -6,9 +6,6 @@ from datetime import datetime, timedelta
 from Forms import *
 from configparser import ConfigParser
 import re
-from numpy import real
-from freecaptcha import captcha
-import uuid
 from csrf import csrf, CSRFError
 from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user, current_user
 app = Flask(__name__)
@@ -24,45 +21,9 @@ app.config['MYSQL_HOST'] = config['account']['host']
 app.config['MYSQL_USER'] = config['account']['user']
 app.config['MYSQL_PASSWORD'] = config['account']['password']
 app.config['MYSQL_DB'] = config['account']['db']
-captcha_solutions = {}
-captcha_solved = []
 
 
-@app.route('/captcha')
-def login():
-    # This means they just submitted a CAPTCHA
-    # We need to see if they got it right
-    incorrect_captcha = False
-    if request.method == 'POST':
-        captcha_quess = request.form.get('captcha', None)
-        captcha_cookie = request.cookies.get('captcha_cookie')
-        real_answer = captcha_solutions.get(captcha_cookie, None)
-        if real_answer is not None:
-            if int(captcha_quess) == int(real_answer):
-                captcha_solved.append(captcha_cookie)
-                return redirect("/", code=302)
-            else:
-                incorrect_captcha = True
 
-    # Select an image
-    image_path = captcha.random_image()
-
-    # Generate list of rotated versions of image
-    # and save which one is correct
-    answer, options = captcha.captchafy(image_path)
-
-    # Provide the CAPTCHA options to the web page using the CAPTCHA
-    resp = make_response(render_template("captcha.html", captcha_options=options, incorrect_captcha=incorrect_captcha))
-
-    # Track this user with a cookie and store the correct answer
-    # by linking the cookie with the answer, we can check their answer
-    # later
-    freecaptcha_cookie = str(uuid.uuid4())
-    resp.set_cookie('captcha_cookie', freecaptcha_cookie)
-    captcha_solutions[freecaptcha_cookie] = answer
-
-    return render_template('captcha.html')
-    
 
 app.permanent_session_lifetime = timedelta(minutes=10)
 db = MySQL(app)
@@ -73,6 +34,7 @@ bcrypt = Bcrypt()
 # def handle_csrf_error(e):
 #     flash('CSRF token was not found')
 #     return render_template('#something')
+
 
 
 @app.route('/')
@@ -96,13 +58,49 @@ def register():
         return redirect(url_for('home'))
     return render_template('register.html',form=form)
 
+class LoginForm(FlaskForm):
+    username = StringField("Username", validators=[DataRequired()])
+    password = PasswordField("Password", validators=[DataRequired()])
+    submit = SubmitField("Submit")
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    form = LoginForm()
+    if request.method == 'POST' and 'username' in request.form and 'password' in request.form:
+        # Create variables for easy access
+        username = form.username.data
+        password = request.form['password']
+        # Check if account exists using MySQL
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute('SELECT * FROM customer_accounts WHERE name = %s', (name))
+        # Fetch one record and return result
+        account = cursor.fetchone()
+        user_hashpwd = account['password']
+
+        if account and bcrypt.check_password_hash(user_hashpwd, password):
+            # Create session data, we can access this data in other routes
+            session['loggedin'] = True
+            session['id'] = account['id']
+            session['username'] = account['username']
+            # Redirect to home page
+            return "logged in successfully"
+        else:
+            # Account doesn’t exist or username/password incorrect
+            msg = 'Incorrect username/password!'
+            # Show the login form with message (if any)
+    return render_template('login.html', form=form)
+
+
+
+
 
 
 @app.route('/home')
 def home():
     # userID = User.query.filter_by(id=current_user.id).first()
     # admin_user()
-    return render_template('captcha.html')
+    return render_template('register.html')
 
 @app.route('/checkout')
 def checkout_purchase():
