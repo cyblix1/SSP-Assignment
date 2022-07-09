@@ -10,6 +10,7 @@ from numpy import real
 from freecaptcha import captcha
 import uuid
 from csrf import csrf, CSRFError
+from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user, current_user
 app = Flask(__name__)
 
 
@@ -60,7 +61,7 @@ def login():
     resp.set_cookie('captcha_cookie', freecaptcha_cookie)
     captcha_solutions[freecaptcha_cookie] = answer
 
-    return resp
+    return render_template('captcha.html')
     
 
 app.permanent_session_lifetime = timedelta(minutes=10)
@@ -100,7 +101,7 @@ def register():
         db.connection.commit()
     elif request.method == 'POST':
         msg = 'Please fill out the form !'
-    return render_template('register.html',form=form)
+   
 
     # db.create_all()
     # form = Register_Users()
@@ -131,7 +132,7 @@ def register():
 def home():
     # userID = User.query.filter_by(id=current_user.id).first()
     # admin_user()
-    return render_template('about.html')
+    return render_template('captcha.html')
 
 @app.route('/checkout')
 def checkout_purchase():
