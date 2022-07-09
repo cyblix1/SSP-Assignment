@@ -67,65 +67,35 @@ def login():
 app.permanent_session_lifetime = timedelta(minutes=10)
 db = MySQL(app)
 bcrypt = Bcrypt()
-csrf.init_app(app)
+# csrf.init_app(app)
 
-@app.errorhandler(CSRFError)
-def handle_csrf_error(e):
-    flash('CSRF token was not found')
-    return render_template('#something')
+# @app.errorhandler(CSRFError)
+# def handle_csrf_error(e):
+#     flash('CSRF token was not found')
+#     return render_template('#something')
 
 
 @app.route('/')
-@app.route('/register',methods =['GET', 'POST'])
+@app.route('/register',methods =['POST','GET'])
 def register():
     form = Register_Users()
-    if request.form == 'POST' and form.validate_on_submit():
-    # if request.method == 'POST' and 'username' in request.form and 'password' in request.form and 'email' in request.form:
-        username = request.form['username']
-        password = request.form['password']
-        email = request.form['email']
+    if form.validate_on_submit():
+        name = form.name.data
+        password = form.password1.data
+        email = form.email.data
         time = datetime.utcnow()
+        password_age=4
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute('SELECT * FROM customer_accounts WHERE username = % s', (username))
-        # if account:
-        #     msg = 'Account already exists !'
-        # elif not re.match(r'[^@]+@[^@]+\.[^@]+', email):
-        #     msg = 'Invalid email address !'
-        # elif not re.match(r'[A-Za-z0-9]+', username):
-        #     msg = 'Username must contain only characters and numbers !'
-        # elif not username or not password or not email:
-        #     msg = 'Please fill out the form !'
-        # else:
-
-        cursor.execute('INSERT INTO customer_accounts VALUES (NULL, %s, %s, %s, %s, %s)', (username,email, password,time))
+        cursor.execute("INSERT INTO customer_accounts VALUES (NULL,%s,%s,%s,%s,%s)",(name,email,password,password_age,time))
         db.connection.commit()
+
     elif request.method == 'POST':
         msg = 'Please fill out the form !'
    
 
-    # db.create_all()
-    # form = Register_Users()
-    # if form.validate_on_submit():
-    #     user_to_create = User(username=form.username.data,
-    #                           email_address=form.email_address.data,
-    #                           password=form.password1.data)
-    #     # 'password' = form.password1.data this is entering the hashed
-    #     # version of the password. Check models.py,
-    #     # @password.setter hashes the passwords
-    #     db.session.add(user_to_create)
-    #     db.session.commit()
-    #     login_user(user_to_create)
-    #     flash(f"Success! You are logged in as: {user_to_create.username}", category='success')
-    #
-    #     return redirect(url_for('home_page'))
-    # if form.errors != {}:  # If there are not errors from the validations
-    #     errors = []
-    #     for err_msg in form.errors.values():
-    #         errors.append(err_msg)
-    #     err_message = '<br/>'.join([f'({number}){error[0]}' for number, error in enumerate(errors, start=1)])
-    #     flash(f'{err_message}', category='danger')
-    #
-    # return render_template('register.html', form=form)
+        return redirect(url_for('home'))
+    return render_template('register.html',form=form)
+
 
 
 @app.route('/home')
@@ -179,7 +149,7 @@ def create_admin():
     #simple first later check is exists
     cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
     #make account
-    cursor.execute('INSERT INTO staff_accounts VALUES (NULL, %s, %s, %s, %s, %s, NULL, %s, %s)', (name,email,phone,gender,hashedpw,date_created,description))
+    cursor.execute('INSERT INTO staff_accounts VALUES (NULL, %s, %s, %s, %s, %s, NULL, %s, %s)', (name,email,phone,gender,hashedpw,description,date_created))
     db.connection.commit()
     flash("Employee Added Successfully!")
     return redirect(url_for('admins'))
@@ -189,12 +159,12 @@ def create_admin():
 def update_admin():
     form = UpdateAdminForm()
     id = form.id.data
-    cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
     name = form.name.data
     email = form.email.data
     phone = form.phone.data
     description = form.description.data
-    cursor.execute('UPDATE staff_accounts SET name = %s, email = %s, phone=%s, description=%s WHERE id = %s', (name,email,phone,description,id))
+    cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor.execute('UPDATE staff_accounts SET full_name = %s, email = %s, phone_no=%s, description=%s WHERE staff_id = %s', (name,email,phone,description,id))
     db.connection.commit()
     flash("Employee updated successfully")
     return redirect(url_for('admins'))
@@ -202,16 +172,34 @@ def update_admin():
 @app.route('/admins/delete_admin/<int:id>/',  methods=['GET','POST'])
 def delete_admin(id):
     cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-    cursor.execute('DELETE FROM staff_accounts WHERE id = %s', [id])
-    db.connection.commit()
-    flash("Employee deleted successfully")
+    #checks if exists 
+    cursor.execute('SELECT * FROM staff_accounts WHERE staff_id = %s', [id])
+    hi = cursor.fetchone()
+    if hi:
+        cursor.execute('DELETE FROM staff_accounts WHERE staff_id = %s', [id])
+        db.connection.commit()
+        flash("Employee deleted successfully",'error')
+    else:
+        flash("Employee does not exist")
     return redirect(url_for('admins'))
 
-
+#customers section
 @app.route('/customers')
 def customers():
-    return render_template('customers.html')
+    cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor.execute('SELECT * FROM customer_accounts')
+    customers = cursor.fetchall()
+    return render_template('customers.html',customers=customers)
 
+@app.route('/customers/delete/<int:id>/', methods=['GET','POST'])
+def delete_customer():
+    cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor.execute
+
+
+@app.route('/products')
+def products():
+    return render_template('products.html')
 
 # Invalid URL
 @app.errorhandler(404)
