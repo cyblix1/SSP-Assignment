@@ -168,8 +168,6 @@ def create_admin():
     else:
         email = email.encode
         key = Fernet.generate_key()
-        with open("symmetric.key","wb") as fo:
-            fo.write(key)
         f = Fernet(key)
         encrypted_email = f.encrypt(email)
     #simple first later check is exists
@@ -261,6 +259,7 @@ def products():
 @app.route('/profile')
 def profile():
     return render_template('profile.html')
+    
 # Invalid URL
 @app.errorhandler(404)
 def page_not_found(e):
