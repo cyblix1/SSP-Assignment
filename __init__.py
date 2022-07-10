@@ -6,12 +6,14 @@ from datetime import datetime, timedelta
 from Forms import *
 from configparser import ConfigParser
 import re
-from freecaptcha import captcha
+# from freecaptcha import captcha
 import uuid
 from csrf import csrf, CSRFError
 import mysql.connector
 from mysql.connector import Error
 from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user, current_user
+from cryptography.fernet import Fernet
+
 app = Flask(__name__)
 
 
@@ -19,7 +21,6 @@ app = Flask(__name__)
 file = 'config.properities'
 config = ConfigParser()
 config.read(file)
-
 # Conguration stuff
 app.config['SECRET_KEY']= 'SSP Assignment'
 SECRET_KEY = 'SSP Assignment'
@@ -30,6 +31,13 @@ app.config['MYSQL_DB'] = config['account']['db']
 captcha_solutions = {}
 captcha_solved = []
 
+#validate email
+regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+def check(email):
+    if(re.fullmatch(regex, email)):
+        return True
+    else:
+        return False
 
 @app.route('/captcha')
 def login():
@@ -140,30 +148,36 @@ def admins():
             cursor.close()
     return render_template('admins.html', employees = all_data, form = form, form2=form2)
 
-@app.route('/admins/create_admin', methods=['POST'])
+@app.route('/admins/create_admin', methods=['POST','GET'])
 def create_admin():
     form = CreateAdminForm()
     name = form.name.data
     email = form.email.data
     phone = form.phone.data
-    gender = 'M'
+    gender = form.gender.data
     description = form.description.data
     password = form.password1.data
     password2 = form.password2.data
+    hashedpw = bcrypt.generate_password_hash(password)
+    date_created = datetime.utcnow()
     if password != password2:
         flash('passwords does not match',category="danger")
         return redirect(url_for('admins'))
-    hashedpw = bcrypt.generate_password_hash(password)
-    date_created = datetime.utcnow()
+    elif check(email) == False:
+        flash('Invalid email')
+    else:
+        email = email.encode
+        key = Fernet.generate_key()
+        with open("symmetric.key","wb") as fo:
+            fo.write(key)
+        f = Fernet(key)
+        encrypted_email = f.encrypt(email)
     #simple first later check is exists
-    cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-    #make account
-    cursor.execute('INSERT INTO staff_accounts VALUES (NULL, %s, %s, %s, %s, %s, NULL, %s, %s)', (name,email,phone,gender,hashedpw,description,date_created))
-    db.connection.commit()
-    cursor.close()
-    db.connection.close()
-    flash("Employee Added Successfully!",category="success")
-    return redirect(url_for('admins'))
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute('INSERT INTO staff_accounts VALUES (NULL, %s, %s, %s, %s, %s, NULL, %s, %s)', (name,encrypted_email,phone,gender,hashedpw,description,date_created))
+        db.connection.commit()
+        flash("Employee Added Successfully!",category="success")
+        return redirect(url_for('admins'))
 
 
 @app.route('/admins/update_admin', methods=['POST'])
@@ -174,29 +188,47 @@ def update_admin():
     email = form.email.data
     phone = form.phone.data
     description = form.description.data
-    cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-    cursor.execute('UPDATE staff_accounts SET full_name = %s, email = %s, phone_no=%s, description=%s WHERE staff_id = %s', (name,email,phone,description,id))
-    db.connection.commit()
-    cursor.close()
-    db.connection.close()
-    flash("Employee updated successfully", category="success")
-    return redirect(url_for('admins'))
+    try:
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        if cursor:
+            cursor.execute('UPDATE staff_accounts SET full_name = %s, email = %s, phone_no=%s, description=%s WHERE staff_id = %s', (name,email,phone,description,id))
+            db.connection.commit()
+            flash("Employee updated successfully", category="success")
+        else:
+            flash('Something went wrong!')
+    except IOError:
+        print('Database problem!')
+    except Exception as e:
+        print(f'Error while connecting to MySQL,{e}')
+    finally:    
+        cursor.close()
+        db.connection.close()
+        return redirect(url_for('admins'))
 
 @app.route('/admins/delete_admin/<int:id>/',  methods=['GET','POST'])
 def delete_admin(id):
-    cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-    #checks if exists 
-    cursor.execute('SELECT * FROM staff_accounts WHERE staff_id = %s', [id])
-    hi = cursor.fetchone()
-    if hi:
-        cursor.execute('DELETE FROM staff_accounts WHERE staff_id = %s', [id])
-        db.connection.commit()
+    try:
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        #checks if exists 
+        cursor.execute('SELECT * FROM staff_accounts WHERE staff_id = %s', [id])
+        account = cursor.fetchone()
+        if account:
+            cursor.execute('DELETE FROM staff_accounts WHERE staff_id = %s', [id])
+            db.connection.commit()
+            flash("Employee deleted successfully",category="success")
+        #user no exists
+        elif account is None:
+            flash("Employee does not exist",category="danger")
+        else:
+            flash("Something went wrong, please try again!",category="danger")
+    except IOError:
+        print('Database problem!')
+    except Exception as e:
+        print(f'Error while connecting to MySQL,{e}')
+    finally:
         cursor.close()
         db.connection.close()
-        flash("Employee deleted successfully",'error')
-    else:
-        flash("Employee does not exist",category="danger")
-    return redirect(url_for('admins'))
+        return redirect(url_for('admins'))
 
 #customers section
 @app.route('/customers')
@@ -225,6 +257,10 @@ def delete_customer():
 def products():
     return render_template('products.html')
 
+
+@app.route('/profile')
+def profile():
+    return render_template('profile.html')
 # Invalid URL
 @app.errorhandler(404)
 def page_not_found(e):
