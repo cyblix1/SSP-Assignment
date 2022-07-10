@@ -7,12 +7,16 @@ from Forms import *
 from configparser import ConfigParser
 import re
 from csrf import csrf, CSRFError
+import mysql.connector
+from mysql.connector import Error
 app = Flask(__name__)
 
 #properities
 file = 'config.properities'
 config = ConfigParser()
 config.read(file)
+
+# Conguration stuff
 app.config['SECRET_KEY']= 'SSP Assignment'
 SECRET_KEY = 'SSP Assignment'
 app.config['MYSQL_HOST'] = config['account']['host']
@@ -69,17 +73,23 @@ def dashboard():
 def admins():
     form = CreateAdminForm()
     form2 = UpdateAdminForm()
-    cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-    cursor.execute('SELECT * FROM staff_accounts')
-    all_data = cursor.fetchall()
-    if request.form == 'POST'and form.validate_on_submit():
-        return redirect(url_for('create_admin'))
-    elif request.form == 'POST' and form2.validate_on_submit():
-        return redirect(url_for('update_admin'))
-    elif form.csrf_token.errors or form2.csrf_token.errors:
-        pass
-    else:
-        pass
+    try:
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute('SELECT * FROM staff_accounts')
+        all_data = cursor.fetchall()
+        if request.form == 'POST'and form.validate_on_submit():
+            return redirect(url_for('create_admin'))
+        elif request.form == 'POST' and form2.validate_on_submit():
+            return redirect(url_for('update_admin'))
+        elif form.csrf_token.errors or form2.csrf_token.errors:
+            pass
+    except IOError:
+        print('Database problem!')
+    except Exception as e:
+        print(f'Error while connecting to MySQL,{e}')
+    finally:
+        if cursor:
+            cursor.close()
     return render_template('admins.html', employees = all_data, form = form, form2=form2)
 
 @app.route('/admins/create_admin', methods=['POST'])
@@ -93,8 +103,8 @@ def create_admin():
     password = form.password1.data
     password2 = form.password2.data
     if password != password2:
-        flash('passwords does not match')
-        return redirect('admins')
+        flash('passwords does not match',category="danger")
+        return redirect(url_for('admins'))
     hashedpw = bcrypt.generate_password_hash(password)
     date_created = datetime.utcnow()
     #simple first later check is exists
@@ -102,7 +112,9 @@ def create_admin():
     #make account
     cursor.execute('INSERT INTO staff_accounts VALUES (NULL, %s, %s, %s, %s, %s, NULL, %s, %s)', (name,email,phone,gender,hashedpw,description,date_created))
     db.connection.commit()
-    flash("Employee Added Successfully!")
+    cursor.close()
+    db.connection.close()
+    flash("Employee Added Successfully!",category="success")
     return redirect(url_for('admins'))
 
 
@@ -117,7 +129,9 @@ def update_admin():
     cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
     cursor.execute('UPDATE staff_accounts SET full_name = %s, email = %s, phone_no=%s, description=%s WHERE staff_id = %s', (name,email,phone,description,id))
     db.connection.commit()
-    flash("Employee updated successfully")
+    cursor.close()
+    db.connection.close()
+    flash("Employee updated successfully", category="success")
     return redirect(url_for('admins'))
 
 @app.route('/admins/delete_admin/<int:id>/',  methods=['GET','POST'])
@@ -129,17 +143,28 @@ def delete_admin(id):
     if hi:
         cursor.execute('DELETE FROM staff_accounts WHERE staff_id = %s', [id])
         db.connection.commit()
+        cursor.close()
+        db.connection.close()
         flash("Employee deleted successfully",'error')
     else:
-        flash("Employee does not exist")
+        flash("Employee does not exist",category="danger")
     return redirect(url_for('admins'))
 
 #customers section
 @app.route('/customers')
 def customers():
-    cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-    cursor.execute('SELECT * FROM customer_accounts')
-    customers = cursor.fetchall()
+    try:
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        if cursor:
+            cursor.execute('SELECT * FROM customer_accounts')
+            customers = cursor.fetchall()
+    except IOError:
+        print('Database problem!')
+    except Exception as e:
+        print(f'Error while connecting to MySQL,{e}')
+    finally:
+        if cursor:
+            cursor.close()
     return render_template('customers.html',customers=customers)
 
 @app.route('/customers/delete/<int:id>/', methods=['GET','POST'])
