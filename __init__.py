@@ -268,6 +268,27 @@ def products():
             cursor.close()
     return render_template('products1.html', items=products)
 
+@app.route('/create_products', methods=['POST','GET'])
+def create_products():
+    form = Create_Products()
+    if form.validate_on_submit():
+        id = 1
+        name = form.product_name.data
+        price = form.price.data
+        description = form.description.data
+
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute('INSERT INTO products VALUES (%s, %s, %s, %s)', (id,name,price,description))
+        db.connection.commit()
+        flash("Employee Added Successfully!",category="success")
+
+    elif request.method == 'POST':
+        msg = 'Please fill out the form !'
+
+        return redirect(url_for('product'))
+
+    return render_template('AddItem.html',add_item_form = form)
+
 
 @app.route('/profile',methods=['GET','POST'])
 def profile():

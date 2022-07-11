@@ -33,13 +33,13 @@
   </ol>
   <div class="carousel-inner">
     <div class="carousel-item active">
-      <img src="../static/img/slide-lg-1.jpg" alt="First slide">
+      <img src="static/images/vala.png" alt="First slide">
     </div>
     <div class="carousel-item">
-      <img src="../static/img/slide-lg-2.jpg" alt="Second slide">
+      <img src="static/images/vala.png" alt="Second slide">
     </div>
       <div class="carousel-item">
-      <img src="../static/img/slide-lg-3.jpg" alt="Third slide">
+      <img src="static/images/vala.png" alt="Third slide">
     </div>
   </div>
        <a class="carousel-control-prev" href="#carousel1_indicator" role="button" data-slide="prev">
@@ -132,7 +132,10 @@
                     </div>
                     <!-- Product actions-->
                     <div class="card-footer p-4 pt-0 border-top-0 bg-transparent">
-                        <div class="text-center"><button class="btn btn-outline-dark" data-toggle="modal" data-target="#Modal-MoreInfo--{{i.product_id}}">More Info</button></div>
+                        <div class="text-center"><button class="btn btn-outline-dark" data-toggle="modal" data-target="#Modal-MoreInfo--{{i.product_id}}">More Info</button>
+
+                        <button class="btn btn-outline mt-auto btn-success" data-toggle="modal" data-target="#Modal-Purchase--{{i.product_id}}">Purchase</button></div>
+
 
                     </div>
                 </div>
@@ -187,7 +190,7 @@
                         <span aria-hidden="true">×</span>
                     </button>
                 </div>
-                <form action="{{ url_for('home') }}" method="POST">
+                <form action="{{ url_for('create_products') }}" method="POST">
                 <div class="modal-body">
                     <hr>
                     <p>ID: {{i.product_id}}</p>
@@ -204,7 +207,6 @@
                     <button class="btn btn-success" type="submit">Add to Cart</button>
 
                     </div>
-                </div>
                 </form>
 
             </div>

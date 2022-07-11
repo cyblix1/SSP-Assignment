@@ -3,7 +3,7 @@ import email
 from tkinter import W
 from tkinter.tix import Select
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField, IntegerField, PasswordField, BooleanField, ValidationError, TextAreaField, EmailField, SelectField
+from wtforms import StringField, SubmitField, IntegerField, PasswordField, BooleanField, ValidationError, TextAreaField, EmailField, SelectField, FloatField
 from wtforms.validators import DataRequired, EqualTo, Length,ValidationError
 from wtforms.widgets import TextArea
 from flask_ckeditor import CKEditorField
@@ -96,3 +96,9 @@ class Register_Users(FlaskForm):
     password1 = PasswordField("Password:", validators=[DataRequired(), EqualTo('password2')])
     password2 = PasswordField("Confirm Password")
     submit = SubmitField("Add Customer")
+
+class Create_Products(FlaskForm):
+    product_name = StringField(label='Name', validators=[Length(min=1, max=100), DataRequired()])
+    description = TextAreaField(label='Description', validators=[DataRequired(), Length(min=1, max=1000)])
+    price = FloatField(label='Price', validators=[DataRequired(), Length(min=1)])
+    submit = SubmitField(label='Add Item')
