@@ -13,7 +13,7 @@ from mysql.connector import Error
 from configparser import ConfigParser
 
 #configuration files
-file = 'config.properities'
+file = 'config.properties'
 config = ConfigParser()
 config.read(file)
 

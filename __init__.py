@@ -114,7 +114,7 @@ def login():
 def home():
     # userID = User.query.filter_by(id=current_user.id).first()
     # admin_user()
-    return render_template('register.html')
+    return render_template('about.html')
 
 @app.route('/checkout')
 def checkout_purchase():
@@ -254,7 +254,19 @@ def delete_customer():
 
 @app.route('/products')
 def products():
-    return render_template('products.html')
+    try:
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        if cursor:
+            cursor.execute('SELECT * FROM products')
+            products = cursor.fetchall()
+    except IOError:
+        print('Database problem!')
+    except Exception as e:
+        print(f'Error while connecting to MySQL,{e}')
+    finally:
+        if cursor:
+            cursor.close()
+    return render_template('products1.html', items=products)
 
 
 @app.route('/profile',methods=['GET','POST'])
