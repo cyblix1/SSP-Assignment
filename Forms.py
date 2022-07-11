@@ -43,17 +43,17 @@ class Update_Name(FlaskForm):
 class Update_Email(FlaskForm):
     def validate_email_address(self, email_address_to_check):
         try:
-            connection = mysql.connector.connect(host=config['account']['host'],user=config['account']['user'],database=config['account']['database'],database=config['account']['db'])
+            connection = mysql.connector.connect(host=config['account']['host'],user=config['account']['user'],database=config['account']['db'],password=config['account']['password'])
             if connection.is_connected(): 
                 cursor = connection.cursor()
-                cursor.execute('SELECT * FROM customer_accounts WHERE customer_id = %s', [id])
+                cursor.execute('SELECT * FROM customer_accounts WHERE email = %s', [email_address_to_check])
                 existing_email = cursor.fetchone()
                 if existing_email:
                     raise ValidationError('Email Aready exists! Please use another!')
                 else:
                     pass
         except Error as e:
-            print('Database Error!')      
+            print('Database Error!',{e})      
         finally:
             if connection.is_connected():
                 cursor.close()
@@ -69,6 +69,23 @@ class Update_Gender(FlaskForm):
 
 class Update_Password(FlaskForm):
     current_password = PasswordField(label='Current Password:', validators=[Length(min=6), DataRequired()])
+    def validate_password(self, password_to_check):
+        try:
+            connection = mysql.connector.connect(host=config['account']['host'],user=config['account']['user'],database=config['account']['db'],password=config['account']['password'])
+            if connection.is_connected(): 
+                cursor = connection.cursor()
+                cursor.execute('SELECT * FROM customer_accounts WHERE customer_id = %s', [id])
+                existing_email = cursor.fetchone()
+                if existing_email:
+                    raise ValidationError('Email Aready exists! Please use another!')
+                else:
+                    pass
+        except Error as e:
+            print('Database Error!',{e})      
+        finally:
+            if connection.is_connected():
+                cursor.close()
+                connection.close()   
     new_password = PasswordField(label='New Password:', validators=[Length(min=6), DataRequired()])
     submit = SubmitField(label='Done')
 

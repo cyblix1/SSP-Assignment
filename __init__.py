@@ -308,9 +308,11 @@ def update_name(name,id):
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute('SELECT * FROM customer_accounts WHERE customer_id = %s', [id])
         account = cursor.fetchone()
+        #acc exists
         if account:
-            cursor.execute('UPDATE staff_accounts SET full_name = %s WHERE staff_id = %s', (name,id))
-
+            cursor.execute('UPDATE customer_accounts SET full_name = %s WHERE customer_id = %s', (name,id))
+        elif account is None:
+            flash("account doesnt exist")
     except IOError:
         print('Database problem!')
     except Exception as e:
@@ -318,13 +320,30 @@ def update_name(name,id):
     finally:
         cursor.close()
         db.connection.close()
-
+        redirect(url_for('profile'))
 
 
 # incomplete need session
 @app.route("/profile/update_email/<email>")
-def update_email(email):
-    pass
+def update_email(email,id):
+    try:
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute('SELECT * FROM customer_accounts WHERE customer_id = %s', [id])
+        account = cursor.fetchone()
+        #acc exists
+        if account:
+            cursor.execute('UPDATE customer_accounts SET email = %s WHERE customer_id = %s', (email,id))
+        elif account is None:
+            flash("account doesnt exist")
+    except IOError:
+        print('Database problem!')
+    except Exception as e:
+        print(f'Error while connecting to MySQL,{e}')
+    finally:
+        cursor.close()
+        db.connection.close()
+        redirect(url_for('profile'))
+
 
 
 # incomplete need session
