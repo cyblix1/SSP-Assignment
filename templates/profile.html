@@ -1,6 +1,243 @@
-{% extends "base_register.html" %}
+
+{% extends "base.html" %}
 {% block title %} Profile {% endblock %}
-<!-- Custom styles for this page -->
-<p>Hi</p>
+
 {% block content %}
+<section class="section-content padding-y">
+<div class="container">
+
+<div class="row">
+    <aside class="col-md-3">
+        <ul class="list-group">
+            <a class="list-group-item active" href="{{ url_for('profile') }}"> Account overview  </a>
+            <a class="list-group-item" href="#"> My Orders </a>
+            <a class="list-group-item" href="#"> My wishlist </a>
+            <a class="list-group-item" href="#">Bookings</a>
+            <a class="list-group-item" href="#"> My Selling Items </a>
+            <a class="list-group-item" href=""> Ticket History </a>
+        </ul>
+    </aside> <!-- col.// -->
+    <main class="col-md-9">
+
+        <article class="card mb-3">
+            <div class="card-body">
+
+                <figure class="icontext">
+                        <div class="icon">
+                            <img class="rounded-circle img-sm border" src="../static/img/undraw_profile.svg" height="60px">
+                        </div>
+                        <div class="text">
+                            <br>
+                            <!-- Url_for for update user-->
+                            <a href="#" class="btn-link" type="submit"><i class="glyphicon glyphicon-ok-sign"></i>Edit User Profile</a>&nbsp;
+                        </div>
+                </figure>
+                <hr>
+                <div class="row">
+                <div class="col-md-6">
+                <p>
+                    <i class="fa fa-solid fa-user-astronaut"></i> &nbsp; Name:
+                     <br>
+                     <!-- current_user.username -->
+                    <strong>Username</strong> &nbsp;
+                    <a class="btn-link" href="#" data-toggle="modal" data-target="#editUsernameModal">Edit Username</a>
+                </p>
+                <p>
+                    <i class="fa fa-regular fa-envelope"></i> &nbsp; Email:
+                     <br>
+                     <!-- current_user.email -->
+                    <strong>email</strong> &nbsp;
+                    <a class="btn-link" href="#" data-toggle="modal" data-target="#editEmailModal">Edit Email</a>
+                </p>
+<!--                <p>-->
+<!--                    <i class="fa fa-map-marker text-muted"></i> &nbsp; My address:-->
+<!--                     <br>-->
+<!--                    <strong>Tashkent city, Street name, Building 123, House 321</strong> &nbsp;-->
+<!--                    <a href="#" class="btn-link"> Edit</a>-->
+<!--                </p>-->
+                <p>
+                    <i class="fa fa-solid fa-venus-mars"></i> &nbsp; Gender:
+                     <br>
+                      <!-- current_user.gender -->
+                    <strong>gender</strong> &nbsp;
+                    <a class="btn-link" href="#" data-toggle="modal" data-target="#editGenderModal">Edit Gender</a>
+                </p>
+                </div>
+                <div class="col-md-4">
+                    <br>
+                    <div class="col-6 col-md-4">
+                        <img class="img-sm" src="../static/img/undraw_social_girl_re_kdrx.svg" height="80px">
+                    </div>
+                    <br>
+                </div>
+                    </div>
+
+                <article class="card-group">
+                    <figure class="card bg">
+                        <div class="p-3">
+                            <!-- owned_items|length -->
+                             <h5 class="card-title">Owned items</h5>
+                            <span>Orders</span>
+                        </div>
+                    </figure>
+                    <figure class="card bg">
+                        <div class="p-3">
+                            <!-- wished_items|length -->
+                             <h5 class="card-title">wished items</h5>
+                            <span>Wishlists</span>
+                        </div>
+                    </figure>
+                    <figure class="card bg">
+                        <div class="p-3">
+                            <!-- products|length -->
+                             <h5 class="card-title">products</h5>
+                            <span>Products For Sale</span>
+                        </div>
+                    </figure>
+                </article>
+
+
+            </div> <!-- card-body .// -->
+        </article> <!-- card.// -->
+        <!-- Password and Authentication Card Start-->
+        <article class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title mb-4">Password and Authentication </h5>
+                <a href="#" class="btn btn-outline-primary" data-toggle="modal" data-target="#changepasswordModal"> Change Password  </a>
+                <br>
+                <br>
+                <h5 class="card-title mb-4">Account Removal </h5>
+                <p>Warning Account Deletion Cannot be undone</p>
+                <a href="" class="btn btn-outline-danger" data-toggle="modal" data-target="#deleteprofileModal" type="reset"><i class="glyphicon glyphicon-repeat"></i>Delete Account</a>
+            </div> <!-- card-body .// -->
+        </article> <!-- card.// -->
+        <!-- Password and Authentication Card End-->
+    </main> <!-- col.// -->
+</div>
+
+
+<!--Delete Account Modal-->
+<div class="modal fade" style="margin-top:100px;" id="deleteprofileModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Delete Account</h5>
+                    <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">×</span>
+                    </button>
+                </div>
+                <div class="modal-body">Are you sure you want to delete your account? This action cannot be undone.</div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
+                    <!--  url_for('delete_profile')  -->
+                    <a class="btn btn-danger" href="#">Delete Account</a>
+                </div>
+            </div>
+        </div>
+    </div>
+<!-- Edit Username -->
+<div class="modal fade" style="margin-top:100px;" id="editUsernameModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Edit Username</h5>
+                    <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">×</span>
+                    </button>
+                </div>
+                <!-- <form method="POST" action="url_for('update_username', id=current_user.id)"> -->
+                <form method="POST" action="">
+                    {{ username_form.hidden_tag() }}
+                <div class="modal-body">
+                    {{username_form.username.label()}}
+                    {{username_form.username(class='form-control form-control-user', placeholder='Enter New Username',value=current_user.username)}}
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
+                    {{username_form.submit(class='btn btn-primary btn-user ')}}
+                </div>
+                </form>
+            </div>
+        </div>
+</div>
+<!-- Edit Email -->
+<div class="modal fade" style="margin-top:100px;" id="editEmailModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Edit Email</h5>
+                    <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">×</span>
+                    </button>
+                </div>
+                 <form method="POST" action="{{url_for('update_email', id=current_user.id)}}">
+                    {{ username_form.hidden_tag() }}
+                <div class="modal-body">
+                    {{email_form.email_address.label()}}
+                    {{email_form.email_address(class='form-control form-control-user', placeholder='Enter New Email',value=current_user.email_address)}}
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
+                    {{email_form.submit(class='btn btn-primary btn-user ')}}
+                </div>
+                </form>
+            </div>
+        </div>
+</div>
+<!-- Edit Gender -->
+<div class="modal fade" style="margin-top:100px;" id="editGenderModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Edit Gender</h5>
+                    <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">×</span>
+                    </button>
+                </div>
+                <form method="POST" action="{{url_for('update_gender', id=current_user.id)}}">
+                    {{ username_form.hidden_tag() }}
+                <div class="modal-body">
+                    {{gender_form.gender.label()}}
+                    {{gender_form.gender(class='form-control form-control-user')}}
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
+                    {{gender_form.submit(class='btn btn-primary btn-user ')}}
+                </div>
+                </form>
+        </div>
+</div>
+</div>
+<!--  Change Password  -->
+    <div class="modal fade" style="margin-top:100px;" id="changepasswordModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Change Your Password</h5>
+                    <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">×</span>
+                    </button>
+                </div>
+                <form method="POST" action="{{url_for('update_password', id=current_user.id)}}">
+                    {{ password_form.hidden_tag() }}
+                <div class="modal-body">
+                    {{password_form.current_password.label()}}
+                    {{password_form.current_password(class='form-control form-control-user', placeholder='Enter Current Password')}}
+                    {{password_form.new_password.label()}}
+                    {{password_form.new_password(class='form-control form-control-user', placeholder='Enter New Password')}}
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
+                    {{username_form.submit(class='btn btn-primary btn-user ')}}
+                </div>
+                </form>
+            </div>
+        </div>
+</div>
 {% endblock %}
+</html>

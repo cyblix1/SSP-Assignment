@@ -256,10 +256,85 @@ def products():
     return render_template('products.html')
 
 
-@app.route('/profile')
+@app.route('/profile',methods=['GET','POST'])
 def profile():
-    return render_template('profile.html')
-    
+    name_form = Update_Name()
+    email_form = Update_Email()
+    gender_form = Update_Gender()
+    password_form = Update_Password()
+    if request.form == "POST" and name_form.validate_on_submit():
+        redirect(url_for('update_name'),name=name_form.name.data)
+    elif request.form == "POST" and email_form.validate_on_submit():
+        email = email_form.email_address.data
+        email_form.validate_email_address(email)
+        redirect(url_for('update_email',email=email))
+    elif request.form == "POST" and gender_form.validate_on_submit():
+        redirect(url_for('update_gender', gender=gender_form.gender.data))
+    #do password later(hard)
+    else:
+        flash("Invalid entry!")
+    return render_template('profile.html',name_form=name_form,email_form=email_form,gender_form=gender_form,password_form=password_form)
+
+@app.route('/customer_delete/<int:id>',methods=['GET','POST'])
+def customer_delete(id):
+    try:
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        #checks if exists 
+        cursor.execute('SELECT * FROM customer_accounts WHERE customer_id = %s', [id])
+        account = cursor.fetchone()
+        if account:
+            cursor.execute('DELETE FROM customer_accounts WHERE customer_id = %s', [id])
+            db.connection.commit()
+            flash("Deleted successfully",category="success")
+        #user no exists
+        elif account is None:
+            flash("Something went wrong! Data does not exist!")
+        else:
+            flash("Something went wrong, please try again!",category="danger")
+            return redirect(url_for('profile'))
+    except IOError:
+        print('Database problem!')
+    except Exception as e:
+        print(f'Error while connecting to MySQL,{e}')
+    finally:
+        cursor.close()
+        db.connection.close()
+        return redirect(url_for('login'))
+
+# incomplete need session
+@app.route("/profile/update_name/<name>/<int:id>")
+def update_name(name,id):
+    try:
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute('SELECT * FROM customer_accounts WHERE customer_id = %s', [id])
+        account = cursor.fetchone()
+        if account:
+            cursor.execute('UPDATE staff_accounts SET full_name = %s WHERE staff_id = %s', (name,id))
+
+    except IOError:
+        print('Database problem!')
+    except Exception as e:
+        print(f'Error while connecting to MySQL,{e}')
+    finally:
+        cursor.close()
+        db.connection.close()
+
+
+
+# incomplete need session
+@app.route("/profile/update_email/<email>")
+def update_email(email):
+    pass
+
+
+# incomplete need session
+@app.route("/profile/update_gender/<gender>")
+def update_gender(gender):
+    pass
+
+
+
+
 # Invalid URL
 @app.errorhandler(404)
 def page_not_found(e):
