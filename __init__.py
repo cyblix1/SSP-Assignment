@@ -266,7 +266,7 @@ def products():
     finally:
         if cursor:
             cursor.close()
-    return render_template('products1.html', items=products)
+    return render_template('products.html', items=products)
 
 @app.route('/create_products', methods=['POST','GET'])
 def create_products():
@@ -288,6 +288,32 @@ def create_products():
         return redirect(url_for('product'))
 
     return render_template('AddItem.html',add_item_form = form)
+# not finished yet - samuel
+
+@app.route('/products/delete_products',  methods=['GET','POST'])
+def delete_products():
+    try:
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        #checks if exists
+        cursor.execute('SELECT * FROM product WHERE staff_id = %s', [id])
+        account = cursor.fetchone()
+        if account:
+            cursor.execute('DELETE FROM product WHERE staff_id = %s', [id])
+            db.connection.commit()
+            flash("Employee deleted successfully",category="success")
+        #user no exists
+        elif account is None:
+            flash("Employee does not exist",category="danger")
+        else:
+            flash("Something went wrong, please try again!",category="danger")
+    except IOError:
+        print('Database problem!')
+    except Exception as e:
+        print(f'Error while connecting to MySQL,{e}')
+    finally:
+        cursor.close()
+        db.connection.close()
+        return redirect(url_for('products'))
 
 
 @app.route('/profile',methods=['GET','POST'])
