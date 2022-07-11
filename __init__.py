@@ -18,7 +18,7 @@ app = Flask(__name__)
 
 
 #properities
-file = 'config.properities'
+file = 'config.properties'
 config = ConfigParser()
 config.read(file)
 # Conguration stuff
