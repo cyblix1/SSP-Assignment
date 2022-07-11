@@ -9,19 +9,18 @@
     <h1 class="h3 mb-2 text-gray-800">CUSTOMER RECORDS</h1>
     <!-- DataTales Example -->
     <div class="card shadow mb-4">
-        {% with messages = get_flashed_messages() %}
+        {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
-        {% for message in messages %}
-        <div class="alert alert-success alert-dismissable" role="alert">
-            <button type="button" class="close" data-dismiss="alert" aria-label="close">
-                <span aria-hidden="true">x</span>
-            </button>
-        {{message}}
-        </div> 
+        {% for category, message in messages %}
+            <div class="alert alert-{{category}} alert-dismissable" role="alert">
+                <button type="button" class="close" data-dismiss="alert" aria-label="close">
+                    <span aria-hidden="true">x</span>
+                </button>
+                {{message}}
+            </div>
         {% endfor %}
         {% endif %}
-        {% endwith%}
-
+        {% endwith %}
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
