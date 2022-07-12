@@ -77,22 +77,22 @@ def register():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     form = LoginForm()
-    if request.method == 'POST' and 'username' in request.form and 'password' in request.form:
+    if request.method == 'POST' and 'name' in request.form and 'password' in request.form:
         # Create variables for easy access
-        name = form.customer_name.data
+        name = form.name.data
         password = form.password1.data
         # Check if account exists using MySQL
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute('SELECT * FROM customer_accounts WHERE full_name = %s', (name))
         # Fetch one record and return result
         account = cursor.fetchone()
-        user_hashpwd = account['password']
 
-        if account and bcrypt.check_password_hash(user_hashpwd, password):
+
+        if account:
             # Create session data, we can access this data in other routes
             session['loggedin'] = True
             session['id'] = account['id']
-            session['username'] = account['username']
+            session['name'] = account['name']
             # Redirect to home page
             return "logged in successfully"
         else:
