@@ -72,6 +72,14 @@ def register():
         return redirect(url_for('home'))
     return render_template('register.html',form=form)
 
+def home():
+    if 'loggedin' in session: 
+# User is loggedin show them the home page 
+        return render_template('home.html', username=session['username']) 
+# User is not loggedin redirect to login page 
+    return redirect(url_for('login')) 
+
+
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -79,10 +87,10 @@ def login():
     form = LoginForm()
     if request.method == 'POST' and 'name' in request.form and 'password' in request.form:
         # Create variables for easy access
-        name = form.name.data
-        password = form.password1.data
+        name = request.form['name']
+        password = request.form['password1']
         # Check if account exists using MySQL
-        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute('SELECT * FROM customer_accounts WHERE full_name = %s', (name))
         # Fetch one record and return result
         account = cursor.fetchone()
@@ -94,13 +102,13 @@ def login():
             session['id'] = account['id']
             session['name'] = account['name']
             # Redirect to home page
-            return "logged in successfully"
+            msg = 'hi'
+            return redirect(url_for('home'))
         else:
             # Account doesn’t exist or username/password incorrect
             msg = 'Incorrect username/password!'
             # Show the login form with message (if any)
-            return redirect(url_for('home'))
-    return render_template('login.html', form=form)
+    return render_template('login.html', form=form, msg='')
 
 
 @app.route('/')
@@ -149,7 +157,7 @@ def password_check(password):
 def home():
     # userID = User.query.filter_by(id=current_user.id).first()
     # admin_user()
-    return render_template('about.html')
+    return render_template('home.html')
 
 @app.route('/checkout')
 def checkout_purchase():
