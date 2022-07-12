@@ -100,5 +100,5 @@ class Register_Users(FlaskForm):
 class Create_Products(FlaskForm):
     product_name = StringField(label='Name', validators=[Length(min=1, max=100), DataRequired()])
     description = TextAreaField(label='Description', validators=[DataRequired(), Length(min=1, max=1000)])
-    price = FloatField(label='Price', validators=[DataRequired(), Length(min=1)])
+    price = StringField(label='Price', validators=[DataRequired(), Length(min=1)])
     submit = SubmitField(label='Add Item')

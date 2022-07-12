@@ -254,6 +254,7 @@ def delete_customer():
 
 @app.route('/products')
 def products():
+    form = Create_Products()
     try:
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
         if cursor:
@@ -266,13 +267,14 @@ def products():
     finally:
         if cursor:
             cursor.close()
-    return render_template('products.html', items=products)
+    return render_template('products.html', items=products,form=form)
 
 @app.route('/create_products', methods=['POST','GET'])
 def create_products():
     form = Create_Products()
     if form.validate_on_submit():
-        id = 1
+        id = 2
+        # need to change manually LMAO
         name = form.product_name.data
         price = form.price.data
         description = form.description.data
@@ -282,23 +284,22 @@ def create_products():
         db.connection.commit()
         flash("Employee Added Successfully!",category="success")
 
+        return redirect(url_for('home'))
+
     elif request.method == 'POST':
         msg = 'Please fill out the form !'
 
-        return redirect(url_for('product'))
-
     return render_template('AddItem.html',add_item_form = form)
-# not finished yet - samuel
 
-@app.route('/products/delete_products',  methods=['GET','POST'])
-def delete_products():
+@app.route('/products/delete_products/<int:id>/',  methods=['GET','POST'])
+def delete_products(id):
     try:
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
         #checks if exists
-        cursor.execute('SELECT * FROM product WHERE staff_id = %s', [id])
+        cursor.execute('SELECT * FROM products WHERE product_id = %s', [id])
         account = cursor.fetchone()
         if account:
-            cursor.execute('DELETE FROM product WHERE staff_id = %s', [id])
+            cursor.execute('DELETE FROM products WHERE product_id = %s', [id])
             db.connection.commit()
             flash("Employee deleted successfully",category="success")
         #user no exists
