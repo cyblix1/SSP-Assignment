@@ -102,3 +102,8 @@ class Create_Products(FlaskForm):
     description = TextAreaField(label='Description', validators=[DataRequired(), Length(min=1, max=1000)])
     price = StringField(label='Price', validators=[DataRequired(), Length(min=1)])
     submit = SubmitField(label='Add Item')
+
+class LoginForm(FlaskForm):
+    name = StringField("Name", validators=[Length(min=1, max=50), DataRequired()])
+    password1 = PasswordField("Password:", validators=[DataRequired(), EqualTo('password2')])
+    submit = SubmitField("Add Customer")

@@ -83,8 +83,8 @@ def login():
     form = LoginForm()
     if request.method == 'POST' and 'username' in request.form and 'password' in request.form:
         # Create variables for easy access
-        username = form.username.data
-        password = request.form['password']
+        name = form.name.data
+        password = form.password1.data
         # Check if account exists using MySQL
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute('SELECT * FROM customer_accounts WHERE name = %s', (name))
@@ -103,6 +103,7 @@ def login():
             # Account doesn’t exist or username/password incorrect
             msg = 'Incorrect username/password!'
             # Show the login form with message (if any)
+            return redirect(url_for('home'))
     return render_template('login.html', form=form)
 
 
@@ -166,11 +167,11 @@ def create_admin():
         return redirect(url_for('admins'))
     elif check(email) == False:
         flash('Invalid email')
-    else:
-        email = email.encode
-        key = Fernet.generate_key()
-        f = Fernet(key)
-        encrypted_email = f.encrypt(email)
+    #else:
+        #email = email.encode
+        #key = Fernet.generate_key()
+        #f = Fernet(key)
+        #encrypted_email = f.encrypt(email)
     #simple first later check is exists
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute('INSERT INTO staff_accounts VALUES (NULL, %s, %s, %s, %s, %s, NULL, %s, %s)', (name,encrypted_email,phone,gender,hashedpw,description,date_created))
