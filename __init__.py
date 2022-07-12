@@ -355,6 +355,29 @@ def delete_products(id):
         db.connection.close()
         return redirect(url_for('products'))
 
+@app.route('/products/update_products', methods=['POST'])
+def update_products():
+    form = Update_Products()
+    id = form.product_id.data
+    name = form.product_name.data
+    price = form.price.data
+    description = form.description.data
+    try:
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        if cursor:
+            cursor.execute('UPDATE products SET product_name = %s, price = %s, description =%s WHERE product_id = %s', (name,price,description,id))
+            db.connection.commit()
+            flash("Employee updated successfully", category="success")
+        else:
+            flash('Something went wrong!')
+    except IOError:
+        print('Database problem!')
+    except Exception as e:
+        print(f'Error while connecting to MySQL,{e}')
+    finally:
+        cursor.close()
+        db.connection.close()
+        return redirect(url_for('products'))
 
 @app.route('/profile',methods=['GET','POST'])
 def profile():

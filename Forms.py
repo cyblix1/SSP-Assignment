@@ -103,6 +103,13 @@ class Create_Products(FlaskForm):
     price = StringField(label='Price', validators=[DataRequired(), Length(min=1)])
     submit = SubmitField(label='Add Item')
 
+class Update_Products(FlaskForm):
+    product_id = IntegerField("Id",validators=[DataRequired()])
+    product_name = StringField(label='Name', validators=[Length(min=1, max=100), DataRequired()])
+    description = TextAreaField(label='Description', validators=[DataRequired(), Length(min=1, max=1000)])
+    price = StringField(label='Price', validators=[DataRequired(), Length(min=1)])
+    submit = SubmitField(label = "Save Changes")
+
 class LoginForm(FlaskForm):
     name = StringField("Name", validators=[Length(min=1, max=50), DataRequired()])
     password1 = PasswordField("Password:", validators=[DataRequired(), EqualTo('password2')])
