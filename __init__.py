@@ -294,12 +294,43 @@ def delete_customer():
     cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
     cursor.execute
 
+@app.route('/market')
+def market():
+    form = Add_To_Cart()
+    try:
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        if cursor:
+            cursor.execute('SELECT * FROM products')
+            products = cursor.fetchall()
+    except IOError:
+        print('Database problem!')
+    except Exception as e:
+        print(f'Error while connecting to MySQL,{e}')
+    finally:
+        if cursor:
+            cursor.close()
+    return render_template('market.html', items = products, form = form )
+
+@app.route('/checkout')
+def checkout():
+    try:
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        if cursor:
+            cursor.execute('SELECT * FROM products')
+            products = cursor.fetchall()
+    except IOError:
+        print('Database problem!')
+    except Exception as e:
+        print(f'Error while connecting to MySQL,{e}')
+    finally:
+        if cursor:
+            cursor.close()
+    return render_template('checkout.html')
 
 @app.route('/products')
 def products():
     form = Create_Products()
     form2 = Update_Products()
-
     try:
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
         if cursor:
@@ -329,7 +360,7 @@ def create_products():
         db.connection.commit()
         flash("Employee Added Successfully!",category="success")
 
-        return redirect(url_for('home'))
+        return redirect(url_for('market'))
 
     elif request.method == 'POST':
         msg = 'Please fill out the form !'
