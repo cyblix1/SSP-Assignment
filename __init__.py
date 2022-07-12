@@ -12,7 +12,7 @@ from csrf import csrf, CSRFError
 import mysql.connector
 from mysql.connector import Error
 from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user, current_user
-#from cryptography.fernet import Fernet
+from cryptography.fernet import Fernet
 
 app = Flask(__name__)
 
@@ -87,7 +87,7 @@ def login():
         password = request.form['password']
         # Check if account exists using MySQL
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute('SELECT * FROM customer_accounts WHERE name = %s', (name))
+        cursor.execute('SELECT * FROM customer_accounts WHERE name = %s', (username))
         # Fetch one record and return result
         account = cursor.fetchone()
         user_hashpwd = account['password']
