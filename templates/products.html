@@ -90,13 +90,13 @@
                             <td>
                                 <button type="button" class="btn btn-info btn-sm" data-toggle="modal" data-target="#admininfo{{p.product_id}}">Info</button>
                                 <button type="button" class="btn btn-warning btn-sm">History</button>
-                                <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#adminedit{{p.product_id}}" >Edit</button>
+                                <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#productsedit{{p.product_id}}" >Edit</button>
                                 <a href="/products/delete_products/{{p.product_id}}" class="btn btn-danger btn-xs btn-sm" onclick="return confirm('Are you sure to delete?')">Delete</a>
 
                             </td>
                         </tr>
                         <!-- start of modal (view Information) -->
-                        <div class="modal fade" style="margin-top:100px;" id="admininfo{{p.product_id}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                        <div class="modal fade" style="margin-top:100px;" id="productsinfo{{p.product_id}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
                             <div class="modal-dialog" role="document">
                                 <div class="modal-content">
                                     <div class="modal-header">
@@ -120,7 +120,40 @@
                             </div>
                         </div>
                         <!-- End of modal -->
-
+                        <!-- start of modal (edit Information)-->
+                        <div class="modal fade" style="margin-top:100px;" id="productsedit{{p.product_id}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                            <div class="modal-dialog" role="document">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Edit Employee Information</h5>
+                                        <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                                            <span aria-hidden="true">×</span>
+                                        </button>
+                                    </div>
+                                        <form action="{{url_for('update_products')}}" method="POST">
+                                            <div class="modal-body">
+                                                    <div class="form-group">
+                                                        {{ form2.product_id(class='form-control', placeholder='Name',value=p.product_id) }}
+                                                    </div>
+                                                    <div class="form-group">
+                                                        {{ form.product_name(class='form-control', placeholder='Email Address', value=p.product_name) }}
+                                                    </div>
+                                                    <div class="form-group">
+                                                        {{ form2.price(class='form-control',  placeholder='Phone Number',value=p.price) }}
+                                                    </div>
+                                                    <div class="form-group">
+                                                        {{ form2.description(class='form-control',  placeholder='Description',value=p.description) }}
+                                                    </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button class="btn btn-success" type="button" data-dismiss="modal">Change Password</button>
+                                                {{ form2.submit(class="btn btn-primary" ,type="submit") }}
+                                            </div>
+                                        </form>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- End of modal -->
 
                         <!-- End of modal -->
                         {% endfor %}

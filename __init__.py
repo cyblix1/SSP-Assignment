@@ -12,7 +12,7 @@ from csrf import csrf, CSRFError
 import mysql.connector
 from mysql.connector import Error
 from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user, current_user
-#from cryptography.fernet import Fernet
+from cryptography.fernet import Fernet
 
 app = Flask(__name__)
 
@@ -255,6 +255,7 @@ def delete_customer():
 @app.route('/products')
 def products():
     form = Create_Products()
+    form2 = Update_Products()
     try:
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
         if cursor:
@@ -267,7 +268,7 @@ def products():
     finally:
         if cursor:
             cursor.close()
-    return render_template('products.html', items=products,form=form)
+    return render_template('products.html', items=products,form=form , form2 = form2)
 
 @app.route('/create_products', methods=['POST','GET'])
 def create_products():
@@ -282,7 +283,7 @@ def create_products():
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute('INSERT INTO products VALUES (%s, %s, %s, %s)', (id,name,price,description))
         db.connection.commit()
-        flash("Employee Added Successfully!",category="success")
+        flash("Products Added Successfully!",category="success")
 
         return redirect(url_for('home'))
 
@@ -316,6 +317,29 @@ def delete_products(id):
         db.connection.close()
         return redirect(url_for('products'))
 
+@app.route('/products/update_products', methods=['POST'])
+def update_products():
+    form = Update_Products()
+    id = form.product_id.data
+    name = form.product_name.data
+    price = form.price.data
+    description = form.description.data
+    try:
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        if cursor:
+            cursor.execute('UPDATE products SET product_name = %s, price = %s, description =%s WHERE product_id = %s', (name,price,description,id))
+            db.connection.commit()
+            flash("Employee updated successfully", category="success")
+        else:
+            flash('Something went wrong!')
+    except IOError:
+        print('Database problem!')
+    except Exception as e:
+        print(f'Error while connecting to MySQL,{e}')
+    finally:
+        cursor.close()
+        db.connection.close()
+        return redirect(url_for('products'))
 
 @app.route('/profile',methods=['GET','POST'])
 def profile():
