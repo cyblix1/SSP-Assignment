@@ -72,10 +72,6 @@ def register():
         return redirect(url_for('home'))
     return render_template('register.html',form=form)
 
-class LoginForm(FlaskForm):
-    username = StringField("Username", validators=[DataRequired()])
-    password = PasswordField("Password", validators=[DataRequired()])
-    submit = SubmitField("Submit")
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -83,11 +79,11 @@ def login():
     form = LoginForm()
     if request.method == 'POST' and 'username' in request.form and 'password' in request.form:
         # Create variables for easy access
-        name = form.name.data
+        name = form.customer_name.data
         password = form.password1.data
         # Check if account exists using MySQL
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute('SELECT * FROM customer_accounts WHERE name = %s', (name))
+        cursor.execute('SELECT * FROM customer_accounts WHERE full_name = %s', (name))
         # Fetch one record and return result
         account = cursor.fetchone()
         user_hashpwd = account['password']
@@ -256,6 +252,8 @@ def delete_customer():
 @app.route('/products')
 def products():
     form = Create_Products()
+    form2 = Update_Products()
+
     try:
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
         if cursor:
@@ -268,7 +266,7 @@ def products():
     finally:
         if cursor:
             cursor.close()
-    return render_template('products.html', items=products,form=form)
+    return render_template('products.html', items=products,form=form , form2 = form2)
 
 @app.route('/create_products', methods=['POST','GET'])
 def create_products():

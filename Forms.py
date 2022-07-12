@@ -111,6 +111,6 @@ class Update_Products(FlaskForm):
     submit = SubmitField(label = "Save Changes")
 
 class LoginForm(FlaskForm):
-    name = StringField("Name", validators=[Length(min=1, max=50), DataRequired()])
-    password1 = PasswordField("Password:", validators=[DataRequired(), EqualTo('password2')])
-    submit = SubmitField("Add Customer")
+    customer_name = StringField("Name", validators=[Length(min=1, max=50), DataRequired()])
+    password1 = PasswordField("Password:", validators=[DataRequired()])
+    submit = SubmitField(label = "Add Customer")
