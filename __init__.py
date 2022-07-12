@@ -321,7 +321,6 @@ def profile():
     name_form = Update_Name()
     email_form = Update_Email()
     gender_form = Update_Gender()
-    password_form = Update_Password()
     if request.form == "POST" and name_form.validate_on_submit():
         redirect(url_for('update_name'),name=name_form.name.data)
     elif request.form == "POST" and email_form.validate_on_submit():
@@ -333,7 +332,7 @@ def profile():
     #do password later(hard)
     else:
         flash("Invalid entry!")
-    return render_template('profile.html',name_form=name_form,email_form=email_form,gender_form=gender_form,password_form=password_form)
+    return render_template('profile.html',name_form=name_form,email_form=email_form,gender_form=gender_form)
 
 @app.route('/customer_delete/<int:id>',methods=['GET','POST'])
 def customer_delete(id):
