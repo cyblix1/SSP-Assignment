@@ -2,8 +2,9 @@ from dataclasses import dataclass
 import email
 from tkinter import W
 from tkinter.tix import Select
+from flask import Flask
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField, IntegerField, PasswordField, BooleanField, ValidationError, TextAreaField, EmailField, SelectField, FloatField
+from wtforms import StringField, SubmitField, IntegerField, PasswordField, BooleanField, ValidationError, TextAreaField, EmailField, SelectField
 from wtforms.validators import DataRequired, EqualTo, Length,ValidationError
 from wtforms.widgets import TextArea
 from flask_ckeditor import CKEditorField
@@ -13,10 +14,48 @@ from mysql.connector import Error
 from configparser import ConfigParser
 
 #configuration files
-file = 'config.properties'
+file = 'config.properities'
 config = ConfigParser()
 config.read(file)
 
+
+class checks_exists:
+    def check_staff_email(self,email_address_to_check):
+        try:
+            connection = mysql.connector.connect(host=config['account']['host'],user=config['account']['user'],database=config['account']['db'],password=config['account']['password'])
+            if connection.is_connected(): 
+                cursor = connection.cursor()
+                cursor.execute('SELECT * FROM customer_accounts WHERE email = %s', [email_address_to_check])
+                existing_email = cursor.fetchone()
+                if existing_email:
+                    raise ValidationError('Email Aready exists! Please use another!')
+                else:
+                    pass
+        except Error as e:
+            print('Database Error!',{e})      
+        finally:
+            if connection.is_connected():
+                cursor.close()
+                connection.close() 
+    def check_customer_email(self,email_address_to_check):
+        try:
+            connection = mysql.connector.connect(host=config['account']['host'],user=config['account']['user'],database=config['account']['db'],password=config['account']['password'])
+            if connection.is_connected(): 
+                cursor = connection.cursor()
+                cursor.execute('SELECT * FROM staff_accounts WHERE email = %s', [email_address_to_check])
+                existing_email = cursor.fetchone()
+                if existing_email:
+                    raise ValidationError('Email Aready exists! Please use another!')
+                else:
+                    pass
+        except Error as e:
+            print('Database Error!',{e})      
+        finally:
+            if connection.is_connected():
+                cursor.close()
+                connection.close() 
+
+                
 class CreateAdminForm(FlaskForm):
     name = StringField("Name", validators=[Length(min=1, max=50),DataRequired()])
     gender = SelectField("gender",validators=[DataRequired()],choices=[('M', 'Male'), ('F', 'Female')], default='M')
@@ -40,24 +79,7 @@ class Update_Name(FlaskForm):
     name = StringField("Name", validators=[Length(min=1, max=50),DataRequired()])
     submit = SubmitField(label='Done')
 
-class Update_Email(FlaskForm):
-    def validate_email_address(self, email_address_to_check):
-        try:
-            connection = mysql.connector.connect(host=config['account']['host'],user=config['account']['user'],database=config['account']['db'],password=config['account']['password'])
-            if connection.is_connected(): 
-                cursor = connection.cursor()
-                cursor.execute('SELECT * FROM customer_accounts WHERE email = %s', [email_address_to_check])
-                existing_email = cursor.fetchone()
-                if existing_email:
-                    raise ValidationError('Email Aready exists! Please use another!')
-                else:
-                    pass
-        except Error as e:
-            print('Database Error!',{e})      
-        finally:
-            if connection.is_connected():
-                cursor.close()
-                connection.close()   
+class Update_Email(FlaskForm): 
     email_address = EmailField(label='Email Address:', validators=[DataRequired(), Length(min=5,max=100)])
     submit = SubmitField(label='Done')
 
@@ -66,28 +88,6 @@ class Update_Gender(FlaskForm):
     gender = SelectField("gender",validators=[DataRequired()],choices=[('M', 'Male'), ('F', 'Female')], default='M')
     submit = SubmitField(label='Done')
 
-
-class Update_Password(FlaskForm):
-    current_password = PasswordField(label='Current Password:', validators=[Length(min=6), DataRequired()])
-    def validate_password(self, password_to_check):
-        try:
-            connection = mysql.connector.connect(host=config['account']['host'],user=config['account']['user'],database=config['account']['db'],password=config['account']['password'])
-            if connection.is_connected(): 
-                cursor = connection.cursor()
-                cursor.execute('SELECT * FROM customer_accounts WHERE customer_id = %s', [id])
-                existing_email = cursor.fetchone()
-                if existing_email:
-                    raise ValidationError('Email Aready exists! Please use another!')
-                else:
-                    pass
-        except Error as e:
-            print('Database Error!',{e})      
-        finally:
-            if connection.is_connected():
-                cursor.close()
-                connection.close()   
-    new_password = PasswordField(label='New Password:', validators=[Length(min=6), DataRequired()])
-    submit = SubmitField(label='Done')
 
 
 class Register_Users(FlaskForm):
