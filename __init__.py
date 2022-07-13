@@ -1,3 +1,4 @@
+from __future__ import print_function
 from flask import Flask, render_template, request, make_response, redirect, url_for, session,flash
 from flask_mysqldb import MySQL
 import MySQLdb.cursors
@@ -12,6 +13,7 @@ from csrf import csrf, CSRFError
 import mysql.connector
 from mysql.connector import Error
 from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user, current_user
+import cryptography
 from cryptography.fernet import Fernet
 
 app = Flask(__name__)
@@ -169,6 +171,18 @@ def checkout_purchase():
 def dashboard():
     return render_template('base_admin.html')
 
+def decrypting(all_data):
+    for i in all_data:
+        file = open('symmetric.key','rb')
+        key = file.read()
+        file.close()
+        f = Fernet(key)
+        decrypted_email = f.decrypt((i["email"]))
+        i['email'] = decrypted_email.decode()
+    return all_data
+
+
+
 @app.route('/admins', methods=['POST','GET'])
 def admins():
     form = CreateAdminForm()
@@ -176,12 +190,15 @@ def admins():
     try:
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute('SELECT * FROM staff_accounts')
-        all_data = cursor.fetchall()
+        all_datas = cursor.fetchall()
+        new_data = decrypting(all_datas)
         if request.form == 'POST'and form.validate_on_submit():
             return redirect(url_for('create_admin'))
         elif request.form == 'POST' and form2.validate_on_submit():
             return redirect(url_for('update_admin'))
         elif form.csrf_token.errors or form2.csrf_token.errors:
+            pass
+        else:
             pass
     except IOError:
         print('Database problem!')
@@ -190,7 +207,7 @@ def admins():
     finally:
         if cursor:
             cursor.close()
-    return render_template('admins.html', employees = all_data, form = form, form2=form2)
+    return render_template('admins.html', employees = new_data, form = form, form2=form2)   
 
 @app.route('/admins/create_admin', methods=['POST','GET'])
 def create_admin():
@@ -218,7 +235,7 @@ def create_admin():
         encrypted_email = f.encrypt(email)
         # simple first later check is exists
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute('INSERT INTO staff_accounts VALUES (NULL, %s, %s, %s, %s, %s, NULL, %s, %s)', (name,encrypted_email,phone,gender,hashedpw,description,date_created))
+        cursor.execute('INSERT INTO staff_accounts VALUES (NULL, %s, %s, %s, %s, %s, %s, %s, %s)', (name,encrypted_email,phone,gender,hashedpw,30,description,date_created))
         db.connection.commit()
         flash("Employee Added Successfully!",category="success")
         return redirect(url_for('admins'))
