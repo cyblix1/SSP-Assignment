@@ -1,4 +1,3 @@
-from __future__ import print_function
 from flask import Flask, render_template, request, make_response, redirect, url_for, session,flash
 from flask_mysqldb import MySQL
 import MySQLdb.cursors
@@ -13,8 +12,7 @@ from csrf import csrf, CSRFError
 import mysql.connector
 from mysql.connector import Error
 from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user, current_user
-import cryptography
-from cryptography.fernet import Fernet
+#from cryptography.fernet import Fernet
 
 app = Flask(__name__)
 login_manager = LoginManager()
@@ -34,8 +32,8 @@ app.config['MYSQL_PASSWORD'] = config['account']['password']
 app.config['MYSQL_DB'] = config['account']['db']
 
 #validate email
+regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
 def check(email):
-    regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
     if(re.fullmatch(regex, email)):
         return True
     else:
@@ -113,7 +111,7 @@ def login():
         # Check if account exists using MySQL
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
         print(name)
-        cursor.execute('SELECT * FROM customer_accounts WHERE full_name = %s;',[name])
+        cursor.execute('SELECT * FROM customer_accounts WHERE full_name = %s AND hashed_pw = %s;',[name,password])
         # Fetch one record and return result
         account = cursor.fetchone()
 
@@ -127,14 +125,13 @@ def login():
             #if password == account["hashed_pw"]:
             #   login_user(account)
             # Redirect to home page
-            flash('yay')
             print('5')
             return redirect(url_for('home'))
         else:
             # Account doesn’t exist or username/password incorrect
             # Show the login form with message (if any)
-            flash('Account does not exist')
-            print('6')
+            flash('Incorrect username or Password')
+            #print('6')
     print('7')
     return render_template('login.html', form=form)
 
@@ -199,18 +196,6 @@ def checkout_purchase():
 def dashboard():
     return render_template('base_admin.html')
 
-def decrypting(all_data):
-    for i in all_data:
-        file = open('symmetric.key','rb')
-        key = file.read()
-        file.close()
-        f = Fernet(key)
-        decrypted_email = f.decrypt((i["email"]))
-        i['email'] = decrypted_email.decode()
-    return all_data
-
-
-
 @app.route('/admins', methods=['POST','GET'])
 def admins():
     form = CreateAdminForm()
@@ -218,15 +203,12 @@ def admins():
     try:
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute('SELECT * FROM staff_accounts')
-        all_datas = cursor.fetchall()
-        new_data = decrypting(all_datas)
+        all_data = cursor.fetchall()
         if request.form == 'POST'and form.validate_on_submit():
             return redirect(url_for('create_admin'))
         elif request.form == 'POST' and form2.validate_on_submit():
             return redirect(url_for('update_admin'))
         elif form.csrf_token.errors or form2.csrf_token.errors:
-            pass
-        else:
             pass
     except IOError:
         print('Database problem!')
@@ -235,7 +217,7 @@ def admins():
     finally:
         if cursor:
             cursor.close()
-    return render_template('admins.html', employees = new_data, form = form, form2=form2)   
+    return render_template('admins.html', employees = all_data, form = form, form2=form2)
 
 @app.route('/admins/create_admin', methods=['POST','GET'])
 def create_admin():
@@ -254,16 +236,14 @@ def create_admin():
         return redirect(url_for('admins'))
     elif check(email) == False:
         flash('Invalid email')
-    else:
-        email = email.encode()
-        key = Fernet.generate_key()
-        with open("symmetric.key","wb") as fo:
-            fo.write(key)
-        f = Fernet(key)
-        encrypted_email = f.encrypt(email)
-        # simple first later check is exists
+    #else:
+        #email = email.encode
+        #key = Fernet.generate_key()
+        #f = Fernet(key)
+        #encrypted_email = f.encrypt(email)
+    #simple first later check is exists
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute('INSERT INTO staff_accounts VALUES (NULL, %s, %s, %s, %s, %s, %s, %s, %s)', (name,encrypted_email,phone,gender,hashedpw,30,description,date_created))
+        cursor.execute('INSERT INTO staff_accounts VALUES (NULL, %s, %s, %s, %s, %s, NULL, %s, %s)', (name,encrypted_email,phone,gender,hashedpw,description,date_created))
         db.connection.commit()
         flash("Employee Added Successfully!",category="success")
         return redirect(url_for('admins'))
@@ -341,43 +321,12 @@ def delete_customer():
     cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
     cursor.execute
 
-@app.route('/market')
-def market():
-    form = Add_To_Cart()
-    try:
-        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        if cursor:
-            cursor.execute('SELECT * FROM products')
-            products = cursor.fetchall()
-    except IOError:
-        print('Database problem!')
-    except Exception as e:
-        print(f'Error while connecting to MySQL,{e}')
-    finally:
-        if cursor:
-            cursor.close()
-    return render_template('market.html', items = products, form = form )
-
-@app.route('/checkout')
-def checkout():
-    try:
-        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        if cursor:
-            cursor.execute('SELECT * FROM products')
-            products = cursor.fetchall()
-    except IOError:
-        print('Database problem!')
-    except Exception as e:
-        print(f'Error while connecting to MySQL,{e}')
-    finally:
-        if cursor:
-            cursor.close()
-    return render_template('checkout.html')
 
 @app.route('/products')
 def products():
     form = Create_Products()
     form2 = Update_Products()
+
     try:
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
         if cursor:
@@ -407,7 +356,7 @@ def create_products():
         db.connection.commit()
         flash("Employee Added Successfully!",category="success")
 
-        return redirect(url_for('market'))
+        return redirect(url_for('home'))
 
     elif request.method == 'POST':
         msg = 'Please fill out the form !'
@@ -540,7 +489,7 @@ def update_email(email,id):
         if account:
             cursor.execute('UPDATE customer_accounts SET email = %s WHERE customer_id = %s', (email,id))
         elif account is None:
-            flash("account doesnt exist",category="danger")
+            flash("account doesnt exist")
     except IOError:
         print('Database problem!')
     except Exception as e:
@@ -554,25 +503,8 @@ def update_email(email,id):
 
 # incomplete need session
 @app.route("/profile/update_gender/<gender>")
-def update_gender(gender,id):
-    try:
-        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute('SELECT * FROM customer_accounts WHERE customer_id = %s', [id])
-        account = cursor.fetchone()
-        #acc exists
-        if account:
-            cursor.execute('UPDATE customer_accounts SET gender = %s WHERE customer_id = %s', (gender,id))
-        elif account is None:
-            flash("account doesnt exist",category="danger")
-    except IOError:
-        print('Database problem!')
-    except Exception as e:
-        print(f'Error while connecting to MySQL,{e}')
-    finally:
-        cursor.close()
-        db.connection.close()
-        redirect(url_for('profile'))
-
+def update_gender(gender):
+    pass
 
 
 
