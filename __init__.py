@@ -12,7 +12,7 @@ from csrf import csrf, CSRFError
 import mysql.connector
 from mysql.connector import Error
 from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user, current_user
-#from cryptography.fernet import Fernet
+from cryptography.fernet import Fernet
 
 app = Flask(__name__)
 
@@ -30,8 +30,8 @@ app.config['MYSQL_PASSWORD'] = config['account']['password']
 app.config['MYSQL_DB'] = config['account']['db']
 
 #validate email
-regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
 def check(email):
+    regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
     if(re.fullmatch(regex, email)):
         return True
     else:
@@ -209,12 +209,14 @@ def create_admin():
         return redirect(url_for('admins'))
     elif check(email) == False:
         flash('Invalid email')
-    #else:
-        #email = email.encode
-        #key = Fernet.generate_key()
-        #f = Fernet(key)
-        #encrypted_email = f.encrypt(email)
-    #simple first later check is exists
+    else:
+        email = email.encode()
+        key = Fernet.generate_key()
+        with open("symmetric.key","wb") as fo:
+            fo.write(key)
+        f = Fernet(key)
+        encrypted_email = f.encrypt(email)
+        # simple first later check is exists
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute('INSERT INTO staff_accounts VALUES (NULL, %s, %s, %s, %s, %s, NULL, %s, %s)', (name,encrypted_email,phone,gender,hashedpw,description,date_created))
         db.connection.commit()
@@ -493,7 +495,7 @@ def update_email(email,id):
         if account:
             cursor.execute('UPDATE customer_accounts SET email = %s WHERE customer_id = %s', (email,id))
         elif account is None:
-            flash("account doesnt exist")
+            flash("account doesnt exist",category="danger")
     except IOError:
         print('Database problem!')
     except Exception as e:
@@ -507,8 +509,25 @@ def update_email(email,id):
 
 # incomplete need session
 @app.route("/profile/update_gender/<gender>")
-def update_gender(gender):
-    pass
+def update_gender(gender,id):
+    try:
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute('SELECT * FROM customer_accounts WHERE customer_id = %s', [id])
+        account = cursor.fetchone()
+        #acc exists
+        if account:
+            cursor.execute('UPDATE customer_accounts SET gender = %s WHERE customer_id = %s', (gender,id))
+        elif account is None:
+            flash("account doesnt exist",category="danger")
+    except IOError:
+        print('Database problem!')
+    except Exception as e:
+        print(f'Error while connecting to MySQL,{e}')
+    finally:
+        cursor.close()
+        db.connection.close()
+        redirect(url_for('profile'))
+
 
 
 
