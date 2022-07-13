@@ -91,9 +91,12 @@ class Update_Password(FlaskForm):
 
 
 class Register_Users(FlaskForm):
-    name = StringField("Name", validators=[Length(min=1, max=50), DataRequired()])
-    email = EmailField("Email", validators=[Length(min=5, max=100), DataRequired()])
-    password1 = PasswordField("Password:", validators=[DataRequired(), EqualTo('password2')])
+    #name = StringField("Name", validators=[Length(min=1, max=50, message='length is between 1 to 50'), DataRequired(message="no name")])
+    #email = EmailField("Email", validators=[Length(min=5, max=100,  message='length is between 5 to 100'), DataRequired(message ='no email')])
+    #password1 = PasswordField("Password:", validators=[DataRequired(message ="no password"), EqualTo('password2', message="password not match")])
+    name = StringField("Name")
+    email = EmailField("Email")
+    password1 = PasswordField("Password:")
     password2 = PasswordField("Confirm Password")
     submit = SubmitField("Add Customer")
 
@@ -113,4 +116,4 @@ class Update_Products(FlaskForm):
 class LoginForm(FlaskForm):
     customer_name = StringField("Name", validators=[Length(min=1, max=50), DataRequired()])
     password1 = PasswordField("Password:", validators=[DataRequired()])
-    submit = SubmitField(label = "Add Customer")
+    submit = SubmitField(label = "Login")

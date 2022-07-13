@@ -15,7 +15,9 @@ from flask_login import UserMixin, login_user, LoginManager, login_required, log
 #from cryptography.fernet import Fernet
 
 app = Flask(__name__)
-
+login_manager = LoginManager()
+login_manager.login_view = "login"
+login_manager.login_message = "hi"
 
 #properities
 file = 'config.properties'
@@ -49,30 +51,44 @@ bcrypt = Bcrypt()
 #     flash('CSRF token was not found')
 #     return render_template('#something')
 
+def user_loader(uid):
+    user = {}
+
+
+
+
 
 
 @app.route('/')
 @app.route('/register',methods =['POST','GET'])
 def register():
     form = Register_Users()
-    if form.validate_on_submit():
+    print('1')
+    print(form.is_submitted())
+    print(form.validate())
+    print(form.name.data)
+    print(form.password1.data)
+    print(form.email.data)
+    if form.is_submitted() and request.method == 'POST':
         name = form.name.data
         password = form.password1.data
         email = form.email.data
         time = datetime.utcnow()
         password_age=4
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute("INSERT INTO customer_accounts VALUES (NULL,%s,%s,%s,%s,%s)",(name,email,password,password_age,time))
+        print('INSERT INTO customer_accounts VALUES (NULL,%s,%s,%s,%s,%s)',(name,email,password,password_age,time,))
+        cursor.execute('INSERT INTO customer_accounts VALUES (NULL,%s,%s,%s,%s,%s)',(name,email,password,password_age,time,))
         db.connection.commit()
-
+        return redirect(url_for('home'))
+        
     elif request.method == 'POST':
         msg = 'Please fill out the form !'
-   
-
-        return redirect(url_for('home'))
+        print('2')
+    
     return render_template('register.html',form=form)
 
 def home():
+    print('4')
     if 'loggedin' in session: 
 # User is loggedin show them the home page 
         return render_template('home.html', username=session['username']) 
@@ -85,30 +101,40 @@ def home():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     form = LoginForm()
-    if request.method == 'POST' and 'name' in request.form and 'password' in request.form:
+    print(request.method)
+    print('customer_name' in request.form)
+    print('password1' in request.form)
+    if request.method == 'POST' and 'customer_name' in request.form and 'password1' in request.form:
         # Create variables for easy access
-        name = request.form['name']
+        name = request.form['customer_name']
         password = request.form['password1']
         # Check if account exists using MySQL
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute('SELECT * FROM customer_accounts WHERE full_name = %s', (name))
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        print(name)
+        cursor.execute('SELECT * FROM customer_accounts WHERE full_name = %s;',[name])
         # Fetch one record and return result
         account = cursor.fetchone()
+
 
 
         if account:
             # Create session data, we can access this data in other routes
             session['loggedin'] = True
-            session['id'] = account['id']
-            session['name'] = account['name']
+            session['id'] = account['customer_id']
+            session['name'] = account['full_name']
+            #if password == account["hashed_pw"]:
+            #   login_user(account)
             # Redirect to home page
-            msg = 'hi'
+            flash('yay')
+            print('5')
             return redirect(url_for('home'))
         else:
             # Account doesn’t exist or username/password incorrect
-            msg = 'Incorrect username/password!'
             # Show the login form with message (if any)
-    return render_template('login.html', form=form, msg='')
+            flash('Account does not exist')
+            print('6')
+    print('7')
+    return render_template('login.html', form=form)
 
 
 @app.route('/')
@@ -155,9 +181,11 @@ def password_check(password):
 
 @app.route('/home')
 def home():
-    # userID = User.query.filter_by(id=current_user.id).first()
-    # admin_user()
-    return render_template('home.html')
+    if 'loggedin' in session:
+        # User is loggedin show them the home page
+        return render_template('home.html', name=session['name'])
+# User is not loggedin redirect to login page
+    return redirect(url_for('login'))
 
 @app.route('/checkout')
 def checkout_purchase():
