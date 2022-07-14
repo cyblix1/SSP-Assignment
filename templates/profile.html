@@ -38,14 +38,14 @@
                 <p>
                     <i class="fa fa-solid fa-user-astronaut"></i> &nbsp; Name:
                      <br>
-                     <!-- current_user.username -->
+                     <!-- 5.username -->
                     <strong>Username</strong> &nbsp;
                     <a class="btn-link" href="#" data-toggle="modal" data-target="#editUsernameModal">Edit Username</a>
                 </p>
                 <p>
                     <i class="fa fa-regular fa-envelope"></i> &nbsp; Email:
                      <br>
-                     <!-- current_user.email -->
+                     <!-- 5.email -->
                     <strong>email</strong> &nbsp;
                     <a class="btn-link" href="#" data-toggle="modal" data-target="#editEmailModal">Edit Email</a>
                 </p>
@@ -58,7 +58,7 @@
                 <p>
                     <i class="fa fa-solid fa-venus-mars"></i> &nbsp; Gender:
                      <br>
-                      <!-- current_user.gender -->
+                      <!-- 5.gender -->
                     <strong>gender</strong> &nbsp;
                     <a class="btn-link" href="#" data-toggle="modal" data-target="#editGenderModal">Edit Gender</a>
                 </p>
@@ -147,12 +147,12 @@
                         <span aria-hidden="true">×</span>
                     </button>
                 </div>
-                <!-- <form method="POST" action="url_for('update_username', id=current_user.id)"> -->
+                <!-- <form method="POST" action="url_for('update_username', id=5.id)"> -->
                 <form method="POST" action="">
                     {{ name_form.hidden_tag() }}
                 <div class="modal-body">
                     {{name_form.name.label()}}
-                    {{name_form.name(class='form-control form-control-user', placeholder='Enter New name',value=.name)}}
+                    {{name_form.name(class='form-control form-control-user', placeholder='Enter New name',value='name')}}
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
@@ -173,15 +173,15 @@
                         <span aria-hidden="true">×</span>
                     </button>
                 </div>
-                 <form method="POST" action="{{url_for('update_name', id=current_user.id, name=current_user.name)}}">
-                    {{ username_form.hidden_tag() }}
+                 <form method="POST" action="{{url_for('update_name',id=5,name=bob)}}">
+                    {{ name_form.hidden_tag() }}
                 <div class="modal-body">
-                    {{email_form.email_address.label()}}
-                    {{email_form.email_address(class='form-control form-control-user', placeholder='Enter New Email',value=current_user.email_address)}}
+                    {{name_form.email_address.label()}}
+                    {{name_form.email_address(class='form-control form-control-user', placeholder='Enter New Email')}}
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
-                    {{email_form.submit(class='btn btn-primary btn-user ')}}
+                    {{name_form.submit(class='btn btn-primary btn-user ')}}
                 </div>
                 </form>
             </div>
@@ -198,7 +198,7 @@
                         <span aria-hidden="true">×</span>
                     </button>
                 </div>
-                <form method="POST" action="{{url_for('update_gender', id=current_user.id)}}">
+                <form method="POST" action="{{url_for('update_gender')}}">
                     {{ username_form.hidden_tag() }}
                 <div class="modal-body">
                     {{gender_form.gender.label()}}
@@ -212,32 +212,6 @@
         </div>
 </div>
 </div>
-<!--  Change Password  -->
-    <div class="modal fade" style="margin-top:100px;" id="changepasswordModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
-        aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="exampleModalLabel">Change Your Password</h5>
-                    <button class="close" type="button" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">×</span>
-                    </button>
-                </div>
-                <form method="POST" action="{{url_for('update_password', id=current_user.id)}}">
-                    {{ password_form.hidden_tag() }}
-                <div class="modal-body">
-                    {{password_form.current_password.label()}}
-                    {{password_form.current_password(class='form-control form-control-user', placeholder='Enter Current Password')}}
-                    {{password_form.new_password.label()}}
-                    {{password_form.new_password(class='form-control form-control-user', placeholder='Enter New Password')}}
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
-                    {{username_form.submit(class='btn btn-primary btn-user ')}}
-                </div>
-                </form>
-            </div>
-        </div>
-</div>
+
 {% endblock %}
 </html>
