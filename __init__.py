@@ -1,11 +1,15 @@
-from flask import Flask, render_template, request, make_response, redirect, url_for, session,flash
+from mimetypes import init
+from tkinter import Image
+from flask import Flask, render_template, request, make_response, redirect, url_for, session,flash, json
 from flask_mysqldb import MySQL
 import MySQLdb.cursors
 from flask_bcrypt import Bcrypt
 from datetime import datetime, timedelta
+from pymysql import NULL
 from Forms import *
 from configparser import ConfigParser
 import re
+import requests
 # from freecaptcha import captcha
 import uuid
 from csrf import csrf, CSRFError
@@ -30,6 +34,8 @@ app.config['MYSQL_HOST'] = config['account']['host']
 app.config['MYSQL_USER'] = config['account']['user']
 app.config['MYSQL_PASSWORD'] = config['account']['password']
 app.config['MYSQL_DB'] = config['account']['db']
+app.config['RECAPTCHA_PUBLIC_KEY'] = "6Ldzgu0gAAAAAKF5Q8AdFeTRJpvl5mLBncz-dsBv"
+app.config['RECAPTCHA_PRIVATE_KEY'] = "6Ldzgu0gAAAAANuXjmXEv_tLJLQ_s7jtQV3rPwX2"
 
 #validate email
 regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
@@ -38,6 +44,7 @@ def check(email):
         return True
     else:
         return False
+
 
 
 
@@ -59,7 +66,7 @@ def user_loader(uid):
 
 
 
-@app.route('/')
+
 @app.route('/register',methods =['POST','GET'])
 def register():
     form = Register_Users()
@@ -69,7 +76,7 @@ def register():
     print(form.name.data)
     print(form.password1.data)
     print(form.email.data)
-    if form.is_submitted() and request.method == 'POST':
+    if form.is_submitted() and request.method == 'POST' and RecaptchaField != NULL:
         name = form.name.data
         password = form.password1.data
         email = form.email.data
@@ -80,11 +87,7 @@ def register():
         cursor.execute('INSERT INTO customer_accounts VALUES (NULL,%s,%s,%s,%s,%s)',(name,email,password,password_age,time,))
         db.connection.commit()
         return redirect(url_for('home'))
-        
-    elif request.method == 'POST':
-        msg = 'Please fill out the form !'
-        print('2')
-    
+
     return render_template('register.html',form=form)
 
 def home():
@@ -97,7 +100,7 @@ def home():
 
 
 
-
+@app.route('/')
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     form = LoginForm()
@@ -141,6 +144,7 @@ def logout():
     session.pop('loggedin', None)
     session.pop('id', None)
     session.pop('username', None)
+    flash('Successfully logged out')
     # Redirect to login page
     return redirect(url_for('login'))
 

@@ -4,6 +4,7 @@ from tkinter import W
 from tkinter.tix import Select
 from flask import Flask
 from flask_wtf import FlaskForm
+from flask_wtf.recaptcha import RecaptchaField
 from wtforms import StringField, SubmitField, IntegerField, PasswordField, BooleanField, ValidationError, TextAreaField, EmailField, SelectField
 from wtforms.validators import DataRequired, EqualTo, Length,ValidationError
 from wtforms.widgets import TextArea
@@ -17,6 +18,9 @@ from configparser import ConfigParser
 file = 'config.properities'
 config = ConfigParser()
 config.read(file)
+
+RECAPTCHA_PUBLIC_KEY = "6Ldzgu0gAAAAAKF5Q8AdFeTRJpvl5mLBncz-dsBv"
+RECAPTCHA_PRIVATE_KEY = "6Ldzgu0gAAAAANuXjmXEv_tLJLQ_s7jtQV3rPwX2"
 
 
 class checks_exists:
@@ -91,14 +95,14 @@ class Update_Gender(FlaskForm):
 
 
 class Register_Users(FlaskForm):
-    #name = StringField("Name", validators=[Length(min=1, max=50, message='length is between 1 to 50'), DataRequired(message="no name")])
-    #email = EmailField("Email", validators=[Length(min=5, max=100,  message='length is between 5 to 100'), DataRequired(message ='no email')])
-    #password1 = PasswordField("Password:", validators=[DataRequired(message ="no password"), EqualTo('password2', message="password not match")])
-    name = StringField("Name")
-    email = EmailField("Email")
-    password1 = PasswordField("Password:")
-    password2 = PasswordField("Confirm Password")
-    submit = SubmitField("Add Customer")
+    name = StringField("Name", validators=[Length(min=1, max=50, message='length is between 1 to 50'), DataRequired(message="no name")])
+    email = EmailField("Email", validators=[Length(min=5, max=100,  message='length is between 5 to 100'), DataRequired(message ='no email')])
+    password1 = PasswordField("Password:", validators=[DataRequired(message ="no password")])
+    recaptcha = RecaptchaField(validators=[DataRequired(message="Click here")])
+    submit = SubmitField("Register")
+    #name = StringField("name")
+    #email = EmailField("Email")
+    #password1 = PasswordField("Password:")
 
 class Create_Products(FlaskForm):
     product_name = StringField(label='Name', validators=[Length(min=1, max=100), DataRequired()])
