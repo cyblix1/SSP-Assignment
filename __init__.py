@@ -13,16 +13,18 @@ import requests
 # from freecaptcha import captcha
 import uuid
 from csrf import csrf, CSRFError
-import mysql.connector
-from mysql.connector import Error
-from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user, current_user
-#from cryptography.fernet import Fernet
+import base64
+import os
+from cryptography.fernet import Fernet
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+
+
+
+
 
 app = Flask(__name__)
-login_manager = LoginManager()
-login_manager.login_view = "login"
-login_manager.login_message = "hi"
-
 #properities
 file = 'config.properties'
 config = ConfigParser()
@@ -51,19 +53,6 @@ def check(email):
 app.permanent_session_lifetime = timedelta(minutes=10)
 db = MySQL(app)
 bcrypt = Bcrypt()
-# csrf.init_app(app)
-
-# @app.errorhandler(CSRFError)
-# def handle_csrf_error(e):
-#     flash('CSRF token was not found')
-#     return render_template('#something')
-
-def user_loader(uid):
-    user = {}
-
-
-
-
 
 
 
@@ -117,9 +106,6 @@ def login():
         cursor.execute('SELECT * FROM customer_accounts WHERE full_name = %s AND hashed_pw = %s;',[name,password])
         # Fetch one record and return result
         account = cursor.fetchone()
-
-
-
         if account:
             # Create session data, we can access this data in other routes
             session['loggedin'] = True
@@ -134,8 +120,6 @@ def login():
             # Account doesn’t exist or username/password incorrect
             # Show the login form with message (if any)
             flash('Incorrect username or Password')
-            #print('6')
-    print('7')
     return render_template('login.html', form=form)
 
 @app.route('/logout')
@@ -250,12 +234,26 @@ def create_admin():
         return redirect(url_for('admins'))
     elif check(email) == False:
         flash('Invalid email')
-    #else:
-        #email = email.encode
-        #key = Fernet.generate_key()
-        #f = Fernet(key)
-        #encrypted_email = f.encrypt(email)
-    #simple first later check is exists
+    else:
+        encoded_password = password.encode()
+        salt = b'\x829\xf0\x9e\x0e\x8bl;\x1a\x95\x8bB\xf9\x16\xd4\xe2'
+        kdf = PBKDF2HMAC(algorithm=hashes.SHA256(),
+                length=32,
+                salt=salt,
+                iterations=100000,
+                backend=default_backend())
+        key = base64.urlsafe_b64encode(kdf.derive(encoded_password))
+
+        #storing key    
+        file = open('symmetric.key','wb')
+        file.write(key)
+        file.close()
+
+        #encrypting email
+        encoded_email = email.encode()
+        f = Fernet(key)
+        encrypted_email = f.encrypt(encoded_email)
+
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute('INSERT INTO staff_accounts VALUES (NULL, %s, %s, %s, %s, %s, NULL, %s, %s)', (name,encrypted_email,phone,gender,hashedpw,description,date_created))
         db.connection.commit()
@@ -431,18 +429,12 @@ def profile():
     name_form = Update_Name()
     email_form = Update_Email()
     gender_form = Update_Gender()
-    if request.form == "POST" and name_form.validate_on_submit():
-        redirect(url_for('update_name'),name=name_form.name.data)
-    elif request.form == "POST" and email_form.validate_on_submit():
-        email = email_form.email_address.data
-        email_form.validate_email_address(email)
-        redirect(url_for('update_email',email=email))
-    elif request.form == "POST" and gender_form.validate_on_submit():
-        redirect(url_for('update_gender', gender=gender_form.gender.data))
-    #do password later(hard)
-    else:
-        flash("Invalid entry!")
-    return render_template('profile.html',name_form=name_form,email_form=email_form,gender_form=gender_form)
+    return render_template('profile.html',account=5,name_form=name_form,email_form=email_form,gender_form=gender_form)
+
+
+
+
+
 
 @app.route('/customer_delete/<int:id>',methods=['GET','POST'])
 def customer_delete(id):
