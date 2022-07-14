@@ -135,6 +135,16 @@ def login():
     print('7')
     return render_template('login.html', form=form)
 
+@app.route('/logout')
+def logout():
+# Remove session data, this will log the user out
+    session.pop('loggedin', None)
+    session.pop('id', None)
+    session.pop('username', None)
+    # Redirect to login page
+    return redirect(url_for('login'))
+
+
 
 @app.route('/')
 # Verify the strength of 'password'

@@ -3,4 +3,5 @@
 {% block content %} 
 <h2>Home Page</h2> 
 <p>Welcome back, {{ name }}!</p> 
+<a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i>Logout</a> 
 {% endblock %} 
