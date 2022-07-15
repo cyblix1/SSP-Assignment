@@ -100,14 +100,13 @@ def login():
         #decryption later + salted hashing + login history
         cursor.execute('SELECT * FROM staff_accounts WHERE email = %s',[email])
         staff = cursor.fetchone()
-        staff_hashed_password = staff['hashed_pw']
-        if staff and bcrypt.check_password_hash(staff_hashed_password,password):
+        if staff:
             session['staffloggedin'] = True
             session['id'] = account['staff_id']
             session['name'] = account['full_name'] 
             #to admin page Fix later 
             return redirect(url_for('admins'))
-        else:
+        elif staff is None:
             # Check if account exists using MySQL
             cursor.execute('SELECT * FROM customer_accounts WHERE email = %s AND hashed_pw = %s',[email,password])
             # Fetch one record and return result
