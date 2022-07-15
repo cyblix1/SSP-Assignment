@@ -160,26 +160,10 @@ $('.image-upload-wrap').bind('dragleave', function () {
     </div>
     <div class="card mx-auto shadow" style="margin: 5px auto 20px auto;" >
         <div class="card-body">
-        <h4 class="card-title mb-4" style="margin-bottom: 30px;">Add Product</h4>
-       <form method="POST" style="margin-top: 60px;" enctype="multipart/form-data">
-       {{ add_item_form.hidden_tag() }}
-        <label>Add Product Image:</label>
-        <div class="file-upload">
 
 
-          <div class="image-upload-wrap">
-            <input class="file-upload-input" type='file' name="pic" onchange="readURL(this);" accept="image/*" />
-            <div class="drag-text">
-              <h3><i class="fa fa fa-download" aria-hidden="true"></i> Drag and drop a file or select add Image</h3>
-            </div>
-          </div>
-          <div class="file-upload-content">
-            <img class="file-upload-image" src="#" alt="your image" />
-            <div class="image-title-wrap">
-              <button type="button" onclick="removeUpload()" class="remove-image">Remove <span class="image-title">Uploaded Image</span></button>
-            </div>
-          </div>
-        </div>
+
+
            <div class="form-group">
                <img src='' class="img-sm rounded-circle border">
            </div>
@@ -202,6 +186,7 @@ $('.image-upload-wrap').bind('dragleave', function () {
 
 
           <button style="margin: 30px auto 30px auto; width: 60%;" class="btn btn-primary btn-block">Add Item</button>
+
         </form>
         </div> <!-- card-body.// -->
       </div>

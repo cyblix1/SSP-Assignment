@@ -132,9 +132,9 @@
                     </div>
                     <!-- Product actions-->
                     <div class="card-footer p-4 pt-0 border-top-0 bg-transparent">
-                        <div class="text-center"><button class="btn btn-outline-dark" data-toggle="modal" data-target="#Modal-MoreInfo--{{items.product_id}}">More Info</button>
+                        <div class="text-center"><button class="btn btn-outline-dark" data-toggle="modal" data-target="#Modal-MoreInfo--{{i.product_id}}">More Info</button>
 
-                        <button class="btn btn-outline mt-auto btn-success" data-toggle="modal" data-target="#Modal-Purchase--{{items.product_id}}">Purchase</button></div>
+                        <button class="btn btn-outline mt-auto btn-success" data-toggle="modal" data-target="#Modal-Purchase--{{i.product_id}}">Purchase</button></div>
                         <!-- start of modal (edit Information)-->
                         <div class="modal fade" style="margin-top:100px;" id="itemsedit{{items.product_id}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
                             <div class="modal-dialog" role="document">
@@ -145,26 +145,7 @@
                                             <span aria-hidden="true">×</span>
                                         </button>
                                     </div>
-                                        <form action="{{url_for('update_products')}}" method="POST">
-                                            <div class="modal-body">
-                                                    <div class="form-group">
-                                                        {{ form.product_id(class='form-control', placeholder='Name') }}
-                                                    </div>
-                                                    <div class="form-group">
-                                                        {{ form.product_name(class='form-control', placeholder='Email Address') }}
-                                                    </div>
-                                                    <div class="form-group">
-                                                        {{ form.price(class='form-control',  placeholder='Phone Number') }}
-                                                    </div>
-                                                    <div class="form-group">
-                                                        {{ form.description(class='form-control',  placeholder='Description') }}
-                                                    </div>
-                                            </div>
-                                            <div class="modal-footer">
-                                                <button class="btn btn-success" type="button" data-dismiss="modal">Change Password</button>
-                                                {{ form.submit(class="btn btn-primary" ,type="submit") }}
-                                            </div>
-                                        </form>
+
                                 </div>
                             </div>
                         </div>

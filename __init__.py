@@ -431,8 +431,37 @@ def profile():
     gender_form = Update_Gender()
     return render_template('profile.html',account=5,name_form=name_form,email_form=email_form,gender_form=gender_form)
 
+@app.route('/market')
+def market():
+    try:
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        if cursor:
+            cursor.execute('SELECT * FROM products')
+            products = cursor.fetchall()
+    except IOError:
+        print('Database problem!')
+    except Exception as e:
+        print(f'Error while connecting to MySQL,{e}')
+    finally:
+        if cursor:
+            cursor.close()
+    return render_template('market.html', items = products)
 
-
+@app.route('/checkout')
+def checkout():
+    try:
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        if cursor:
+            cursor.execute('SELECT * FROM products')
+            products = cursor.fetchall()
+    except IOError:
+        print('Database problem!')
+    except Exception as e:
+        print(f'Error while connecting to MySQL,{e}')
+    finally:
+        if cursor:
+            cursor.close()
+    return render_template('checkout.html')
 
 
 

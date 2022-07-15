@@ -174,14 +174,14 @@
                     </button>
                 </div>
                  <form method="POST" action="{{url_for('update_name',id=5,name=bob)}}">
-                    {{ name_form.hidden_tag() }}
+                    {{ email_form.hidden_tag() }}
                 <div class="modal-body">
-                    {{name_form.email_address.label()}}
-                    {{name_form.email_address(class='form-control form-control-user', placeholder='Enter New Email')}}
+                    {{email_form.email_address.label()}}
+                    {{email_form.email_address(class='form-control form-control-user', placeholder='Enter New Email')}}
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
-                    {{name_form.submit(class='btn btn-primary btn-user ')}}
+                    {{email_form.submit(class='btn btn-primary btn-user ')}}
                 </div>
                 </form>
             </div>
