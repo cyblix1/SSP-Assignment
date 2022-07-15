@@ -194,9 +194,7 @@ def home():
 # User is not loggedin redirect to login page
     return redirect(url_for('login'))
 
-@app.route('/checkout')
-def checkout_purchase():
-    return render_template('checkout.html')
+
 
 
 #base template
@@ -469,7 +467,7 @@ def market():
 @app.route('/add_to_checkout', methods=['POST','GET'])
 def add_to_checkout():
     try:
-        id = 5
+        id = 1
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute('INSERT INTO shopping_cart SELECT product_id, product_name, price , description FROM products WHERE product_id = %s', [id])
         db.connection.commit()
@@ -479,12 +477,12 @@ def add_to_checkout():
 
     return redirect(url_for('checkout'))
 
-@app.route('/checkout')
+@app.route('/checkout', methods=['POST','GET'])
 def checkout():
     try:
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
         if cursor:
-            cursor.execute('SELECT * FROM products')
+            cursor.execute('SELECT * FROM shopping_cart')
             products = cursor.fetchall()
     except IOError:
         print('Database problem!')
@@ -493,7 +491,30 @@ def checkout():
     finally:
         if cursor:
             cursor.close()
-    return render_template('checkout.html')
+    return render_template('checkout.html',cart_items = products)
+
+@app.route('/payment', methods=['POST','GET'])
+def payment():
+    form = Add_Card_Details()
+    if request.method == 'POST':
+        card_number = form.card_number.data
+        card_name = form.card_name.data
+        card_date = form.card_date.data
+        card_cvc = form.card_cvc.data
+
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute('INSERT INTO payment VALUES (%s, %s, %s, %s)', (card_number,card_date,card_name,card_cvc))
+        db.connection.commit()
+        flash("Employee Added Successfully!", category="success")
+
+        return redirect(url_for('checkout'))
+
+    elif request.method == 'POST':
+        msg = 'Please fill out the form !'
+
+    return render_template('payment.html', form =form)
+
+
 
 @app.route('/admin_profile',methods=['GET','POST'])
 def admin_profile():

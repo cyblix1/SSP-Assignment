@@ -5,7 +5,7 @@ from tkinter.tix import Select
 from flask import Flask
 from flask_wtf import FlaskForm
 from flask_wtf.recaptcha import RecaptchaField
-from wtforms import StringField, SubmitField, IntegerField, PasswordField, BooleanField, ValidationError, TextAreaField, EmailField, SelectField
+from wtforms import StringField, SubmitField, IntegerField, PasswordField, BooleanField, ValidationError, TextAreaField, EmailField, SelectField,DateField
 from wtforms.validators import DataRequired, EqualTo, Length,ValidationError
 from wtforms.widgets import TextArea
 from flask_ckeditor import CKEditorField
@@ -120,4 +120,20 @@ class LoginForm(FlaskForm):
     email = EmailField("Email", validators=[Length(min=5, max=100,  message='length is between 5 to 100'), DataRequired(message ='no email')])
     password1 = PasswordField("Password:", validators=[DataRequired()])
     submit = SubmitField(label = "Login")
+
+class Add_Card_Details(FlaskForm):
+    card_number = IntegerField("Card Number",validators=[Length(min=16, max=16),DataRequired()])
+    card_name = StringField(label='Card Name', validators=[Length(min=1, max=100), DataRequired()])
+    card_date = DateField("Card Date",validators=[DataRequired()])
+    card_cvc = IntegerField("CVC Number",validators=[Length(min=3, max=3), DataRequired()])
+    submit = SubmitField(label = "Add Card")
+
+
+
+
+
+
+
+
+
 

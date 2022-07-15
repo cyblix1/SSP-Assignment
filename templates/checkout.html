@@ -13,9 +13,10 @@
 <thead class="text-muted">
 <tr class="small text-uppercase">
   <th scope="col">Product</th>
-  <th scope="col" width="120">Quantity</th>
+  <th scope="col" width="120">Description</th>
   <th scope="col" width="120">Price</th>
   <th scope="col" class="text-right" width="200"> </th>
+
 </tr>
 </thead>
 <tbody>
@@ -24,32 +25,29 @@
 
     <td>
         <figure class="itemside">
-            <div class="aside"><img src="{{url_for('get_img' , id = cart_items[i].get_image())}}" class="img-sm" style="height:40px"></div>
+            <div class="aside"><img src="static/images/vala.png" class="img-sm" style="height:40px"></div>
             <figcaption class="info" style="margin: 10px auto auto auto;">
                 <a href=""></a>
                 <a href=""></a>
-                <a href="#" class="title text-dark">{{cart_items[i].get_name()}}</a>
+                <a href="" class="title text-dark">{{i.product_name}}</a>
             </figcaption>
         </figure>
     </td>
+
     <td>
-        <var class="price">{{cart_items[i].get_qty_purchased()}}</var>
-    </td>
-    <td>
-        <div class="price-wrap">
-            <var class="price">${{ "{:.2f}".format(cart_items[i].get_total_cost()) }}</var>
+        <div class="itemside">
+            <var class="price">{{i.description}}</var>
 
         </div> <!-- price-wrap .// -->
     </td>
-    <td class="text-right">
-        <button class="btn btn-light" data-toggle="modal" data-target="#Modal-MoreInfo--{{i}}"><i class="fas fa-info-circle"></i></button>
-            <form action="{{ url_for('remove_from_cart') }}" class="d-inline-block" method="POST">
-                <input type="hidden" name="uuid" value="{{i}}">
-                <input type="hidden" name="uuid2" value="{{cart_items[i].get_id()}}">
-                <input type="hidden" name="uuid3" value="{{cart_items[i].get_owner_id()}}">
-                <button type="submit" class="btn btn-light">Remove</button>
-            </form>
-        </td>
+
+    <td>
+        <div class="price-wrap">
+            <var class="price">${{ "{:.2f}".format(i.price)}}</var>
+
+        </div> <!-- price-wrap .// -->
+    </td>
+
 
 </tr>
 {% endfor %}
@@ -57,7 +55,7 @@
 </table>
 
 <div class="card-body border-top">
-    <form method="POST" action="{{ url_for('home') }}">
+    <form method="POST" action="{{ url_for('payment') }}">
     <button type="submit" href="#" class="btn btn-primary float-md-right"> Proceed To Checkout <i class="fa fa-chevron-right"></i> </button>
     </form>
     <form method="POST" action="{{ url_for('home') }}">
@@ -92,15 +90,11 @@
             <div class="card-body">
                     <dl class="dlist-align">
                       <dt>Total price:</dt>
-                      <dd class="text-right">${{"{:.2f}".format(total)}}</dd>
-                    </dl>
-                    <dl class="dlist-align">
-                      <dt>Discount:</dt>
-                      <dd class="text-right">SGD 0</dd>
+                      <dd class="text-right">{{cart_items.price}}</dd>
                     </dl>
                     <dl class="dlist-align">
                       <dt>Total:</dt>
-                      <dd class="text-right  h5"><strong>${{"{:.2f}".format(total)}}</strong></dd>
+                      <dd class="text-right  h5"><strong>$0</strong></dd>
                     </dl>
                     <hr>
                     <p class="text-center mb-3">
@@ -122,20 +116,17 @@
         <div class="modal-dialog" role="document">
             <div class="modal-content" style=" left: auto; max-width: 700px; margin: 100px auto auto auto;">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="exampleModalLabel">{{cart_items[i].get_name()}}</h5>
+                    <h5 class="modal-title" id="exampleModalLabel">{{i.product_name}}</h5>
                     <button class="close" type="button" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">×</span>
                     </button>
                 </div>
                 <div class="modal-body">
-                    <img class="card-img-top" style="max-height:300px" src="{{url_for('get_img' , id = cart_items[i].get_image())}}" alt="Item Image" />
+                    <img class="card-img-top" style="max-height:300px" src="static/images/vala.png" alt="Item Image" />
                     <hr>
-                    <p>Barcode: {{cart_items[i].get_id()}}</p>
-                    <p>Name: {{cart_items[i].get_name()}}</p>
-                    <p>Description: {{cart_items[i].get_description()}}</p>
-                    <p>Price: ${{ "{:.2f}".format(cart_items[i].get_price()) }}</p>
-                    <p>Quantity Purchased: {{cart_items[i].get_qty_purchased()}}</p>
-                    <p>Seller: {{cart_items[i].get_owner()}}</p>
+                    <p>Name: {{i.product_name}}</p>
+                    <p>Description: {{i.description}}</p>
+                    <p>Price: ${{ "{:.2f}".format(i.price) }}</p>
                   </div>
                    <div class="modal-footer">
                     <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
