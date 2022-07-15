@@ -63,18 +63,21 @@
                                     <!--Password1-->
                                         {{ form.password2.label() }}
                                         {{ form.password2(class='form-control form-control-user', placeholder='Confirm') }}
-
                                 </div>
+                                &nbsp;
+                                <div class="form-group row">
                                 {{form.recaptcha}}
                                 {% for error in form.recaptcha.errors %}
                                 <span style="color:red;">
                                     {{error}}
                                 </span>
-                            {% endfor %}
-
-                                <br>
+                                {% endfor %}
+                                </div>
+                                
                                 {{ form.submit(class='btn btn-primary btn-user btn-block',type='submit') }}
                             </form>
+                            <br>
+                            <a href="{{ url_for('login')}}" class="btn btn-secondary btn-user btn-block">Login</a>
                             <hr>
                         </div>
                     </div>
