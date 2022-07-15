@@ -97,7 +97,7 @@ def login():
         password = form.password1.data
         #check if its staff account
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        #decryption later + hashing algorithm
+        #decryption later + salted hashing + login history
         cursor.execute('SELECT * FROM staff_accounts WHERE email = %s',[email])
         staff = cursor.fetchone()
         staff_hashed_password = staff['hashed_pw']

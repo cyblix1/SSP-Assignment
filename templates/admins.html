@@ -58,7 +58,7 @@
                                         {{ form.description(class='form-control form-control-user', placeholder='description') }}
                                     </div>
                                     <div class="form-group">
-                                        {{ form.password1(class='form-control form-control-user', placeholder='password') }}
+                                        {{ form.password1(class='form-control form-control-user', placeholder='password',pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,} ) }}
                                     </div>
                                     <div class="form-group">
                                         {{ form.password2(class='form-control form-control-user', placeholder='confirm password') }}
