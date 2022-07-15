@@ -245,6 +245,7 @@ def create_admin():
     elif check(email) == False:
         flash('Invalid email')
     else:
+        #encryption
         encoded_password = password.encode()
         salt = b'\x829\xf0\x9e\x0e\x8bl;\x1a\x95\x8bB\xf9\x16\xd4\xe2'
         kdf = PBKDF2HMAC(algorithm=hashes.SHA256(),
@@ -253,19 +254,19 @@ def create_admin():
                 iterations=100000,
                 backend=default_backend())
         key = base64.urlsafe_b64encode(kdf.derive(encoded_password))
-
-        #storing key    
-        file = open('symmetric.key','wb')
-        file.write(key)
-        file.close()
-
+   
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
         #encrypting email
         encoded_email = email.encode()
         f = Fernet(key)
         encrypted_email = f.encrypt(encoded_email)
+        cursor.execute('INSERT INTO staff_accounts VALUES (NULL, %s, %s, %s, %s, %s, %s, %s, %s)', (name,encrypted_email,phone,gender,hashedpw,30,description,date_created))
+        db.connection.commit()
 
-        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute('INSERT INTO staff_accounts VALUES (NULL, %s, %s, %s, %s, %s, NULL, %s, %s)', (name,encrypted_email,phone,gender,hashedpw,description,date_created))
+        #get staff-id + sorting key
+        cursor.execute('SELECT staff_id FROM staff_accounts WHERE email = %s',[encrypted_email])
+        staff_id = cursor.fetchone()
+        cursor.execute('INSERT INTO staff_key VALUE (%s,%s)',((staff_id['staff_id']),key))
         db.connection.commit()
         flash("Employee Added Successfully!",category="success")
         return redirect(url_for('admins'))
