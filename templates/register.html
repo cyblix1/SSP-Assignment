@@ -59,6 +59,12 @@
                                         {{ form.password1(class='form-control form-control-user', placeholder='Password') }}
 
                                 </div>
+                                <div class="form-group row">
+                                    <!--Password1-->
+                                        {{ form.password2.label() }}
+                                        {{ form.password2(class='form-control form-control-user', placeholder='Confirm') }}
+
+                                </div>
                                 {{form.recaptcha}}
                                 {% for error in form.recaptcha.errors %}
                                 <span style="color:red;">

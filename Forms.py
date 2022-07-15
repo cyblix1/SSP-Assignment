@@ -93,16 +93,14 @@ class Update_Gender(FlaskForm):
     submit = SubmitField(label='Done')
 
 
-
 class Register_Users(FlaskForm):
     name = StringField("Name", validators=[Length(min=1, max=50, message='length is between 1 to 50'), DataRequired(message="no name")])
     email = EmailField("Email", validators=[Length(min=5, max=100,  message='length is between 5 to 100'), DataRequired(message ='no email')])
     password1 = PasswordField("Password:", validators=[DataRequired(message ="no password")])
+    password2 = PasswordField("Confirm:",validators=[DataRequired(message ="no password")])
     recaptcha = RecaptchaField(validators=[DataRequired(message="Click here")])
     submit = SubmitField("Register")
-    #name = StringField("name")
-    #email = EmailField("Email")
-    #password1 = PasswordField("Password:")
+
 
 class Create_Products(FlaskForm):
     product_name = StringField(label='Name', validators=[Length(min=1, max=100), DataRequired()])

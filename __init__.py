@@ -59,15 +59,13 @@ bcrypt = Bcrypt()
 @app.route('/register',methods =['POST','GET'])
 def register():
     form = Register_Users()
-    print('1')
-    print(form.is_submitted())
-    print(form.validate())
-    print(form.name.data)
-    print(form.password1.data)
-    print(form.email.data)
     if form.is_submitted() and request.method == 'POST' and RecaptchaField != NULL:
         name = form.name.data
         password = form.password1.data
+        password2 = form.password2.data
+        if password != password2:
+            flash('passwords do not match',category='danger')
+            return redirect(url_for('register'))
         email = form.email.data
         time = datetime.utcnow()
         password_age=4
@@ -93,9 +91,6 @@ def home():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     form = LoginForm()
-    print(request.method)
-    print('customer_name' in request.form)
-    print('password1' in request.form)
     if request.method == 'POST' and 'customer_name' in request.form and 'password1' in request.form:
         # Create variables for easy access
         name = request.form['customer_name']
@@ -132,7 +127,14 @@ def logout():
     # Redirect to login page
     return redirect(url_for('login'))
 
-
+@app.route('/logoutstaff')
+def logoutstaff():
+    session.pop('staffloggedin', None)
+    session.pop('id', None)
+    session.pop('username', None)
+    flash('Successfully logged out')
+    # Redirect to login page
+    return redirect(url_for('login'))
 
 @app.route('/')
 # Verify the strength of 'password'
