@@ -438,6 +438,39 @@ def profile():
         return 'not in session'
     return redirect(url_for('login'))
 
+
+@app.route('/market')
+def market():
+    try:
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        if cursor:
+            cursor.execute('SELECT * FROM products')
+            products = cursor.fetchall()
+    except IOError:
+        print('Database problem!')
+    except Exception as e:
+        print(f'Error while connecting to MySQL,{e}')
+    finally:
+        if cursor:
+            cursor.close()
+    return render_template('market.html', items = products)
+
+@app.route('/checkout')
+def checkout():
+    try:
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        if cursor:
+            cursor.execute('SELECT * FROM products')
+            products = cursor.fetchall()
+    except IOError:
+        print('Database problem!')
+    except Exception as e:
+        print(f'Error while connecting to MySQL,{e}')
+    finally:
+        if cursor:
+            cursor.close()
+    return render_template('checkout.html')
+
 @app.route('/admin_profile',methods=['GET','POST'])
 def admin_profile():
     name_form = Update_Name()
