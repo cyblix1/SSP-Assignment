@@ -368,7 +368,7 @@ def products():
 def create_products():
     form = Create_Products()
     if form.validate_on_submit():
-        id = 2
+        id = uuid.uuid4()
         # need to change manually LMAO
         name = form.product_name.data
         price = form.price.data
@@ -465,6 +465,19 @@ def market():
         if cursor:
             cursor.close()
     return render_template('market.html', items = products)
+
+@app.route('/add_to_checkout', methods=['POST','GET'])
+def add_to_checkout():
+    try:
+        id = 5
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute('INSERT INTO shopping_cart SELECT product_id, product_name, price , description FROM products WHERE product_id = %s', [id])
+        db.connection.commit()
+        flash("Employee Added Successfully!",category="success")
+    except:
+        flash("Employee Added NO!", category="success")
+
+    return redirect(url_for('checkout'))
 
 @app.route('/checkout')
 def checkout():
