@@ -90,31 +90,40 @@ def home():
 @app.route('/')
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    form = LoginForm()
-    if request.method == 'POST' and 'customer_name' in request.form and 'password1' in request.form:
+    form = LoginForm(request.form)
+    if request.method == 'POST':
         # Create variables for easy access
-        name = request.form['customer_name']
-        password = request.form['password1']
-        # Check if account exists using MySQL
+        email = form.email.data
+        password = form.password1.data
+        #check if its staff account
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        print(name)
-        cursor.execute('SELECT * FROM customer_accounts WHERE full_name = %s AND hashed_pw = %s;',[name,password])
-        # Fetch one record and return result
-        account = cursor.fetchone()
-        if account:
-            # Create session data, we can access this data in other routes
-            session['loggedin'] = True
-            session['id'] = account['customer_id']
-            session['name'] = account['full_name']
-            #if password == account["hashed_pw"]:
-            #   login_user(account)
-            # Redirect to home page
-            print('5')
-            return redirect(url_for('home'))
+        #decryption later + hashing algorithm
+        cursor.execute('SELECT * FROM staff_accounts WHERE email = %s',[email])
+        staff = cursor.fetchone()
+        staff_hashed_password = staff['hashed_pw']
+        if staff and bcrypt.check_password_hash(staff_hashed_password,password):
+            session['staffloggedin'] = True
+            session['id'] = account['staff_id']
+            session['name'] = account['full_name'] 
+            #to admin page Fix later 
+            return redirect(url_for('admins'))
         else:
-            # Account doesn’t exist or username/password incorrect
-            # Show the login form with message (if any)
-            flash('Incorrect username or Password')
+            # Check if account exists using MySQL
+            cursor.execute('SELECT * FROM customer_accounts WHERE email = %s AND hashed_pw = %s',[email,password])
+            # Fetch one record and return result
+            account = cursor.fetchone()
+            if account:
+                # Create session data, we can access this data in other routes
+                session['loggedin'] = True
+                session['id'] = account['customer_id']
+                session['name'] = account['full_name']
+                # Redirect to home page
+                return redirect(url_for('home'))
+            else:
+                # Account doesn’t exist or username/password incorrect
+                # Show the login form with message (if any)
+                flash('Incorrect username or Password')
+    
     return render_template('login.html', form=form)
 
 @app.route('/logout')
