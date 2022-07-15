@@ -180,7 +180,7 @@ def password_check(password):
 def home():
     if 'loggedin' in session:
         # User is loggedin show them the home page
-        return render_template('home.html', name=session['name'])
+        return render_template('home.html',id=session['id'], name=session['name'])
 # User is not loggedin redirect to login page
     return redirect(url_for('login'))
 
@@ -429,11 +429,35 @@ def profile():
     name_form = Update_Name()
     email_form = Update_Email()
     gender_form = Update_Gender()
-    return render_template('profile.html',account=5,name_form=name_form,email_form=email_form,gender_form=gender_form)
+    if 'loggedin' in session:
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute('SELECT * FROM customer_accounts WHERE customer_id = %s', [session['id']])
+        account = cursor.fetchone()
+        return render_template('profile.html',account=account,name_form=name_form,email_form=email_form,gender_form=gender_form)
+    elif 'loggedin' not in session:
+        return 'not in session'
+    return redirect(url_for('login'))
 
-
-
-
+@app.route('/admin_profile',methods=['GET','POST'])
+def admin_profile():
+    name_form = Update_Name()
+    email_form = Update_Email()
+    gender_form = Update_Gender()
+    if 'staffloggedin' in session:
+        try:
+            cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+            cursor.execute('SELECT * FROM staff_accounts WHERE staff_id = %s', [session['id']])
+            if account:
+                account = cursor.fetchone()
+                return render_template('admin_profile.html',account=account,name_form=name_form,email_form=email_form,gender_form=gender_form)
+        except IOError:
+            print('Database problem!')
+        except Exception as e:
+            print(f'Error while connecting to MySQL,{e}')
+        finally:
+            cursor.close()
+            db.connection.close()
+    return redirect(url_for('login'))
 
 
 @app.route('/customer_delete/<int:id>',methods=['GET','POST'])

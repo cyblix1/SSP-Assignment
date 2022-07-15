@@ -1,5 +1,5 @@
 
-{% extends "base.html" %}
+{% extends "base_admin.html" %}
 {% block title %} Profile {% endblock %}
 
 {% block content %}
@@ -55,7 +55,13 @@
 <!--                    <strong>Tashkent city, Street name, Building 123, House 321</strong> &nbsp;-->
 <!--                    <a href="#" class="btn-link"> Edit</a>-->
 <!--                </p>-->
-        
+                <p>
+                    <i class="fa fa-solid fa-venus-mars"></i> &nbsp; Gender:
+                     <br>
+                      <!-- 5.gender -->
+                    <strong>{{ account['gender']}}</strong> &nbsp;
+                    <a class="btn-link" href="#" data-toggle="modal" data-target="#editGenderModal">Edit Gender</a>
+                </p>
                 </div>
                 <div class="col-md-4">
                     <br>
