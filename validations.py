@@ -1,4 +1,5 @@
 import re
+#input validations
 class Validations:
     #using regex
     def validate_password(self,password):

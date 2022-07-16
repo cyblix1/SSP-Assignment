@@ -81,6 +81,51 @@
                 </div>
             </div>
             <!-- End of modal -->
+
+            <!-- start of modal -->
+            <div class="modal fade" style="margin-top:100px;" id="verifyotp" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="exampleModalLabel">Verify</h5>
+                            <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">×</span>
+                            </button>
+                        </div>
+                        <form action="" method="POST">
+                            <div class="modal-body">
+                                        {{ form.csrf_token(type='hidden') }}
+                                        {% if form.csrf_token.errors %}
+                                            <div class="warning">
+                                                You have submited an invalid csrf token 
+                                            </div>
+                                        {% endif %}
+                                    <div class="form-group">
+                                        <input type="Enter OTP">
+                                    </div>
+                                    <div class="form-group">
+                                    <div class="form-group">
+                                        {{ form.password2(class='form-control form-control-user', placeholder='confirm password') }}
+                                    </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
+                                {{ form.submit(class="btn btn-primary" ,type="submit") }}
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+
+
+
+
+
+
+
+
+
         </div>
         <div class="card-body">
             <div class="table-responsive">
