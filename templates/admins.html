@@ -1,7 +1,7 @@
 {% extends "base_admin.html" %}
 {% block title %} Admins {% endblock %}
 <!-- Custom styles for this page -->
-<link href="static/css/admins.css" rel="stylesheet" type="text/css">
+
 {% block content %}
 <!-- Begin Page Content -->
 <div class="container-fluid">
@@ -93,24 +93,14 @@
                             </button>
                         </div>
                         <form action="" method="POST">
-                            <div class="modal-body">
-                                        {{ form.csrf_token(type='hidden') }}
-                                        {% if form.csrf_token.errors %}
-                                            <div class="warning">
-                                                You have submited an invalid csrf token 
-                                            </div>
-                                        {% endif %}
+                            <div class="modal-body">       
                                     <div class="form-group">
                                         <input type="Enter OTP">
-                                    </div>
-                                    <div class="form-group">
-                                    <div class="form-group">
-                                        {{ form.password2(class='form-control form-control-user', placeholder='confirm password') }}
                                     </div>
                             </div>
                             <div class="modal-footer">
                                 <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
-                                {{ form.submit(class="btn btn-primary" ,type="submit") }}
+
                             </div>
                         </form>
                     </div>
@@ -150,8 +140,8 @@
                 
                     </tfoot>
                     <tbody>
-                        <p>{{ dicswt }}</p>
-                        <p>{{ employees }}</p>
+                        
+           
                         {% for employee in employees %}
                         <tr>
                             <td>{{employee.staff_id}}</td>
@@ -162,7 +152,11 @@
                                 <button type="button" class="btn btn-info btn-sm" data-toggle="modal" data-target="#admininfo{{employee.staff_id}}">Info</button>
                                 <button type="button" class="btn btn-warning btn-sm">History</button>
                                 <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#adminedit{{employee.staff_id}}" >Edit</button>
-                                <a href="/admins/delete_admin/{{employee.staff_id}}" class="btn btn-danger btn-xs btn-sm" onclick="return confirm('Are you sure to delete?')">Delete</a>
+                                
+                                <form action="{{ url_for('delete_admin',id=employee.staff_id)}}", method="POST">
+                                    <button type="submit" class="btn btn-danger btn-xs btn-sm" onclick="return confirm('Are you sure to delete?')">Delete</button>
+                                </form>
+
                             </td>
                         </tr>
                         <!-- start of modal (view Information) -->
@@ -255,63 +249,4 @@
     </div>
     <!-- End of Page Wrapper -->
     <!-- #password validation javascript -->
-    <script>
-        var myInput = document.getElementById("psw");
-        var letter = document.getElementById("letter");
-        var capital = document.getElementById("capital");
-        var number = document.getElementById("number");
-        var length = document.getElementById("length");
-        
-        // When the user clicks on the password field, show the message box
-        myInput.onfocus = function() {
-          document.getElementById("message").style.display = "block";
-        }
-        
-        // When the user clicks outside of the password field, hide the message box
-        myInput.onblur = function() {
-          document.getElementById("message").style.display = "none";
-        }
-        
-        // When the user starts to type something inside the password field
-        myInput.onkeyup = function() {
-          // Validate lowercase letters
-          var lowerCaseLetters = /[a-z]/g;
-          if(myInput.value.match(lowerCaseLetters)) {  
-            letter.classList.remove("invalid");
-            letter.classList.add("valid");
-          } else {
-            letter.classList.remove("valid");
-            letter.classList.add("invalid");
-          }
-          
-          // Validate capital letters
-          var upperCaseLetters = /[A-Z]/g;
-          if(myInput.value.match(upperCaseLetters)) {  
-            capital.classList.remove("invalid");
-            capital.classList.add("valid");
-          } else {
-            capital.classList.remove("valid");
-            capital.classList.add("invalid");
-          }
-        
-          // Validate numbers
-          var numbers = /[0-9]/g;
-          if(myInput.value.match(numbers)) {  
-            number.classList.remove("invalid");
-            number.classList.add("valid");
-          } else {
-            number.classList.remove("valid");
-            number.classList.add("invalid");
-          }
-          
-          // Validate length
-          if(myInput.value.length >= 8) {
-            length.classList.remove("invalid");
-            length.classList.add("valid");
-          } else {
-            length.classList.remove("valid");
-            length.classList.add("invalid");
-          }
-        }
-        </script>
 {% endblock %}
