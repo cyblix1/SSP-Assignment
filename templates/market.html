@@ -205,7 +205,7 @@
                         <span aria-hidden="true">×</span>
                     </button>
                 </div>
-                <form method="POST" action="{{url_for('add_to_checkout')}}">
+                <form method="POST" action="{{url_for('add_to_checkout')}}" >
                 <div class="modal-body">
                     <hr>
                     <p>ID: {{i.product_id}}</p>
@@ -218,7 +218,7 @@
 
                    <div class="modal-footer">
                     <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
-                    <input id="uuid" name="uuid" type="hidden" value="{{i.product_id}}">
+                    <input id="uuid" name="product-value" type="hidden" value="{{i.product_id}}">
                     <button class="btn btn-success" type="submit">Add to Cart</button>
 
                     </div>

@@ -604,12 +604,12 @@ def market():
     finally:
         if cursor:
             cursor.close()
-    return render_template('market.html', items = products)
+    return render_template('market.html', items = products  )
 
-@app.route('/add_to_checkout', methods=['POST','GET'])
+@app.route('/add_to_checkout', methods=['POST'])
 def add_to_checkout():
+    id = request.form['product-value']
     try:
-        id = 1
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute('INSERT INTO shopping_cart SELECT product_id, product_name, price , description FROM products WHERE product_id = %s', [id])
         db.connection.commit()
@@ -654,6 +654,29 @@ def payment():
 
     return render_template('payment.html', form =form)
 
+@app.route('/checkout/delete/<int:id>/', methods=['GET','POST'])
+def checkout_success(id):
+    try:
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        #checks if exists
+        cursor.execute('SELECT * FROM shopping_cart WHERE customer_id = %s', [id])
+        account = cursor.fetchone()
+        if account:
+            cursor.execute('DELETE FROM shopping_cart WHERE customer_id = %s', [id])
+            db.connection.commit()
+            flash("Check-Out successfully",category="success")
+        #user no exists
+        else:
+            flash("Something went wrong, please try again!",category="danger")
+    except IOError:
+        print('Database problem!')
+    except Exception as e:
+        print(f'Error while connecting to MySQL,{e}')
+    finally:
+        if cursor:
+            cursor.close()
+            db.connection.close()
+            return redirect(url_for('market'))
 
 
 # Invalid URL
