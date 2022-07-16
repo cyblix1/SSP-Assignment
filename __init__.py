@@ -490,6 +490,7 @@ def checkout():
             cursor.close()
     return render_template('checkout.html',cart_items = products)
 
+
 @app.route('/payment', methods=['POST','GET'])
 def payment():
     form = Add_Card_Details()
@@ -502,15 +503,11 @@ def payment():
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute('INSERT INTO payment VALUES (%s, %s, %s, %s)', (card_number,card_date,card_name,card_cvc))
         db.connection.commit()
-        flash("Employee Added Successfully!", category="success")
+        flash("Card Added Successfully!", category="success")
+        return redirect(url_for('market'))
 
-        return redirect(url_for('checkout'))
-
-    elif request.method == 'POST':
-        msg = 'Please fill out the form !'
 
     return render_template('payment.html', form =form)
-
 
 
 @app.route('/admin_profile',methods=['GET','POST'])
