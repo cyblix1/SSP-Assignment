@@ -227,7 +227,6 @@ def create_admin():
     description = form.description.data
     password = form.password1.data
     password2 = form.password2.data
-    hashedpw = bcrypt.generate_password_hash(password)
     date_created = datetime.utcnow()
     if password != password2:
         flash('passwords does not match',category="danger")
@@ -239,6 +238,8 @@ def create_admin():
         flash('Invalid email')
         return redirect(url_for('admins'))
     else:
+        #hashing 
+        hashedpw = bcrypt.generate_password_hash(password)
         #encryption
         encoded_password = password.encode()
         salt = b'\x829\xf0\x9e\x0e\x8bl;\x1a\x95\x8bB\xf9\x16\xd4\xe2'
