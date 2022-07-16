@@ -19,7 +19,7 @@ from cryptography.fernet import Fernet
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-
+from validations import Validations
 
 
 
@@ -38,14 +38,6 @@ app.config['MYSQL_PASSWORD'] = config['account']['password']
 app.config['MYSQL_DB'] = config['account']['db']
 app.config['RECAPTCHA_PUBLIC_KEY'] = "6Ldzgu0gAAAAAKF5Q8AdFeTRJpvl5mLBncz-dsBv"
 app.config['RECAPTCHA_PRIVATE_KEY'] = "6Ldzgu0gAAAAANuXjmXEv_tLJLQ_s7jtQV3rPwX2"
-
-#validate email
-regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
-def check(email):
-    if(re.fullmatch(regex, email)):
-        return True
-    else:
-        return False
 
 
 
@@ -240,8 +232,12 @@ def create_admin():
     if password != password2:
         flash('passwords does not match',category="danger")
         return redirect(url_for('admins'))
-    elif check(email) == False:
+    elif Validations.validate_password(password) == False:
+        flash('',category="danger")
+        return redirect(url_for('admins'))
+    elif Validations.validate_email(email) == False:
         flash('Invalid email')
+        return redirect(url_for('admins'))
     else:
         #encryption
         encoded_password = password.encode()

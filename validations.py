@@ -1,0 +1,22 @@
+import re
+class Validations:
+    #using regex
+    def validate_password(self,password):
+        reg = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!#%*?&]{6,20}$"
+        # compiling regex
+        pat = re.compile(reg)
+        # searching regex                 
+        mat = re.search(pat, password)
+        # validating conditions
+        if mat:
+            return False
+        else:
+            #password meets requirements
+            return True
+    #validate email
+    def validate_email(self,email):
+        regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+        if(re.fullmatch(regex, email)):
+            return True
+        else:
+            return False
