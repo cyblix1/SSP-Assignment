@@ -2,43 +2,18 @@
 {% block title %}Add Card Details {% endblock %}
 {% block content %}
 
-<!-- <script class="jsbin" src="https://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
-<script>
-  function readURL(input) {
-if (input.files && input.files[0]) {
-
-  var reader = new FileReader();
-
-  reader.onload = function(e) {
-    $('.image-upload-wrap').hide();
-
-    $('.file-upload-image').attr('src', e.target.result);
-    $('.file-upload-content').show();
-
-    $('.image-title').html(input.files[0].name);
-  };
-
-  reader.readAsDataURL(input.files[0]);
-
-} else {
-  removeUpload();
-}
-}
-
-function removeUpload() {
-$('.file-upload-input').replaceWith($('.file-upload-input').clone());
-$('.file-upload-content').hide();
-$('.image-upload-wrap').show();
-}
-$('.image-upload-wrap').bind('dragover', function () {
-  $('.image-upload-wrap').addClass('image-dropping');
-});
-$('.image-upload-wrap').bind('dragleave', function () {
-  $('.image-upload-wrap').removeClass('image-dropping');
-});
-</script> -->
-
-
+{% with messages = get_flashed_messages() %}
+    {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-success alert-dismissable" role="alert">
+                    <button type="button" class="close" data-dismiss="alert" aria-label="close">
+                        <span aria-hidden="true">x</span>
+                    </button>
+                    {{message}}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith%}
 </style>
 
 <div class="container-fluid" style="margin-top: 30px;">
@@ -62,10 +37,12 @@ $('.image-upload-wrap').bind('dragleave', function () {
           <div class="form-group">
                 {{ form.card_number.label() }}
                 {{ form.card_number(class='form-control form-control-user', placeholder='Enter Card Number') }}
+
           </div> <!-- form-group end.// -->
           <div class="form-group">
                 {{ form.card_date.label() }}
                 {{ form.card_date(class='form-control form-control-user', placeholder='Enter Card Date') }}
+
           </div>
            <div class="form-group">
                 {{ form.card_cvc.label() }}
