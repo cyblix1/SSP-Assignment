@@ -87,9 +87,18 @@ def login():
         #check if its staff account
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
         #decryption later + salted hashing + login history
+
+
+
+
         cursor.execute('SELECT * FROM staff_accounts WHERE email = %s',[email])
         staff = cursor.fetchone()
         if staff:
+            id = staff['staff_id']
+            cursor.execute('SELECT * FROM staff_key WHERE staff_id = %s',[id])
+
+
+
             session['staffloggedin'] = True
             session['id'] = account['staff_id']
             session['name'] = account['full_name'] 
@@ -241,7 +250,7 @@ def create_admin():
                 iterations=100000,
                 backend=default_backend())
         key = base64.urlsafe_b64encode(kdf.derive(encoded_password))
-   
+
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
         #encrypting email
         encoded_email = email.encode()
@@ -253,7 +262,7 @@ def create_admin():
         #get staff-id + sorting key
         cursor.execute('SELECT staff_id FROM staff_accounts WHERE email = %s',[encrypted_email])
         staff_id = cursor.fetchone()
-        cursor.execute('INSERT INTO staff_key VALUE (%s,%s)',((staff_id['staff_id']),key))
+        cursor.execute('INSERT INTO staff_key VALUE (%s,%s)',((staff_id['staff_id']),key.decode()))
         db.connection.commit()
         flash("Employee Added Successfully!",category="success")
         return redirect(url_for('admins'))
