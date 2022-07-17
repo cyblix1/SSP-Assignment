@@ -18,7 +18,7 @@
                 <div class="modal-dialog" role="document">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title" id="exampleModalLabel">ADD EMPLOYEE</h5>
+                            <h5 class="modal-title" id="exampleModalLabel">ADD PRODUCT</h5>
                             <button class="close" type="button" data-dismiss="modal" aria-label="Close">
                                 <span aria-hidden="true">×</span>
                             </button>
@@ -126,7 +126,7 @@
                             <div class="modal-dialog" role="document">
                                 <div class="modal-content">
                                     <div class="modal-header">
-                                        <h5 class="modal-title">Edit Employee Information</h5>
+                                        <h5 class="modal-title">Edit Product Information</h5>
                                         <button class="close" type="button" data-dismiss="modal" aria-label="Close">
                                             <span aria-hidden="true">×</span>
                                         </button>
@@ -135,13 +135,13 @@
 
                                             <div class="modal-body">
                                                     <div class="form-group">
-                                                        {{ form.product_name(class='form-control', placeholder='Email Address', value=p.product_name) }}
+                                                        {{ form.product_name(class='form-control', placeholder='Product Name', value=p.product_name) }}
                                                     </div>
                                                     <div class="form-group">
-                                                        {{ form2.price(class='form-control',  placeholder='Phone Number',value=p.price) }}
+                                                        {{ form2.price(class='form-control',  placeholder='Product Price',value=p.price) }}
                                                     </div>
                                                     <div class="form-group">
-                                                        {{ form2.description(class='form-control', value=p.description, placeholder='Description') }}
+                                                        {{ form2.description(class='form-control', value=p.description, placeholder='Product Description') }}
                                                     </div>
                                             </div>
                                             <div class="modal-footer">

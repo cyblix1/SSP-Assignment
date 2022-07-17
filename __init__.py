@@ -571,6 +571,7 @@ def create_products():
             name = form.product_name.data
             price = form.price.data
             description = form.description.data
+
             cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
             cursor.execute('INSERT INTO products VALUES (%s, %s, %s, %s)', (id,name,price,description))
             db.connection.commit()
@@ -578,9 +579,10 @@ def create_products():
             return redirect(url_for('products'))
 
     except Exception :
-        flash("Please LOG IN!", category="error")
-        return redirect(url_for('login'))
+        flash("Error Adding Products", category="error")
+        return redirect(url_for('products'))
 
+    return render_template('AddItem.html', add_item_form=form)
 
 @app.route('/products/delete_products/<id>/',  methods=['POST'])
 def delete_products(id):
@@ -622,6 +624,8 @@ def update_products(id):
         print('Database problem!')
     except Exception as e:
         print(f'Error while connecting to MySQL,{e}')
+        flash("Error Updating Products", category="error")
+        return redirect(url_for('products'))
     finally:
         cursor.close()
         db.connection.close()
@@ -654,6 +658,10 @@ def add_to_checkout():
     id = request.form['product-value']
     try:
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        # cursor.execute('SELECT * FROM shopping_cart')
+        # account = cursor.fetchall()
+        # account['customer_id'] = session['id']
+        # if customer id was in shopping cart table, able to specify each shopping cart for each customer_id
         cursor.execute('INSERT INTO shopping_cart SELECT product_id, product_name, price , description FROM products WHERE product_id = %s', [id])
         db.connection.commit()
         flash("Product Added Successfully!",category="success")
