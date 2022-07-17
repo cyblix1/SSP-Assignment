@@ -2,12 +2,13 @@ from distutils import ccompiler
 from distutils.util import byte_compile
 from mimetypes import init
 from tkinter import Image
+from types import NoneType
 from flask import Flask, render_template, request, make_response, redirect, url_for, session,flash, json
 from flask_mysqldb import MySQL
 import MySQLdb.cursors
 import bcrypt
 from flask_bcrypt import Bcrypt
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from pymysql import NULL
 from Forms import *
 from configparser import ConfigParser
@@ -24,8 +25,8 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from validations import *
 #from verify import *
-bcrypt = Bcrypt()
-import stripe
+bcrypt2 = Bcrypt()
+# import stripe
 
 
 app = Flask(__name__)
@@ -44,7 +45,7 @@ app.config['RECAPTCHA_PUBLIC_KEY'] = "6Ldzgu0gAAAAAKF5Q8AdFeTRJpvl5mLBncz-dsBv"
 app.config['RECAPTCHA_PRIVATE_KEY'] = "6Ldzgu0gAAAAANuXjmXEv_tLJLQ_s7jtQV3rPwX2"
 app.config['STRIPE_PUBLIC_KEY'] = 'pk_test_51LM6HwJDutS1IqmOR34Em3mZeuTsaUwAaUp40HLvcwrQJpUR5bR60V1e3kkwugBz0A8xAuXObCpte2Y0M251tBeD00p16YXMgE'
 app.config['STRIPE_SECRET_KEY'] = 'sk_test_51LM6HwJDutS1IqmOFhsHKYQcSM2OEF8znqltmmy2vcQCkRUMiKyJrQunP0OlJji6Nlg142NVZ8CpTaMJgZLzzucx00tx6FdjY0'
-stripe.api_key = app.config['STRIPE_SECRET_KEY']
+# stripe.api_key = app.config['STRIPE_SECRET_KEY']
 
 
 
@@ -76,7 +77,7 @@ def register():
     if form.is_submitted() and request.method == 'POST' and RecaptchaField != NULL:
         name = form.name.data
         password = form.password1.data
-        hashpassword = bcrypt.generate_password_hash(form.password1.data)
+        hashpassword = bcrypt2.generate_password_hash(password)
         password2 = form.password2.data
         if password != password2:
             flash('passwords do not match',category='danger')
@@ -111,22 +112,43 @@ def login():
         # Create variables for easy access
         email = form.email.data
         password = form.password1.data
+        login_time = datetime.utcnow()
         #check if its staff account
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
         #decryption later + salted hashing + login history
         # Check if account exists using MySQL
-        cursor.execute('SELECT * FROM customer_accounts WHERE email = %s',(email,))
+        cursor.execute('SELECT * FROM customer_accounts WHERE email = %s',[email])
         # Fetch one record and return result
         account = cursor.fetchone()
-        print(account)
-        user_hashpwd = account['hashed_pw']
-        if account and bcrypt.check_password_hash(user_hashpwd, password):
-            # Create session data, we can access this data in other routes
-            session['loggedin'] = True
-            session['id'] = account['customer_id']
-            session['name'] = account['full_name']
-            # Redirect to home page
-            return redirect(url_for('home'))
+        if account: 
+            user_hashpwd = account['hashed_pw']
+            if bcrypt2.check_password_hash(user_hashpwd, password):
+                id = account['customer_id']
+                # Create session data, we can access this data in other routes
+                cursor.execute('SELECT max(login_attempt_no) AS last_login FROM customer_login_history WHERE customer_id = %s',[id])
+                acc_login = cursor.fetchone()
+                #means first login
+                if acc_login == NoneType:
+                    #means first login
+                    cursor.execute('INSERT INTO customer_login_history (customer_id, login_attempt_no, login_time) VALUES (%s,%s,%s)',(id,0,login_time))
+                    db.connection.commit()
+                    session['loggedin'] = True
+                    session['id'] = account['customer_id']
+                    session['name'] = account['full_name']
+                    session['customer_login_no'] = 0
+                    # Redirect to home page
+                    return redirect(url_for('home'))
+                #means not first login
+                else:
+                    next_login_attempt = 2 + 1
+                    cursor.execute('INSERT INTO customer_login_history (customer_id, login_attempt_no, login_time) VALUES (%s,%s,%s)',(id,next_login_attempt,login_time))
+                    db.connection.commit()
+                    session['loggedin'] = True
+                    session['id'] = account['customer_id']
+                    session['name'] = account['full_name']
+                    session['customer_login_no'] = int(next_login_attempt)
+                    # Redirect to home page
+                    return redirect(url_for('home'))
         else:
             #check for staff account 
             cursor.execute('SELECT * FROM staff_email_hash')
@@ -165,9 +187,17 @@ def login():
 @app.route('/logout')
 def logout():
 # Remove session data, this will log the user out
+    cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+    login_num = session.get('customer_login_no')
+    id = session.get('id')
+    logout_time = datetime.utcnow()
+    #Once fix this done alr
+    cursor.execute('INSERT INTO customer_login_history logout_time VALUES %s WHERE customer_id = %s AND login_attempt_no = %s',(logout_time,id,login_num))
+    db.connection.commit()
     session.pop('loggedin', None)
     session.pop('id', None)
-    session.pop('username', None)
+    session.pop('name', None)
+    session.pop('customer_login_no',None)
     flash('Successfully logged out')
     # Redirect to login page
     return redirect(url_for('login'))
