@@ -7,50 +7,41 @@
         <div class="col-md-10">
 
 
-            <div class="receipt bg-white p-3 rounded" style="border-top: 10px solid #2A27A2;"><img src="..\static\img\Swiss.png" width="120">
+            <div class="receipt bg-white p-3 rounded" style="border-top: 10px solid #2A27A2;"><img src="static/images/vala.png" width="120">
                 <h4 class="mt-2 mb-3">Your order is almost ready!</h4>
-                <h6 class="name">Hello {{ current_user.username }},</h6><span class="fs-12 text-black-50">your order is almost ready please check that your order is correct before confirming payment.</span>
+                <h6 class="name">Hello ,</h6><span class="fs-12 text-black-50">your order is almost ready please check that your order is correct before confirming payment.</span>
                 <hr>
                 <div class="d-flex flex-row justify-content-between align-items-center order-details">
-                    <div><span class="d-block fs-12">Order date</span><span class="font-weight-bold">{{order_date}}</span></div>
+                    <div><span class="d-block fs-12">Order date</span><span class="font-weight-bold"></span></div>
                     <div><span class="d-block fs-12">Order number</span><span class="font-weight-bold">1234567</span></div>
                     <div><span class="d-block fs-12">Shipping Address</span><span class="font-weight-bold text-success">Singapore</span></div>
                 </div>
                 <hr>
-                {% for i in cart_items %}
+                {% for i in shopping %}
                 <div class="d-flex justify-content-between align-items-center product-details">
-                    <div class="d-flex flex-row product-name-image"><img src="{{url_for('get_img' , id = cart_items[i].get_image())}}" class="img-sm" style="height:60px">
+                    <div class="d-flex flex-row product-name-image"><img src="static/images/vala.png" class="img-sm" style="height:60px">
                         <div class="d-flex flex-column justify-content-between ml-2">
-                            <div><span class="d-block font-weight-bold p-name">{{cart_items[i].get_name()}}</span></div><span class="fs-12">Qty: {{cart_items[i].get_qty_purchased()}}</span>
+                            <div><span class="d-block font-weight-bold p-name">{{i.product_name}}</span></div><span class="fs-12"></span>
                         </div>
                     </div>
                     <div class="product-price">
-                        <h5>${{ "{:.2f}".format(cart_items[i].get_total_cost()) }}</h5>
+                        <h5>${{ "{:.2f}".format(i.price) }}</h5>
                     </div>
                 </div>
                 <br>
-<!--                <div class="d-flex justify-content-between align-items-center product-details">-->
-<!--                    <div class="d-flex flex-row product-name-image"><img class="rounded" src="../static/img/Hakase.png" width="80">-->
-<!--                        <div class="d-flex flex-column justify-content-between ml-2">-->
-<!--                            <div><span class="d-block font-weight-bold p-name">{{cart_items[i].get_name()}}</span></div><span class="fs-12">Qty: {{cart_items[i].get_qty_purchased()}}</span>-->
-<!--                        </div>-->
-<!--                    </div>-->
-<!--                    <div class="product-price">-->
-<!--                        <h5>${{ "{:.2f}".format(cart_items[i].get_price()) }}</h5>-->
-<!--                    </div>-->
-<!--                </div>-->
+
                 {% endfor %}
 
                 <div class="mt-5 amount row">
-                    <div class="d-flex justify-content-center col-md-6"><img src="data:image/png;base64, {{qr_code}}" height="150px" alt="QR Code For Checkout"></div>
+                    <div class="d-flex justify-content-center col-md-6"><img src="static/images/vala.png" height="150px" alt="QR Code For Checkout"></div>
                     <div class="col-md-6">
                         <div class="billing">
-                            <div class="d-flex justify-content-between"><span>Subtotal</span><span class="font-weight-bold">${{"{:.2f}".format(total)}}</span></div>
+                            <div class="d-flex justify-content-between"><span>Subtotal</span><span class="font-weight-bold">$0</span></div>
                             <div class="d-flex justify-content-between mt-2"><span>Shipping fee</span><span class="font-weight-bold">$0</span></div>
                             <div class="d-flex justify-content-between mt-2"><span>Tax</span><span class="font-weight-bold">$0</span></div>
                             <div class="d-flex justify-content-between mt-2"><span class="text-success">Discount</span><span class="font-weight-bold text-success">$0</span></div>
                             <hr>
-                            <div class="d-flex justify-content-between mt-1"><span class="font-weight-bold">Total</span><span class="font-weight-bold text-success">${{"{:.2f}".format(total)}}</span></div>
+                            <div class="d-flex justify-content-between mt-1"><span class="font-weight-bold">Total</span><span class="font-weight-bold text-success">$0</span></div>
                         </div>
                     </div>
                 </div><span class="d-block">Expected delivery date</span><span class="font-weight-bold text-success">{{ expected_delivery_date }}</span><span class="d-block mt-3 text-black-50 fs-15">We will be sending a shipping confirmation email when the item is shipped!</span>
@@ -58,11 +49,11 @@
                 <div class="d-flex justify-content-between align-items-center footer">
 
                     <div class="thanks"><span class="d-block font-weight-bold">Thanks for shopping</span><span>Swiss team</span></div>
-                    <a href="{{ url_for('Shopping_Cart') }}" class="btn btn-secondary"> <i class="fa fa-chevron-left"></i> Back To Cart </a>
+                    <a href="{{ url_for('checkout') }}" class="btn btn-secondary"> <i class="fa fa-chevron-left"></i> Back To Cart </a>
                     <div class="d-flex flex-column justify-content-end align-items-end">
 
-                        <form method="POST" action="{{ url_for('Purchase_Item') }}">
-                        <button type="submit" href="#" class="btn btn-primary float-md-right" {% if cart_items|length == 0 %} disabled {% endif %}>{% if cart_items|length == 0 %}Your Cart is Empty {% else %} Confirm Order {% endif %} <i class="fa fa-chevron-right"></i> </button>
+                        <form method="POST" action="{{ url_for('market') }}">
+                        <button type="submit"  class="btn btn-primary float-md-right"> Confirm Order <i class="fa fa-chevron-right"></i> </button>
                         </form>
 
                     </div>

@@ -22,7 +22,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from validations import *
 from verify import *
-# import stripe
+import stripe
 
 
 app = Flask(__name__)
@@ -41,7 +41,7 @@ app.config['RECAPTCHA_PUBLIC_KEY'] = "6Ldzgu0gAAAAAKF5Q8AdFeTRJpvl5mLBncz-dsBv"
 app.config['RECAPTCHA_PRIVATE_KEY'] = "6Ldzgu0gAAAAANuXjmXEv_tLJLQ_s7jtQV3rPwX2"
 app.config['STRIPE_PUBLIC_KEY'] = 'pk_test_51LM6HwJDutS1IqmOR34Em3mZeuTsaUwAaUp40HLvcwrQJpUR5bR60V1e3kkwugBz0A8xAuXObCpte2Y0M251tBeD00p16YXMgE'
 app.config['STRIPE_SECRET_KEY'] = 'sk_test_51LM6HwJDutS1IqmOFhsHKYQcSM2OEF8znqltmmy2vcQCkRUMiKyJrQunP0OlJji6Nlg142NVZ8CpTaMJgZLzzucx00tx6FdjY0'
-# stripe.api_key = app.config['STRIPE_SECRET_KEY']
+stripe.api_key = app.config['STRIPE_SECRET_KEY']
 
 
 
@@ -152,7 +152,7 @@ def login():
                     session['name'] = account['full_name']
                     return redirect(url_for('admins'))
     else:
-        flash('Incorrect username or Password')
+        flash('Incorrect username or Password',category='danger')
     return render_template('login.html', form=form)
 
 @app.route('/logout')
@@ -620,9 +620,6 @@ def update_products(id):
         return redirect(url_for('products'))
 
 
-
-
-
 @app.route('/market')
 def market():
     try:
@@ -707,6 +704,28 @@ def delete_checkout_products(id):
         cursor.close()
         db.connection.close()
         return redirect(url_for('checkout'))
+
+@app.route('/orders')
+def orders():
+    global payment
+    global shopping
+    try:
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        if cursor:
+            cursor.execute('SELECT * FROM shopping_cart')
+            shopping = cursor.fetchall()
+            cursor.execute('SELECT * FROM payment')
+            payment = cursor.fetchall()
+    except IOError:
+        print('Database problem!')
+    except Exception as e:
+        print(f'Error while connecting to MySQL,{e}')
+    finally:
+        if cursor:
+            cursor.close()
+    return render_template('receipt.html',shopping=shopping, payment=payment)
+
+
 
 @app.route('/index')
 def index():
