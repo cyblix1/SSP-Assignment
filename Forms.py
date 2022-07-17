@@ -13,6 +13,7 @@ from flask_wtf.file import FileField
 import mysql.connector
 from mysql.connector import Error
 from configparser import ConfigParser
+import bcrypt
 
 #configuration files
 file = 'config.properities'
@@ -24,24 +25,27 @@ RECAPTCHA_PRIVATE_KEY = "6Ldzgu0gAAAAANuXjmXEv_tLJLQ_s7jtQV3rPwX2"
 
 
 class checks_exists:
-    def check_staff_email(self,email_address_to_check):
+    def check_staff_email(email_address_to_check):
         try:
             connection = mysql.connector.connect(host=config['account']['host'],user=config['account']['user'],database=config['account']['db'],password=config['account']['password'])
             if connection.is_connected(): 
                 cursor = connection.cursor()
                 cursor.execute('SELECT * FROM staff_email_hash ')
                 all_staff = cursor.fetchall()
-                existing_email = cursor.fetchone()
-                if existing_email:
-                    return "Email aready exists, please login!"
-                else:
-                    pass
+                for staff in all_staff:
+                    if bcrypt.checkpw(email_address_to_check.encode(),staff['email_hash']):
+                        #if staff exists
+                        return "Email aready exists, please login!"
         except Error as e:
             print('Database Error!',{e})      
         finally:
             if connection.is_connected():
                 cursor.close()
                 connection.close() 
+        return False
+
+
+        
     def check_customer_email(self,email_address_to_check):
         try:
             connection = mysql.connector.connect(host=config['account']['host'],user=config['account']['user'],database=config['account']['db'],password=config['account']['password'])
