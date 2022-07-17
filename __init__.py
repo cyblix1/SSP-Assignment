@@ -25,7 +25,7 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from validations import *
 #from verify import *
 bcrypt = Bcrypt()
-# import stripe
+import stripe
 
 
 app = Flask(__name__)
@@ -44,7 +44,7 @@ app.config['RECAPTCHA_PUBLIC_KEY'] = "6Ldzgu0gAAAAAKF5Q8AdFeTRJpvl5mLBncz-dsBv"
 app.config['RECAPTCHA_PRIVATE_KEY'] = "6Ldzgu0gAAAAANuXjmXEv_tLJLQ_s7jtQV3rPwX2"
 app.config['STRIPE_PUBLIC_KEY'] = 'pk_test_51LM6HwJDutS1IqmOR34Em3mZeuTsaUwAaUp40HLvcwrQJpUR5bR60V1e3kkwugBz0A8xAuXObCpte2Y0M251tBeD00p16YXMgE'
 app.config['STRIPE_SECRET_KEY'] = 'sk_test_51LM6HwJDutS1IqmOFhsHKYQcSM2OEF8znqltmmy2vcQCkRUMiKyJrQunP0OlJji6Nlg142NVZ8CpTaMJgZLzzucx00tx6FdjY0'
-# stripe.api_key = app.config['STRIPE_SECRET_KEY']
+stripe.api_key = app.config['STRIPE_SECRET_KEY']
 
 
 
@@ -565,24 +565,22 @@ def products():
 @app.route('/create_products', methods=['POST','GET'])
 def create_products():
     form = Create_Products()
-    if form.validate_on_submit():
-        id = uuid.uuid4()
-        # need to change manually LMAO
-        name = form.product_name.data
-        price = form.price.data
-        description = form.description.data
+    try:
+        if form.validate_on_submit():
+            id = uuid.uuid4()
+            name = form.product_name.data
+            price = form.price.data
+            description = form.description.data
+            cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+            cursor.execute('INSERT INTO products VALUES (%s, %s, %s, %s)', (id,name,price,description))
+            db.connection.commit()
+            flash("Product Added Successfully!",category="success")
+            return redirect(url_for('products'))
 
-        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute('INSERT INTO products VALUES (%s, %s, %s, %s)', (id,name,price,description))
-        db.connection.commit()
-        flash("Employee Added Successfully!",category="success")
+    except Exception :
+        flash("Please LOG IN!", category="error")
+        return redirect(url_for('login'))
 
-        return redirect(url_for('products'))
-
-    elif request.method == 'POST':
-        msg = 'Please fill out the form !'
-
-    return render_template('AddItem.html',add_item_form = form)
 
 @app.route('/products/delete_products/<id>/',  methods=['POST'])
 def delete_products(id):
@@ -629,22 +627,27 @@ def update_products(id):
         db.connection.close()
         return redirect(url_for('products'))
 
-
 @app.route('/market')
 def market():
-    try:
-        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        if cursor:
-            cursor.execute('SELECT * FROM products')
-            products = cursor.fetchall()
-    except IOError:
-        print('Database problem!')
-    except Exception as e:
-        print(f'Error while connecting to MySQL,{e}')
-    finally:
-        if cursor:
-            cursor.close()
-    return render_template('market.html', items = products  )
+    if 'loggedin' in session:
+        try:
+            cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+            if cursor:
+                cursor.execute('SELECT * FROM products')
+                products = cursor.fetchall()
+                cursor.execute('SELECT * FROM shopping_cart')
+                shopping_cart = cursor.fetchall()
+        except IOError:
+            print('Database problem!')
+        except Exception as e:
+            print(f'Error while connecting to MySQL,{e}')
+        finally:
+            if cursor:
+                cursor.close()
+        return render_template('market.html', items=products, cart = shopping_cart,id=session['id'], name=session['name'])
+    else:
+        flash("Please LOG IN!", category="error")
+        return redirect(url_for('login'))
 
 @app.route('/add_to_checkout', methods=['POST'])
 def add_to_checkout():
@@ -659,34 +662,37 @@ def add_to_checkout():
 
     return redirect(url_for('checkout'))
 
-@app.route('/checkout', methods=['POST','GET'])
+
+@app.route('/checkout', methods=['POST', 'GET'])
 def checkout():
-    session = stripe.checkout.Session.create(
-        payment_method_types=['card'],
-        line_items=[{
-            'price': 'price_1LMQn6JDutS1IqmOYxizfOAB',
-            'quantity': 1,
-        }],
-        mode='payment',
-        success_url=url_for('orders', _external=True),
-        cancel_url=url_for('market', _external=True),
-    )
-
-    try:
-        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        if cursor:
-            cursor.execute('SELECT * FROM shopping_cart')
-            products = cursor.fetchall()
-    except IOError:
-        print('Database problem!')
-    except Exception as e:
-        print(f'Error while connecting to MySQL,{e}')
-    finally:
-        if cursor:
-            cursor.close()
-    return render_template('checkout.html',cart_items = products,checkout_session_id=session['id'],
-                           checkout_public_key=app.config['STRIPE_PUBLIC_KEY'])
-
+    if 'loggedin' in session:
+        session_checkout = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=[{
+                'price': 'price_1LMQn6JDutS1IqmOYxizfOAB',
+                'quantity': 1,
+            }],
+            mode='payment',
+            success_url=url_for('orders', _external=True),
+            cancel_url=url_for('market', _external=True),
+        )
+        try:
+            cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+            if cursor:
+                cursor.execute('SELECT * FROM shopping_cart')
+                products = cursor.fetchall()
+        except IOError:
+            print('Database problem!')
+        except Exception as e:
+            print(f'Error while connecting to MySQL,{e}')
+        finally:
+            if cursor:
+                cursor.close()
+        return render_template('checkout.html', cart_items=products, checkout_session_id=session_checkout['id'],
+                               checkout_public_key=app.config['STRIPE_PUBLIC_KEY'])
+    else:
+        flash("Please LOG IN!", category="error")
+        return redirect(url_for('login'))
 
 @app.route('/payment1', methods=['POST','GET'])
 def payment():

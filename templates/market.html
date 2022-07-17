@@ -187,8 +187,6 @@
                 </button>
             </div>
             <div class="modal-body">
-                <hr>
-                <p>ID: {{i.product_id}}</p>
                 <p>Name: {{i.product_name}}</p>
                 <p>Description: {{i.description}}</p>
                 <p>Price: ${{ "{:.2f}".format(i.price) }}</p>
@@ -218,7 +216,6 @@
                 <form method="POST" action="{{url_for('add_to_checkout')}}" >
                 <div class="modal-body">
                     <hr>
-                    <p>ID: {{i.product_id}}</p>
                     <p>Name: {{i.product_name}}</p>
                     <p>Description: {{i.description}}</p>
                     <p>Price: ${{ "{:.2f}".format(i.price) }}</p>
@@ -227,10 +224,13 @@
                   </div>
 
                    <div class="modal-footer">
-                    <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
                     <input id="uuid" name="product-value" type="hidden" value="{{i.product_id}}">
-                    <button class="btn btn-success" type="submit">Add to Cart</button>
-
+                    {% if i not in cart %}
+                       <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
+                        <button class="btn btn-success" type="submit">Add to Cart</button>
+                    {% elif i in cart %}
+                       <button class="btn btn-secondary" type="button" data-dismiss="modal">IN SHOPPING CART</button>
+                    {% endif %}
                     </div>
                 </form>
 
