@@ -76,6 +76,8 @@ def register():
         if password != password2:
             flash('passwords do not match',category='danger')
             return redirect(url_for('register'))
+        elif password == password2:
+            flash('Account created successfully!')
         email = form.email.data
         time = datetime.utcnow()
         password_age=4
