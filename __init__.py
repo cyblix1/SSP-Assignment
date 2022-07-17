@@ -1,3 +1,4 @@
+from distutils.util import byte_compile
 from mimetypes import init
 from tkinter import Image
 from flask import Flask, render_template, request, make_response, redirect, url_for, session,flash, json
@@ -45,7 +46,23 @@ app.permanent_session_lifetime = timedelta(minutes=10)
 db = MySQL(app)
 
 
-
+class checks_exists:
+    def check_staff_email(email_address_to_check):
+        try:
+            cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+            cursor.execute('SELECT email_hash FROM staff_email_hash')
+            all_staff = cursor.fetchall()
+        except Error as e:
+            print('Database Error!',{e})      
+        finally:
+            cursor.close()
+            for staff in all_staff:
+                if bcrypt.checkpw(email_address_to_check.encode(),staff['email_hash'].encode()) == True:
+                    #if staff exists
+                    return True
+                else:
+                    return False
+   
 @app.route('/register',methods =['POST','GET'])
 def register():
     form = Register_Users()
@@ -87,40 +104,50 @@ def login():
         #check if its staff account
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
         #decryption later + salted hashing + login history
-
-
-
-
-        cursor.execute('SELECT * FROM staff_accounts WHERE email = %s',[email])
-        staff = cursor.fetchone()
-        if staff:
-            id = staff['staff_id']
-            cursor.execute('SELECT * FROM staff_key WHERE staff_id = %s',[id])
-
-
-
-            session['staffloggedin'] = True
-            session['id'] = account['staff_id']
-            session['name'] = account['full_name'] 
-            #to admin page Fix later 
-            return redirect(url_for('admins'))
-        elif staff is None:
-            # Check if account exists using MySQL
-            cursor.execute('SELECT * FROM customer_accounts WHERE email = %s AND hashed_pw = %s',[email,password])
-            # Fetch one record and return result
+        # Check if account exists using MySQL
+        cursor.execute('SELECT * FROM customer_accounts WHERE email = %s AND hashed_pw = %s',[email,password])
+        # Fetch one record and return result
+        account = cursor.fetchone()
+        if account:
+            # Create session data, we can access this data in other routes
+            session['loggedin'] = True
+            session['id'] = account['customer_id']
+            session['name'] = account['full_name']
+            # Redirect to home page
+            return redirect(url_for('home'))
+        else:
+            #check for staff account 
+            cursor.execute('SELECT * FROM staff_email_hash')
+            staff_accounts = cursor.fetchall()
+            for staff in staff_accounts:
+                #check if account exists 
+                hashed_email = staff['email_hash'].encode()
+                if bcrypt.checkpw(password.encode(),hashed_email):
+                    break
+                else:
+                    pass
+            staff_id = staff['staff_id']
+            #decryption of email
+            #get key
+            cursor.execute('SELECT * FROM staff_key WHERE staff_id = %s',[staff_id])
+            columns = cursor.fetchone()
+            staff_key = columns['staff_key']
+            #Get account information
+            cursor.execute('SELECT * FROM staff_accounts WHERE staff_id = %s',[staff_id])
             account = cursor.fetchone()
-            if account:
-                # Create session data, we can access this data in other routes
-                session['loggedin'] = True
-                session['id'] = account['customer_id']
-                session['name'] = account['full_name']
-                # Redirect to home page
-                return redirect(url_for('home'))
-            else:
-                # Account doesn’t exist or username/password incorrect
-                # Show the login form with message (if any)
-                flash('Incorrect username or Password')
-    
+            #check password hash
+            if account and bcrypt.checkpw(password.encode(),account['hashed_pw'].encode()):
+                #decrypt email
+                fernet = Fernet(staff_key)
+                encrypted_email = account['email']
+                decrypted = fernet.decrypt(encrypted_email.encode())
+                if decrypted:
+                    session['staffloggedin'] = True
+                    session['id'] = staff_id
+                    session['name'] = account['full_name']
+                    return redirect(url_for('admins'))
+    else:
+        flash('Incorrect username or Password')
     return render_template('login.html', form=form)
 
 @app.route('/logout')
@@ -228,9 +255,10 @@ def create_admin():
     password2 = form.password2.data
     date_created = datetime.utcnow()
     #Server side validations
-    # if checks_exists.check_staff_email():
-    #     pass 
-    if password != password2:
+    if checks_exists.check_staff_email(email) == False:
+        flash('Email Exists, please login',category="danger")
+        return redirect(url_for('admins'))
+    elif password != password2:
         flash('passwords does not match',category="danger")
         return redirect(url_for('admins'))
     elif Validations.validate_password(password) == False:
