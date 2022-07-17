@@ -131,6 +131,8 @@ def login():
             for staff in all_staff:
                 if bcrypt.checkpw(email.encode(),staff['email_hash'].encode()):
                     continue
+                flash('Account does not exist, please create one!')
+                return redirect(url_for('login'))
             staff_id = staff['staff_id']
             #decryption of email
             #get key
@@ -143,16 +145,16 @@ def login():
             #check password hash
             if account and bcrypt.checkpw(password.encode(),account['hashed_pw'].encode()):
                 #decrypt email
-                fernet = Fernet(staff_key)
+                f = Fernet(staff_key)
                 encrypted_email = account['email']
-                decrypted = fernet.decrypt(encrypted_email.encode())
+                decrypted = f.decrypt(encrypted_email.encode())
                 if decrypted:
                     session['staffloggedin'] = True
                     session['id'] = staff_id
                     session['name'] = account['full_name']
                     return redirect(url_for('admins'))
-    else:
-        flash('Incorrect username or Password',category='danger')
+            else:
+                flash('Incorrect username or Password',category='danger')
     return render_template('login.html', form=form)
 
 @app.route('/logout')
