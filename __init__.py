@@ -130,7 +130,7 @@ def login():
             #check if email exists
             for staff in all_staff:
                 if bcrypt.checkpw(email.encode(),staff['email_hash'].encode()):
-                    break
+                    break    
             staff_id = staff['staff_id']
             #decryption of email
             #get key
