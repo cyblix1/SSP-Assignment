@@ -23,26 +23,6 @@ config.read(file)
 RECAPTCHA_PUBLIC_KEY = "6Ldzgu0gAAAAAKF5Q8AdFeTRJpvl5mLBncz-dsBv"
 RECAPTCHA_PRIVATE_KEY = "6Ldzgu0gAAAAANuXjmXEv_tLJLQ_s7jtQV3rPwX2"
 
-
-class checks_exists:
-    def check_customer_email(self,email_address_to_check):
-        try:
-            connection = mysql.connector.connect(host=config['account']['host'],user=config['account']['user'],database=config['account']['db'],password=config['account']['password'])
-            if connection.is_connected(): 
-                cursor = connection.cursor()
-                cursor.execute('SELECT * FROM staff_accounts WHERE email = %s', [email_address_to_check])
-                existing_email = cursor.fetchone()
-                if existing_email:
-                    raise ValidationError('Email Aready exists! Please use another!')
-                else:
-                    pass
-        except Error as e:
-            print('Database Error!',{e})      
-        finally:
-            if connection.is_connected():
-                cursor.close()
-                connection.close() 
-
                 
 class CreateAdminForm(FlaskForm):
     name = StringField("Name", validators=[Length(min=1, max=50),DataRequired()])

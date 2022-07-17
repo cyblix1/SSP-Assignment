@@ -1,3 +1,4 @@
+from distutils import ccompiler
 from distutils.util import byte_compile
 from mimetypes import init
 from tkinter import Image
@@ -22,7 +23,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from validations import *
 from verify import *
-import stripe
+# import stripe
 
 
 app = Flask(__name__)
@@ -41,7 +42,7 @@ app.config['RECAPTCHA_PUBLIC_KEY'] = "6Ldzgu0gAAAAAKF5Q8AdFeTRJpvl5mLBncz-dsBv"
 app.config['RECAPTCHA_PRIVATE_KEY'] = "6Ldzgu0gAAAAANuXjmXEv_tLJLQ_s7jtQV3rPwX2"
 app.config['STRIPE_PUBLIC_KEY'] = 'pk_test_51LM6HwJDutS1IqmOR34Em3mZeuTsaUwAaUp40HLvcwrQJpUR5bR60V1e3kkwugBz0A8xAuXObCpte2Y0M251tBeD00p16YXMgE'
 app.config['STRIPE_SECRET_KEY'] = 'sk_test_51LM6HwJDutS1IqmOFhsHKYQcSM2OEF8znqltmmy2vcQCkRUMiKyJrQunP0OlJji6Nlg142NVZ8CpTaMJgZLzzucx00tx6FdjY0'
-stripe.api_key = app.config['STRIPE_SECRET_KEY']
+# stripe.api_key = app.config['STRIPE_SECRET_KEY']
 
 
 
@@ -53,14 +54,15 @@ class checks_exists:
     def check_staff_email(email_address_to_check):
         try:
             cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-            cursor.execute('SELECT email_hash FROM staff_email_hash')
+            cursor.execute('SELECT * FROM staff_email_hash')
             all_staff = cursor.fetchall()
         except Error as e:
             print('Database Error!',{e})      
         finally:
             cursor.close()
             for staff in all_staff:
-                if bcrypt.checkpw(email_address_to_check.encode(),staff['email_hash'].encode()) == True:
+                staff_email_hash = (staff['email_hash']).encode()
+                if bcrypt.checkpw(email_address_to_check.encode(),staff_email_hash):
                     #if staff exists
                     return True
                 else:
@@ -122,15 +124,13 @@ def login():
             return redirect(url_for('home'))
         else:
             #check for staff account 
+            cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
             cursor.execute('SELECT * FROM staff_email_hash')
-            staff_accounts = cursor.fetchall()
-            for staff in staff_accounts:
-                #check if account exists 
-                hashed_email = staff['email_hash'].encode()
-                if bcrypt.checkpw(password.encode(),hashed_email):
-                    break
-                else:
-                    pass
+            all_staff = cursor.fetchall()
+            #check if email exists
+            for staff in all_staff:
+                if bcrypt.checkpw(email.encode(),staff['email_hash'].encode()):
+                    continue
             staff_id = staff['staff_id']
             #decryption of email
             #get key
@@ -260,10 +260,16 @@ def create_admin():
     password2 = form.password2.data
     date_created = datetime.utcnow()
     #Server side validations
-    if checks_exists.check_staff_email(email) == False:
-        flash('Email Exists, please login',category="danger")
-        return redirect(url_for('admins'))
-    elif password != password2:
+    cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor.execute('SELECT * FROM staff_email_hash')
+    all_staff = cursor.fetchall()
+    #check if email exists
+    for staff in all_staff:
+        if bcrypt.checkpw(email.encode(),staff['email_hash'].encode()):
+            flash('Email exists!',category="danger")
+            return redirect(url_for('admins'))
+        continue
+    if password != password2:
         flash('passwords does not match',category="danger")
         return redirect(url_for('admins'))
     elif Validations.validate_password(password) == False:
@@ -280,9 +286,6 @@ def create_admin():
         #hashing email to find it later in login 
         email_salt = bcrypt.gensalt()
         hashed_email = bcrypt.hashpw(email.encode(),email_salt)
-        #cursor
-        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        
         #encryption of email using password, getting key using salt
         encoded_password = password.encode()
         salt = b'\x829\xf0\x9e\x0e\x8bl;\x1a\x95\x8bB\xf9\x16\xd4\xe2'
