@@ -127,20 +127,12 @@ def login():
             cursor.execute('SELECT * FROM staff_email_hash')
             all_staff = cursor.fetchall()
             #check if email exists
-            l = len(all_staff)
             id = 0
-            l2 = 0
             for staff in all_staff: 
                 hash = (staff['email_hash']).encode()
                 if bcrypt.checkpw(email.encode(),hash):
                     id = staff['staff_id']
                     break
-                elif l2 > l:
-                    id == False
-                    break
-                else:
-                    l2+=1
-        
             #decryption of email
             #get key
             if id == 0:
@@ -163,7 +155,6 @@ def login():
                         session['id'] = id
                         session['name'] = staff['full_name']
                         return redirect(url_for('admins'))
-           
     return render_template('login.html', form=form)
 
 @app.route('/logout')
