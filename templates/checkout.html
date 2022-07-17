@@ -2,6 +2,19 @@
 {% block title %}Shopping Cart{% endblock %}
 
 {% block content %}
+
+{% with messages = get_flashed_messages() %}
+    {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-success alert-dismissable" role="alert">
+                    <button type="button" class="close" data-dismiss="alert" aria-label="close">
+                        <span aria-hidden="true">x</span>
+                    </button>
+                    {{message}}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith%}
 <section class="section-content padding-y">
 <div class="container" style="margin: 100px auto 100px auto;">
 
@@ -57,9 +70,11 @@
 </tbody>
 </table>
 
+
+
 <div class="card-body border-top">
 {% if cart_items|length > 0  %}
-    <a href="{{ url_for('index') }}" class="btn btn-primary float-md-right"> <i class="fa fa-chevron-right"></i> Proceed To Checkout (STRIPE) </a>
+    <a href="#" id="buy_now_btn" class="btn btn-primary float-md-right"><i class="fa fa-chevron-right"></i> Proceed To Checkout (STRIPE) </a>
     <a href="{{ url_for('payment') }}" class="btn btn-primary float-md-right"> <i class="fa fa-chevron-right"></i> Proceed To Checkout (FORM) </a>
     <a href="{{ url_for('market') }}" class="btn btn-light"> <i class="fa fa-chevron-left"></i> Continue shopping </a>
 {% elif cart_items|length == 0 %}
@@ -70,38 +85,21 @@
 
 <div class="alert alert-success mt-3">
     <p class="icontext"><i class="icon text-success fa fa-truck"></i> Free Delivery within 1-2 weeks</p>
-</div>
-
+</div>{% for i in cart_items %}
     </main> <!-- col.// -->
     <aside class="col-md-3" style="box-shadow: rgb(209, 209, 209) 1px 1px 25px 1px; border-top: 10px solid #2A27A2;">
         <div class="card mb-3">
-<!--            <div class="card-body">-->
-<!--            <form>-->
-<!--                <div class="form-group">-->
-<!--                    <label>Have coupon?</label>-->
-<!--                    <div class="input-group">-->
-<!--                        <input type="text" class="form-control" name="" placeholder="Coupon code">-->
-<!--                        <span class="input-group-append">-->
-<!--                            <button class="btn btn-primary">Apply</button>-->
-<!--                        </span>-->
-<!--                    </div>-->
-<!--                </div>-->
-<!--            </form>-->
-<!--            </div> &lt;!&ndash; card-body.// &ndash;&gt;-->
+
         </div>  <!-- card .// -->
         <div class="card">
             <div class="card-body">
                     <dl class="dlist-align">
-                      <dt>Total price:</dt>
-                      <dd class="text-right">{{cart_items.price}}</dd>
-                    </dl>
-                    <dl class="dlist-align">
                       <dt>Total:</dt>
-                      <dd class="text-right  h5"><strong>$0</strong></dd>
+                      <dd class="text-right  h5"><strong>${{i.price}}</strong></dd>
                     </dl>
                     <hr>
                     <p class="text-center mb-3">
-                        <img src="../static/images/Swiss_Logo.png" height="26">
+                        <img src="../static/images/vala.png" height="26">
                     </p>
 
             </div> <!-- card-body.// -->
@@ -111,6 +109,7 @@
 
 </div> <!-- container .//  -->
 </section>
+{% endfor %}
 
 <!-- More Info Modal -->
 {% for i in cart_items %}
@@ -139,6 +138,13 @@
 
             </div>
 </div>
+
+      <script src="https://js.stripe.com/v3/"></script>
+      <script>
+        const checkout_public_key = '{{checkout_public_key}}';
+        const checkout_session_id = '{{checkout_session_id}}';
+      </script>
+      <script src="{{ url_for('static', filename='script-no-ajax.js') }}"></script>
 
 {% endfor %}
 

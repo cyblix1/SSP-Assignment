@@ -646,14 +646,25 @@ def add_to_checkout():
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute('INSERT INTO shopping_cart SELECT product_id, product_name, price , description FROM products WHERE product_id = %s', [id])
         db.connection.commit()
-        flash("Employee Added Successfully!",category="success")
+        flash("Product Added Successfully!",category="success")
     except:
-        flash("Employee Added NO!", category="success")
+        flash("No Items were added!", category="error")
 
     return redirect(url_for('checkout'))
 
 @app.route('/checkout', methods=['POST','GET'])
 def checkout():
+    session = stripe.checkout.Session.create(
+        payment_method_types=['card'],
+        line_items=[{
+            'price': 'price_1LMQn6JDutS1IqmOYxizfOAB',
+            'quantity': 1,
+        }],
+        mode='payment',
+        success_url=url_for('orders', _external=True),
+        cancel_url=url_for('market', _external=True),
+    )
+
     try:
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
         if cursor:
@@ -666,10 +677,11 @@ def checkout():
     finally:
         if cursor:
             cursor.close()
-    return render_template('checkout.html',cart_items = products)
+    return render_template('checkout.html',cart_items = products,checkout_session_id=session['id'],
+                           checkout_public_key=app.config['STRIPE_PUBLIC_KEY'])
 
 
-@app.route('/payment', methods=['POST','GET'])
+@app.route('/payment1', methods=['POST','GET'])
 def payment():
     form = Add_Card_Details()
     if request.method == 'POST':
@@ -686,6 +698,7 @@ def payment():
 
 
     return render_template('payment.html', form =form)
+
 
 @app.route('/checkout/delete_checkout_products/<id>/',  methods=['POST'])
 def delete_checkout_products(id):
@@ -728,22 +741,27 @@ def orders():
             cursor.close()
     return render_template('receipt.html',shopping=shopping, payment=payment)
 
-
-
-@app.route('/index')
-def index():
-    session = stripe.checkout.Session.create(
-        payment_method_types=['card'],
-        line_items=[{
-            'price': 'price_1LMQn6JDutS1IqmOYxizfOAB',
-            'quantity': 1,
-        }],
-        mode='payment',
-        success_url=url_for('index', _external=True) ,
-        cancel_url=url_for('index', _external=True),
-    )
-
-    return render_template('index.html', checkout_session_id=session['id'], checkout_public_key=app.config['STRIPE_PUBLIC_KEY'])
+@app.route('/orders/delete_order',  methods=['POST'])
+def delete_order():
+    id = request.form['product-checkout']
+    try:
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute('SELECT * FROM shopping_cart WHERE product_id = %s', [id])
+        account = cursor.fetchone()
+        if account:
+            cursor.execute('DELETE FROM shopping_cart WHERE product_id = %s', [id])
+            db.connection.commit()
+            flash("Purchase successfully",category="success")
+        else:
+            flash("Something went wrong, please try again!",category="danger")
+    except IOError:
+        print('Database problem!')
+    except Exception as e:
+        print(f'Error while connecting to MySQL,{e}')
+    finally:
+        cursor.close()
+        db.connection.close()
+        return redirect(url_for('market'))
 
 # Invalid URL
 @app.errorhandler(404)
