@@ -6,7 +6,7 @@ from flask import Flask
 from flask_wtf import FlaskForm
 from flask_wtf.recaptcha import RecaptchaField
 from wtforms import StringField, SubmitField, IntegerField, PasswordField, BooleanField, ValidationError, TextAreaField, EmailField, SelectField,DateField
-from wtforms.validators import DataRequired, EqualTo, Length,ValidationError, NumberRange
+from wtforms.validators import DataRequired, EqualTo, Length,ValidationError
 from wtforms.widgets import TextArea
 from flask_ckeditor import CKEditorField
 from flask_wtf.file import FileField
@@ -101,7 +101,6 @@ class Register_Users(FlaskForm):
     password2 = PasswordField("Confirm:",validators=[DataRequired(message ="no password")])
     recaptcha = RecaptchaField(validators=[DataRequired(message="Click here")])
     submit = SubmitField("Register")
-
 
 class Create_Products(FlaskForm):
     product_name = StringField(label='Name', validators=[Length(min=1, max=100), DataRequired()])

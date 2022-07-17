@@ -1,5 +1,5 @@
 {% extends "base_admin.html" %}
-{% block title %} Admins {% endblock %}
+{% block title %} Products {% endblock %}
 <!-- Custom styles for this page -->
 {% block content %}
 <!-- Begin Page Content -->
@@ -91,8 +91,9 @@
                                 <button type="button" class="btn btn-info btn-sm" data-toggle="modal" data-target="#admininfo{{p.product_id}}">Info</button>
                                 <button type="button" class="btn btn-warning btn-sm">History</button>
                                 <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#productsedit{{p.product_id}}" >Edit</button>
-                                <a href="/products/delete_products/{{p.product_id}}" class="btn btn-danger btn-xs btn-sm" onclick="return confirm('Are you sure to delete?')">Delete</a>
-
+                                <form action="{{ url_for('delete_products',id=p.product_id)}}", method="POST">
+                                    <button type="submit" class="btn btn-danger btn-xs btn-sm" onclick="return confirm('Are you sure to delete?')">Delete</button>
+                                </form>
                             </td>
                         </tr>
                         <!-- start of modal (view Information) -->
@@ -130,11 +131,9 @@
                                             <span aria-hidden="true">×</span>
                                         </button>
                                     </div>
-                                        <form action="{{url_for('update_products')}}" method="POST">
+                                        <form action="{{url_for('update_products' , id=p.product_id)}}" method="POST">
+
                                             <div class="modal-body">
-                                                    <div class="form-group">
-                                                        {{ form2.product_id(class='form-control', placeholder='Name',value=p.product_id) }}
-                                                    </div>
                                                     <div class="form-group">
                                                         {{ form.product_name(class='form-control', placeholder='Email Address', value=p.product_name) }}
                                                     </div>
@@ -142,11 +141,11 @@
                                                         {{ form2.price(class='form-control',  placeholder='Phone Number',value=p.price) }}
                                                     </div>
                                                     <div class="form-group">
-                                                        {{ form2.description(class='form-control',  placeholder='Description',value=p.description) }}
+                                                        {{ form2.description(class='form-control', value=p.description, placeholder='Description') }}
                                                     </div>
                                             </div>
                                             <div class="modal-footer">
-                                                <button class="btn btn-success" type="button" data-dismiss="modal">Change Password</button>
+                                                <button class="btn btn-success" type="button" data-dismiss="modal">Exit</button>
                                                 {{ form2.submit(class="btn btn-primary" ,type="submit") }}
                                             </div>
                                         </form>

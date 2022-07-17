@@ -487,15 +487,6 @@ def update_gender(gender):
     pass
 
 
-
-
-
-
-
-
-
-
-
 @app.route('/products')
 def products():
     form = Create_Products()
@@ -530,27 +521,23 @@ def create_products():
         db.connection.commit()
         flash("Employee Added Successfully!",category="success")
 
-        return redirect(url_for('home'))
+        return redirect(url_for('products'))
 
     elif request.method == 'POST':
         msg = 'Please fill out the form !'
 
     return render_template('AddItem.html',add_item_form = form)
 
-@app.route('/products/delete_products/<int:id>/',  methods=['GET','POST'])
+@app.route('/products/delete_products/<id>/',  methods=['POST'])
 def delete_products(id):
     try:
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        #checks if exists
         cursor.execute('SELECT * FROM products WHERE product_id = %s', [id])
         account = cursor.fetchone()
         if account:
             cursor.execute('DELETE FROM products WHERE product_id = %s', [id])
             db.connection.commit()
-            flash("Employee deleted successfully",category="success")
-        #user no exists
-        elif account is None:
-            flash("Employee does not exist",category="danger")
+            flash("Product deleted successfully",category="success")
         else:
             flash("Something went wrong, please try again!",category="danger")
     except IOError:
@@ -562,10 +549,10 @@ def delete_products(id):
         db.connection.close()
         return redirect(url_for('products'))
 
-@app.route('/products/update_products', methods=['POST'])
-def update_products():
+
+@app.route('/products/update_products/<id>/', methods=['POST'])
+def update_products(id):
     form = Update_Products()
-    id = form.product_id.data
     name = form.product_name.data
     price = form.price.data
     description = form.description.data
@@ -574,7 +561,7 @@ def update_products():
         if cursor:
             cursor.execute('UPDATE products SET product_name = %s, price = %s, description =%s WHERE product_id = %s', (name,price,description,id))
             db.connection.commit()
-            flash("Employee updated successfully", category="success")
+            flash("Products updated successfully", category="success")
         else:
             flash('Something went wrong!')
     except IOError:
@@ -653,30 +640,6 @@ def payment():
 
 
     return render_template('payment.html', form =form)
-
-@app.route('/checkout/delete/<int:id>/', methods=['GET','POST'])
-def checkout_success(id):
-    try:
-        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        #checks if exists
-        cursor.execute('SELECT * FROM shopping_cart WHERE customer_id = %s', [id])
-        account = cursor.fetchone()
-        if account:
-            cursor.execute('DELETE FROM shopping_cart WHERE customer_id = %s', [id])
-            db.connection.commit()
-            flash("Check-Out successfully",category="success")
-        #user no exists
-        else:
-            flash("Something went wrong, please try again!",category="danger")
-    except IOError:
-        print('Database problem!')
-    except Exception as e:
-        print(f'Error while connecting to MySQL,{e}')
-    finally:
-        if cursor:
-            cursor.close()
-            db.connection.close()
-            return redirect(url_for('market'))
 
 
 # Invalid URL
