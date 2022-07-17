@@ -87,7 +87,7 @@ def register():
         print('INSERT INTO customer_accounts VALUES (NULL,%s,%s,%s,%s,%s)',(name,email,password,password_age,time,))
         cursor.execute('INSERT INTO customer_accounts VALUES (NULL,%s,%s,%s,%s,%s)',(name,email,password,password_age,time,))
         db.connection.commit()
-        return redirect(url_for('home'))
+        return redirect(url_for('login'))
 
     return render_template('register.html',form=form)
 
@@ -124,35 +124,46 @@ def login():
             return redirect(url_for('home'))
         else:
             #check for staff account 
-            cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
             cursor.execute('SELECT * FROM staff_email_hash')
             all_staff = cursor.fetchall()
             #check if email exists
-            for staff in all_staff:
-                if bcrypt.checkpw(email.encode(),staff['email_hash'].encode()):
-                    break    
-            staff_id = staff['staff_id']
+            l = len(all_staff)
+            id = 0
+            l2 = 0
+            for staff in all_staff: 
+                hash = (staff['email_hash']).encode()
+                if bcrypt.checkpw(email.encode(),hash):
+                    id = staff['staff_id']
+                    break
+                elif l2 > l:
+                    id == False
+                    break
+                else:
+                    l2+=1
+        
             #decryption of email
             #get key
-            cursor.execute('SELECT * FROM staff_key WHERE staff_id = %s',[staff_id])
-            columns = cursor.fetchone()
-            staff_key = columns['staff_key']
-            #Get account information
-            cursor.execute('SELECT * FROM staff_accounts WHERE staff_id = %s',[staff_id])
-            account = cursor.fetchone()
-            #check password hash
-            if account and bcrypt.checkpw(password.encode(),account['hashed_pw'].encode()):
-                #decrypt email
-                f = Fernet(staff_key)
-                encrypted_email = account['email']
-                decrypted = f.decrypt(encrypted_email.encode())
-                if decrypted:
-                    session['staffloggedin'] = True
-                    session['id'] = staff_id
-                    session['name'] = account['full_name']
-                    return redirect(url_for('admins'))
+            if id == 0:
+                flash('Invalid username or Password',category='danger')
             else:
-                flash('Incorrect username or Password',category='danger')
+                cursor.execute('SELECT staff_key FROM staff_key WHERE staff_id = %s',[id])
+                columns = cursor.fetchone()
+                staff_key = columns['staff_key']
+                #Get account information
+                cursor.execute('SELECT * FROM staff_accounts WHERE staff_id = %s',[id])
+                staff = cursor.fetchone()
+                #check password hash
+                if staff and bcrypt.checkpw(password.encode(),staff['hashed_pw'].encode()):
+                    #decrypt email
+                    f = Fernet(staff_key)
+                    encrypted_email = staff['email']
+                    decrypted = f.decrypt(encrypted_email.encode())
+                    if decrypted:
+                        session['staffloggedin'] = True
+                        session['id'] = id
+                        session['name'] = staff['full_name']
+                        return redirect(url_for('admins'))
+           
     return render_template('login.html', form=form)
 
 @app.route('/logout')
