@@ -29,10 +29,11 @@ class checks_exists:
             connection = mysql.connector.connect(host=config['account']['host'],user=config['account']['user'],database=config['account']['db'],password=config['account']['password'])
             if connection.is_connected(): 
                 cursor = connection.cursor()
-                cursor.execute('SELECT * FROM customer_accounts WHERE email = %s', [email_address_to_check])
+                cursor.execute('SELECT * FROM staff_email_hash ')
+                all_staff = cursor.fetchall()
                 existing_email = cursor.fetchone()
                 if existing_email:
-                    raise ValidationError('Email Aready exists! Please use another!')
+                    return "Email aready exists, please login!"
                 else:
                     pass
         except Error as e:

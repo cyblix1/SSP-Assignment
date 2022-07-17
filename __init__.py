@@ -227,7 +227,9 @@ def create_admin():
     password = form.password1.data
     password2 = form.password2.data
     date_created = datetime.utcnow()
-    #Server side validations 
+    #Server side validations
+    # if checks_exists.check_staff_email():
+    #     pass 
     if password != password2:
         flash('passwords does not match',category="danger")
         return redirect(url_for('admins'))
