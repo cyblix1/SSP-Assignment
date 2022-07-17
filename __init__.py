@@ -21,6 +21,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from validations import *
 from verify import *
+import stripe
 
 
 app = Flask(__name__)
@@ -37,7 +38,9 @@ app.config['MYSQL_PASSWORD'] = config['account']['password']
 app.config['MYSQL_DB'] = config['account']['db']
 app.config['RECAPTCHA_PUBLIC_KEY'] = "6Ldzgu0gAAAAAKF5Q8AdFeTRJpvl5mLBncz-dsBv"
 app.config['RECAPTCHA_PRIVATE_KEY'] = "6Ldzgu0gAAAAANuXjmXEv_tLJLQ_s7jtQV3rPwX2"
-
+app.config['STRIPE_PUBLIC_KEY'] = 'pk_test_51LM6HwJDutS1IqmOR34Em3mZeuTsaUwAaUp40HLvcwrQJpUR5bR60V1e3kkwugBz0A8xAuXObCpte2Y0M251tBeD00p16YXMgE'
+app.config['STRIPE_SECRET_KEY'] = 'sk_test_51LM6HwJDutS1IqmOFhsHKYQcSM2OEF8znqltmmy2vcQCkRUMiKyJrQunP0OlJji6Nlg142NVZ8CpTaMJgZLzzucx00tx6FdjY0'
+stripe.api_key = app.config['STRIPE_SECRET_KEY']
 
 
 
@@ -654,6 +657,41 @@ def payment():
 
     return render_template('payment.html', form =form)
 
+@app.route('/checkout/delete_checkout_products/<id>/',  methods=['POST'])
+def delete_checkout_products(id):
+    try:
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute('SELECT * FROM shopping_cart WHERE product_id = %s', [id])
+        account = cursor.fetchone()
+        if account:
+            cursor.execute('DELETE FROM shopping_cart WHERE product_id = %s', [id])
+            db.connection.commit()
+            flash("Product deleted successfully",category="success")
+        else:
+            flash("Something went wrong, please try again!",category="danger")
+    except IOError:
+        print('Database problem!')
+    except Exception as e:
+        print(f'Error while connecting to MySQL,{e}')
+    finally:
+        cursor.close()
+        db.connection.close()
+        return redirect(url_for('checkout'))
+
+@app.route('/index')
+def index():
+    session = stripe.checkout.Session.create(
+        payment_method_types=['card'],
+        line_items=[{
+            'price': 'price_1LMQn6JDutS1IqmOYxizfOAB',
+            'quantity': 1,
+        }],
+        mode='payment',
+        success_url=url_for('index', _external=True) ,
+        cancel_url=url_for('index', _external=True),
+    )
+
+    return render_template('index.html', checkout_session_id=session['id'], checkout_public_key=app.config['STRIPE_PUBLIC_KEY'])
 
 # Invalid URL
 @app.errorhandler(404)

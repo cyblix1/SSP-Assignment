@@ -48,8 +48,9 @@
         </div> <!-- price-wrap .// -->
     </td>
     <td>
-    <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#productsedit{{i.product_id}}" >Edit</button>
-
+    <form action="{{ url_for('delete_checkout_products',id=i.product_id)}}", method="POST">
+        <button type="submit" class="btn btn-danger btn-xs btn-sm" onclick="return confirm('Are you sure to delete?')">Delete</button>
+    </form>
     </td>
 </tr>
 {% endfor %}
@@ -57,13 +58,12 @@
 </table>
 
 <div class="card-body border-top">
-    <form method="POST" action="{{ url_for('payment') }}">
-    <button type="submit" href="#" class="btn btn-primary float-md-right"> Proceed To Checkout <i class="fa fa-chevron-right"></i> </button>
-    </form>
-    <form method="POST" action="{{ url_for('home') }}">
-    <button type="submit" href="#" class="btn btn-secondary float-md-right" style="margin-right:10px"> Edit Cart <i class="fa fa-chevron-right"></i> </button>
-    </form>
-    <a href="{{ url_for('home') }}" class="btn btn-light"> <i class="fa fa-chevron-left"></i> Continue shopping </a>
+{% if cart_items|length > 0  %}
+    <a href="{{ url_for('index') }}" class="btn btn-primary float-md-right"> <i class="fa fa-chevron-right"></i> Proceed To Checkout </a>
+    <a href="{{ url_for('market') }}" class="btn btn-light"> <i class="fa fa-chevron-left"></i> Continue shopping </a>
+{% elif cart_items|length == 0 %}
+    <a href="{{ url_for('market') }}" class="btn btn-light"> <i class="fa fa-chevron-left"></i> Continue shopping </a>
+{% endif %}
 </div>
 </div> <!-- card.// -->
 
