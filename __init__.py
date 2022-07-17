@@ -6,6 +6,7 @@ from flask import Flask, render_template, request, make_response, redirect, url_
 from flask_mysqldb import MySQL
 import MySQLdb.cursors
 import bcrypt
+from flask_bcrypt import Bcrypt
 from datetime import datetime, timedelta
 from pymysql import NULL
 from Forms import *
@@ -22,7 +23,8 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from validations import *
-from verify import *
+#from verify import *
+bcrypt = Bcrypt()
 # import stripe
 
 
@@ -74,6 +76,7 @@ def register():
     if form.is_submitted() and request.method == 'POST' and RecaptchaField != NULL:
         name = form.name.data
         password = form.password1.data
+        hashpassword = bcrypt.generate_password_hash(form.password1.data)
         password2 = form.password2.data
         if password != password2:
             flash('passwords do not match',category='danger')
@@ -84,8 +87,8 @@ def register():
         time = datetime.utcnow()
         password_age=4
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        print('INSERT INTO customer_accounts VALUES (NULL,%s,%s,%s,%s,%s)',(name,email,password,password_age,time,))
-        cursor.execute('INSERT INTO customer_accounts VALUES (NULL,%s,%s,%s,%s,%s)',(name,email,password,password_age,time,))
+        print('INSERT INTO customer_accounts VALUES (NULL,%s,%s,%s,%s,%s)',(name,email,hashpassword,password_age,time,))
+        cursor.execute('INSERT INTO customer_accounts VALUES (NULL,%s,%s,%s,%s,%s)',(name,email,hashpassword,password_age,time,))
         db.connection.commit()
         return redirect(url_for('login'))
 
@@ -112,10 +115,12 @@ def login():
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
         #decryption later + salted hashing + login history
         # Check if account exists using MySQL
-        cursor.execute('SELECT * FROM customer_accounts WHERE email = %s AND hashed_pw = %s',[email,password])
+        cursor.execute('SELECT * FROM customer_accounts WHERE email = %s',(email,))
         # Fetch one record and return result
         account = cursor.fetchone()
-        if account:
+        print(account)
+        user_hashpwd = account['hashed_pw']
+        if account and bcrypt.check_password_hash(user_hashpwd, password):
             # Create session data, we can access this data in other routes
             session['loggedin'] = True
             session['id'] = account['customer_id']
