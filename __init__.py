@@ -49,7 +49,6 @@ app.config['STRIPE_SECRET_KEY'] = 'sk_test_51LM6HwJDutS1IqmOFhsHKYQcSM2OEF8znqlt
 
 
 
-app.permanent_session_lifetime = timedelta(minutes=10)
 db = MySQL(app)
 
 
@@ -137,6 +136,7 @@ def login():
                     session['name'] = account['full_name']
                     session['customer_login_no'] = 0
                     session.permanent = True
+                    app.permanent_session_lifetime = timedelta(seconds= 5) 
                     # Redirect to home page
                     return redirect(url_for('home'))
                 #means not first login
@@ -259,6 +259,7 @@ def home():
         # User is loggedin show them the home page
         return render_template('home.html',id=session['id'], name=session['name'])
 # User is not loggedin redirect to login page
+    flash('Session timeout')
     return redirect(url_for('login'))
 
 
@@ -469,7 +470,7 @@ def profile():
         account = cursor.fetchone()
         return render_template('profile.html',account=account,name_form=name_form,email_form=email_form,gender_form=gender_form)
     elif 'loggedin' not in session:
-        return 'not in session'
+        flash('Session timeout')
     return redirect(url_for('login'))
 
 
