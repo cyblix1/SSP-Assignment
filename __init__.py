@@ -189,21 +189,23 @@ def login():
 
 @app.route('/logout')
 def logout():
-    id=session['id']
-    login_num=session['customer_login_no']
+    if 'loggedin' in session:
+        id=session['id']
+        login_num=session['customer_login_no']
 # Remove session data, this will log the user out
-    cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-    logout_time = datetime.utcnow()
-    #Once fix this done alr
-    cursor.execute('INSERT INTO customer_login_history (logout_time) VALUE (%s) WHERE customer_id = %s AND login_attempt_no = %s',(logout_time,id,login_num))
-    db.connection.commit()
-    session.pop('loggedin', None)
-    session.pop('id', None)
-    session.pop('name', None)
-    session.pop('customer_login_no',None)
-    flash('Successfully logged out')
-    # Redirect to login page
-    return redirect(url_for('login'))
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        logout_time = datetime.utcnow()
+        #Once fix this done alr
+        cursor.execute('INSERT INTO customer_login_history (logout_time) VALUE (%s) WHERE customer_id = %s AND login_attempt_no = %s',(logout_time,id,login_num))
+        db.connection.commit()
+        session.pop('loggedin', None)
+        session.pop('id', None)
+        session.pop('name', None)
+        session.pop('customer_login_no',None)
+        flash('Successfully logged out')
+        # Redirect to login page]
+    else:
+        return redirect(url_for('login'))
 
 
 @app.route('/')
@@ -558,6 +560,7 @@ def update_email(email,id):
 
 @app.route('/logoutstaff')
 def logoutstaff():
+
     session.pop('staffloggedin', None)
     session.pop('id', None)
     session.pop('username', None)
