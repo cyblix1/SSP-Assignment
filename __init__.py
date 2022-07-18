@@ -204,7 +204,12 @@ def logout():
     # Redirect to login page
     return redirect(url_for('login'))
 
-
+@app.route('/staff_logout')
+def staff_logout():
+    session.pop('staffloggedin', None)
+    session.pop('id', None)
+    session.pop('name', None)
+    return redirect(url_for('login'))
 
 @app.route('/')
 # Verify the strength of 'password'
