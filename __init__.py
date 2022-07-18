@@ -317,6 +317,7 @@ def create_admin():
     if password != password2:
         flash('passwords does not match',category="danger")
         return redirect(url_for('admins'))
+    #server side confirmations 
     elif Validations.validate_password(password) == False:
         flash('Invalid password',category="danger")
         return redirect(url_for('admins'))
