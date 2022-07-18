@@ -91,7 +91,11 @@ class Add_Card_Details(FlaskForm):
     card_cvc = IntegerField("CVC Number",validators=[Length(min=3, max=3), DataRequired()])
     submit = SubmitField(label = "Add Card")
 
-
+class UpdatePassword(FlaskForm):
+    oldpassword = PasswordField("Old Password:",validators=[DataRequired(message ="Enter the correct password!")])
+    newpassword = PasswordField("New Password:",validators=[DataRequired()])
+    confirmpassword = PasswordField("Confirm New Password:",validators=[DataRequired()])
+    submit = SubmitField(label = "Change Password")
 
 
 
