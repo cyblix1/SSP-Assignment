@@ -127,21 +127,22 @@ def login():
                 cursor.execute('SELECT max(login_attempt_no) AS last_login FROM customer_login_history WHERE customer_id = %s',[id])
                 acc_login = cursor.fetchone()
                 #means first login
-                if acc_login == type(None):
+                if acc_login['last_login'] is None:
                     #means first login
-                    cursor.execute('INSERT INTO customer_login_history (customer_id, login_attempt_no, login_time) VALUES (%s,%s,%s)',(id,0,login_time))
+                    zero = 1
+                    cursor.execute('INSERT INTO customer_login_history (customer_id, login_attempt_no, login_time) VALUES (%s,%s,%s)',(id,zero,login_time))
                     db.connection.commit()
                     session['loggedin'] = True
                     session['id'] = account['customer_id']
                     session['name'] = account['full_name']
-                    session['customer_login_no'] = 0
+                    session['customer_login_no'] = 1
                     session.permanent = True
                     app.permanent_session_lifetime = timedelta(seconds= 5) 
                     # Redirect to home page
                     return redirect(url_for('home'))
                 #means not first login
                 else:
-                    next_login_attempt = 2 + 1
+                    next_login_attempt = acc_login['last_login'] +1
                     cursor.execute('INSERT INTO customer_login_history (customer_id, login_attempt_no, login_time) VALUES (%s,%s,%s)',(id,next_login_attempt,login_time))
                     db.connection.commit()
                     session['loggedin'] = True
@@ -482,20 +483,14 @@ def admin_profile():
     email_form = Update_Email()
     gender_form = Update_Gender()
     if 'staffloggedin' in session:
-        try:
-            cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-            cursor.execute('SELECT * FROM staff_accounts WHERE staff_id = %s', [session['id']])
-            if account:
-                account = cursor.fetchone()
-                return render_template('admin_profile.html',account=account,name_form=name_form,email_form=email_form,gender_form=gender_form)
-        except IOError:
-            print('Database problem!')
-        except Exception as e:
-            print(f'Error while connecting to MySQL,{e}')
-        finally:
-            cursor.close()
-            db.connection.close()
-    return redirect(url_for('login'))
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute('SELECT * FROM staff_accounts WHERE staff_id = %s', [session['id']])
+        account = cursor.fetchone()
+        return render_template('admin_profile.html',account=account,name_form=name_form,email_form=email_form,gender_form=gender_form)
+    else:
+        flash('please login')
+        return redirect(url_for('login'))
+
 
 #for customer use, can implement 2fa confirmation
 @app.route('/profile/customer_delete/<int:id>',methods=['GET','POST'])
