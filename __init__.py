@@ -2,7 +2,6 @@ from distutils import ccompiler
 from distutils.util import byte_compile
 from mimetypes import init
 from tkinter import Image
-from types import NoneType
 from flask import Flask, render_template, request, make_response, redirect, url_for, session,flash, json
 from flask_mysqldb import MySQL
 import MySQLdb.cursors
@@ -41,6 +40,7 @@ app.config['MYSQL_HOST'] = config['account']['host']
 app.config['MYSQL_USER'] = config['account']['user']
 app.config['MYSQL_PASSWORD'] = config['account']['password']
 app.config['MYSQL_DB'] = config['account']['db']
+app.config['PERMANENT_SESSION_LIFETIME'] =  timedelta(seconds=5)
 app.config['RECAPTCHA_PUBLIC_KEY'] = "6Ldzgu0gAAAAAKF5Q8AdFeTRJpvl5mLBncz-dsBv"
 app.config['RECAPTCHA_PRIVATE_KEY'] = "6Ldzgu0gAAAAANuXjmXEv_tLJLQ_s7jtQV3rPwX2"
 app.config['STRIPE_PUBLIC_KEY'] = 'pk_test_51LM6HwJDutS1IqmOR34Em3mZeuTsaUwAaUp40HLvcwrQJpUR5bR60V1e3kkwugBz0A8xAuXObCpte2Y0M251tBeD00p16YXMgE'
@@ -128,7 +128,7 @@ def login():
                 cursor.execute('SELECT max(login_attempt_no) AS last_login FROM customer_login_history WHERE customer_id = %s',[id])
                 acc_login = cursor.fetchone()
                 #means first login
-                if acc_login == NoneType:
+                if acc_login == type(None):
                     #means first login
                     cursor.execute('INSERT INTO customer_login_history (customer_id, login_attempt_no, login_time) VALUES (%s,%s,%s)',(id,0,login_time))
                     db.connection.commit()
@@ -136,6 +136,7 @@ def login():
                     session['id'] = account['customer_id']
                     session['name'] = account['full_name']
                     session['customer_login_no'] = 0
+                    session.permanent = True
                     # Redirect to home page
                     return redirect(url_for('home'))
                 #means not first login
