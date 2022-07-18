@@ -49,7 +49,7 @@ app.config['STRIPE_SECRET_KEY'] = 'sk_test_51LM6HwJDutS1IqmOFhsHKYQcSM2OEF8znqlt
 
 
 
-app.permanent_session_lifetime = timedelta(minutes=10)
+app.permanent_session_lifetime = timedelta(seconds= 10)
 db = MySQL(app)
 
 
@@ -137,6 +137,9 @@ def login():
                     session['name'] = account['full_name']
                     session['customer_login_no'] = 0
                     session.permanent = True
+                    if session.permanent == True:
+                        flash("Session timeout")
+                        return redirect(url_for('login'))
                     # Redirect to home page
                     return redirect(url_for('home'))
                 #means not first login
