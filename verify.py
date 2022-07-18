@@ -33,13 +33,13 @@ class email_verification:
         else:
             return False    
 
-#testing
-# email = "nattzwc@gmail.com"
-# otp = email_verification.generateOTP()
-# email_verification.send_otp(otp,email)
-# new_otp= input("ENter otp: ")
-# verify = email_verification.verify_otp(new_otp,otp)
-# if verify == True:
-#     print("correct")
-# else:
-#     print("wrong")
+# testing
+email = "chamsamuel01@gmail.com"
+otp = email_verification.generateOTP()
+email_verification.send_otp(otp,email)
+new_otp= input("ENter otp: ")
+verify = email_verification.verify_otp(new_otp,otp)
+if verify == True:
+    print("correct")
+else:
+    print("wrong")

@@ -3,7 +3,7 @@ import re
 class Validations:
     #using regex
     def validate_password(password):
-        reg = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!#%*?&]{6,20}$"
+        reg = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!#%*?&]{8,20}$"
         # compiling regex
         pat = re.compile(reg)
         # searching regex                 
