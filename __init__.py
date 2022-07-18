@@ -103,7 +103,7 @@ def home():
 
 
 
-@app.route('/')
+@app.route('/expiry')
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     form = LoginForm(request.form)
@@ -248,8 +248,12 @@ def password_check(password):
         'lowercase_error' : lowercase_error,
         'symbol_error' : symbol_error,
     }
-
-
+@app.route('/updatePassword', methods=['GET', 'POST'])
+def updatePassword():
+    form = UpdatePasswordForm(request.form)
+    oldpassword = form.oldpassword.data
+    newpassword = form.newpassword.data
+    confirmpassword = form.confirmpassword.data
 
 
 
