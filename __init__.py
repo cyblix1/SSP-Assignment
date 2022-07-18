@@ -189,13 +189,13 @@ def login():
 
 @app.route('/logout')
 def logout():
+    id=session['id']
+    login_num=session['customer_login_no']
 # Remove session data, this will log the user out
     cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-    login_num = session.get('customer_login_no')
-    id = session.get('id')
     logout_time = datetime.utcnow()
     #Once fix this done alr
-    cursor.execute('INSERT INTO customer_login_history logout_time VALUES %s WHERE customer_id = %s AND login_attempt_no = %s',(logout_time,id,login_num))
+    cursor.execute('INSERT INTO customer_login_history (logout_time) VALUE (%s) WHERE customer_id = %s AND login_attempt_no = %s',(logout_time,id,login_num))
     db.connection.commit()
     session.pop('loggedin', None)
     session.pop('id', None)
@@ -205,12 +205,6 @@ def logout():
     # Redirect to login page
     return redirect(url_for('login'))
 
-@app.route('/staff_logout')
-def staff_logout():
-    session.pop('staffloggedin', None)
-    session.pop('id', None)
-    session.pop('name', None)
-    return redirect(url_for('login'))
 
 @app.route('/')
 # Verify the strength of 'password'
