@@ -163,7 +163,7 @@ def login():
             #decryption of email
             #get key
             if id == 0:
-                flash('Invalid username or Password',category='danger')
+                pass
             else:
                 cursor.execute('SELECT staff_key FROM staff_key WHERE staff_id = %s',[id])
                 columns = cursor.fetchone()
@@ -182,6 +182,7 @@ def login():
                         session['id'] = id
                         session['name'] = staff['full_name']
                         return redirect(url_for('admins'))
+        flash('Invalid username or Password',category='danger')
     return render_template('login.html', form=form)
 
 @app.route('/logout')
