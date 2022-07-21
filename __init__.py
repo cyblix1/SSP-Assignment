@@ -26,6 +26,10 @@ from validations import *
 #from verify import *
 bcrypt2 = Bcrypt()
 # import stripe
+import logging
+from logging.config import dictConfig , fileConfig
+
+
 
 
 app = Flask(__name__)
@@ -50,6 +54,72 @@ app.config['STRIPE_SECRET_KEY'] = 'sk_test_51LM6HwJDutS1IqmOFhsHKYQcSM2OEF8znqlt
 
 
 db = MySQL(app)
+
+# dictConfig({
+#     'version': 1,
+#     'disable_existing_loggers': False,
+#     'formatters': {
+#             'default': {
+#                         'format': '[%(asctime)s] %(levelname)s in %(module)s: %(message)s',
+#                        },
+#             'simpleformatter' : {
+#                         'format' : '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+#             }
+#     },
+#     'handlers':
+#     {
+#         'custom_handler': {
+#             'class' : 'logging.FileHandler',
+#             'filename' : 'warnings.log',
+#                         'level': 'WARN',
+#         }
+#     },
+#     'root': {
+#         'level': 'WARN',
+#         'handlers': ['custom_handler'],
+#     },
+# })
+
+fileConfig('logging.cfg')
+
+@app.route("/")
+def main():
+    app.logger.debug("debug")
+    app.logger.info("info")
+    app.logger.warning("warning")
+    app.logger.error("error")
+    app.logger.critical("critical")
+    return ""
+
+# @app.route('/')
+# def hello_world():
+#     app.logger.info('Processing default request')
+#     return 'Hello World!'
+
+# logger = logging.getLogger('dev')
+# logger.info('This is an information message')
+
+@app.before_first_request
+def before_first_request():
+    log_level = logging.INFO
+
+    for handler in app.logger.handlers:
+        app.logger.removeHandler(handler)
+
+    root = os.path.dirname(os.path.abspath(__file__))
+    logdir = os.path.join(root, 'logs')
+    if not os.path.exists(logdir):
+        os.mkdir(logdir)
+    log_file = os.path.join(logdir, 'app.log')
+    handler = logging.FileHandler(log_file)
+    handler.setLevel(log_level)
+    app.logger.addHandler(handler)
+
+    app.logger.setLevel(log_level)
+
+    defaultFormatter = logging.Formatter('[%(asctime)s] %(levelname)s in %(module)s: %(message)s')
+    handler.setFormatter(defaultFormatter)
+
 
 
 class checks_exists:
@@ -208,7 +278,7 @@ def logout():
         return redirect(url_for('login'))
 
 
-@app.route('/')
+# @app.route('/')
 # Verify the strength of 'password'
 #Returns a dict indicating the wrong criteria
 #A password is considered strong if:
