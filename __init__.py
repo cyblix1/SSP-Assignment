@@ -159,6 +159,7 @@ def register():
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
         print('INSERT INTO customer_accounts VALUES (NULL,%s,%s,%s,%s,%s)',(name,email,hashpassword,password_age,time,))
         cursor.execute('INSERT INTO customer_accounts VALUES (NULL,%s,%s,%s,%s,%s)',(name,email,hashpassword,password_age,time,))
+        cursor.execute('INSERT INTO logs_login (log_id ,description, date_created) VALUES (NULL,concat("User ",%s," has registered"),%s)',(name, time))
         db.connection.commit()
         return redirect(url_for('login'))
 
@@ -209,6 +210,8 @@ def login():
                     session.permanent = True
                     app.permanent_session_lifetime = timedelta(seconds= 5) 
                     # Redirect to home page
+                    cursor.execute('INSERT INTO logs_login (log_id ,description, date_created) VALUES (NULL,concat("User ID (",%s,") has logged in"),%s)',(id,login_time))
+                    db.connection.commit()
                     return redirect(url_for('home'))
                 #means not first login
                 else:
@@ -220,6 +223,8 @@ def login():
                     session['name'] = account['full_name']
                     session['customer_login_no'] = int(next_login_attempt)
                     # Redirect to home page
+                    cursor.execute('INSERT INTO logs_login (log_id ,description, date_created) VALUES (NULL,concat("User ID (",%s,") has logged in"," (Number of Times: ",%s, ")"),%s)',(id, next_login_attempt ,login_time))
+                    db.connection.commit()
                     return redirect(url_for('home'))
         else:
             #check for staff account 
@@ -339,7 +344,21 @@ def home():
 #base template
 @app.route('/dashboard')
 def dashboard():
-    return render_template('base_admin.html')
+    try:
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        if cursor:
+            cursor.execute('SELECT * FROM logs_login')
+            login = cursor.fetchall()
+            cursor.execute('SELECT * FROM logs_product')
+            products = cursor.fetchall()
+    except IOError:
+        print('Database problem!')
+    except Exception as e:
+        print(f'Error while connecting to MySQL,{e}')
+    finally:
+        if cursor:
+            cursor.close()
+    return render_template('dashboard.html', items=login , products = products )
 
 @app.route('/admins', methods=['POST','GET'])
 def admins():
@@ -672,13 +691,15 @@ def create_products():
     form = Create_Products()
     try:
         if form.validate_on_submit():
-            id = uuid.uuid4()
+            product_id = uuid.uuid4()
             name = form.product_name.data
             price = form.price.data
             description = form.description.data
+            time = datetime.utcnow()
 
             cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-            cursor.execute('INSERT INTO products VALUES (%s, %s, %s, %s)', (id,name,price,description))
+            cursor.execute('INSERT INTO products VALUES (%s, %s, %s, %s)', (product_id,name,price,description))
+            cursor.execute('INSERT INTO logs_product (log_id ,description, date_created) VALUES (NULL,concat("User has created product (ID :",%s," )"),%s)',(product_id, time))
             db.connection.commit()
             flash("Product Added Successfully!",category="success")
             return redirect(url_for('products'))
@@ -696,7 +717,10 @@ def delete_products(id):
         cursor.execute('SELECT * FROM products WHERE product_id = %s', [id])
         account = cursor.fetchone()
         if account:
+            time = datetime.utcnow()
             cursor.execute('DELETE FROM products WHERE product_id = %s', [id])
+            cursor.execute('INSERT INTO logs_product (log_id ,description, date_created) VALUES (NULL,concat("User has deleted product (ID :",%s," )"),%s)',(id, time))
+
             db.connection.commit()
             flash("Product deleted successfully",category="success")
         else:
@@ -717,10 +741,14 @@ def update_products(id):
     name = form.product_name.data
     price = form.price.data
     description = form.description.data
+    time = datetime.utcnow()
+
     try:
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
         if cursor:
             cursor.execute('UPDATE products SET product_name = %s, price = %s, description =%s WHERE product_id = %s', (name,price,description,id))
+            cursor.execute('INSERT INTO logs_product (log_id ,description, date_created) VALUES (NULL,concat("User has updated product (ID :",%s," )"),%s)',(id, time))
+
             db.connection.commit()
             flash("Products updated successfully", category="success")
         else:
@@ -760,6 +788,7 @@ def market():
 
 @app.route('/add_to_checkout', methods=['POST'])
 def add_to_checkout():
+    time = datetime.utcnow()
     id = request.form['product-value']
     try:
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
@@ -768,6 +797,8 @@ def add_to_checkout():
         # account['customer_id'] = session['id']
         # if customer id was in shopping cart table, able to specify each shopping cart for each customer_id
         cursor.execute('INSERT INTO shopping_cart SELECT product_id, product_name, price , description FROM products WHERE product_id = %s', [id])
+        cursor.execute('INSERT INTO logs_product (log_id ,description, date_created) VALUES (NULL,concat("User has added product to Shopping Cart (ID :",%s," )"),%s)',(id, time))
+
         db.connection.commit()
         flash("Product Added Successfully!",category="success")
     except:
