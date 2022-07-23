@@ -82,7 +82,7 @@ db = MySQL(app)
 
 fileConfig('logging.cfg')
 
-@app.route("/")
+@app.route("/logs")
 def main():
     app.logger.debug("debug")
     app.logger.info("info")
@@ -204,7 +204,7 @@ def login():
                     # Redirect to home page
                     cursor.execute('INSERT INTO logs_login (log_id ,description, date_created) VALUES (NULL,concat("User ID (",%s,") has logged in"),%s)',(id,login_time))
                     db.connection.commit()
-                    return redirect(url_for('home'))
+                    return redirect(url_for('market'))
                 # elif acc_login['last_login'] == 3 :
                 #     flash('TOO MANY LOGIN ATTEMPTS', category='danger')
                 #     return redirect(url_for('logout'))
@@ -265,7 +265,7 @@ def logout():
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
         logout_time = datetime.utcnow()
         #Once fix this done alr
-        cursor.execute('INSERT INTO customer_login_history (logout_time) VALUE (%s) WHERE customer_id = %s AND login_attempt_no = %s',(logout_time,id,login_num))
+        cursor.execute('UPDATE customer_login_history SET logout_time = %s WHERE customer_id = %s AND login_attempt_no = %s',(logout_time,id,login_num))
         cursor.execute('INSERT INTO logs_login (log_id ,description, date_created) VALUES (NULL,concat("User ID (",%s,") has logged in"),%s)',(id, logout_time))
         db.connection.commit()
         session.pop('loggedin', None)
@@ -274,6 +274,7 @@ def logout():
         session.pop('customer_login_no',None)
         flash('Successfully logged out')
         # Redirect to login page]
+        return redirect(url_for('login'))
     else:
         return redirect(url_for('login'))
 
@@ -324,7 +325,7 @@ def updatePassword():
 
 
 
-@app.route('/home')
+@app.route('/')
 def home():
     if 'loggedin' in session:
         # User is loggedin show them the home page
