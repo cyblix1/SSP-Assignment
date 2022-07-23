@@ -794,12 +794,11 @@ def add_to_checkout():
         # if customer id was in shopping cart table, able to specify each shopping cart for each customer_id
         cursor.execute('INSERT INTO shopping_cart SELECT product_id, product_name, price , description FROM products WHERE product_id = %s', [id])
         cursor.execute('INSERT INTO logs_product (log_id ,description, date_created) VALUES (NULL,concat("User has added product to Shopping Cart (ID :",%s," )"),%s)',(id, time))
-
         db.connection.commit()
     except:
         flash("No Items were added!", category="error")
 
-    return redirect(url_for('market'))
+    return redirect(url_for('check_sc'))
 
 @app.route('/check_sc', methods=['POST', 'GET'])
 def check_sc():
@@ -952,9 +951,7 @@ def checkout_verification2():
                     session['id'] = account['customer_id']
                     session['name'] = account['full_name']
                     # Redirect to home page
-                    cursor.execute(
-                        'INSERT INTO logs_product (log_id ,description, date_created) VALUES (NULL,concat("User ID (",%s,") has been verififed for products"),%s)',
-                        (id, login_time))
+                    cursor.execute('INSERT INTO logs_product (log_id ,description, date_created) VALUES (NULL,concat("User ID (",%s,") has been verififed for products"),%s)',(id, login_time))
                     db.connection.commit()
                     return redirect(url_for('checkout'))
             else:
