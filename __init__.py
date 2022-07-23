@@ -266,7 +266,7 @@ def logout():
         logout_time = datetime.utcnow()
         #Once fix this done alr
         cursor.execute('UPDATE customer_login_history SET logout_time = %s WHERE customer_id = %s AND login_attempt_no = %s',(logout_time,id,login_num))
-        cursor.execute('INSERT INTO logs_login (log_id ,description, date_created) VALUES (NULL,concat("User ID (",%s,") has logged in"),%s)',(id, logout_time))
+        cursor.execute('INSERT INTO logs_login (log_id ,description, date_created) VALUES (NULL,concat("User ID (",%s,") has logged out"),%s)',(id, logout_time))
         db.connection.commit()
         session.pop('loggedin', None)
         session.pop('id', None)
@@ -695,7 +695,7 @@ def create_products():
 
             cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
             cursor.execute('INSERT INTO products VALUES (%s, %s, %s, %s)', (product_id,name,price,description))
-            cursor.execute('INSERT INTO logs_product (log_id ,description, date_created) VALUES (NULL,concat("User has created product (ID :",%s," )"),%s)',(product_id, time))
+            cursor.execute('INSERT INTO logs_product (log_id ,description, date_created) VALUES (NULL,concat("Admin has created product (ID :",%s," )"),%s)',(product_id, time))
             db.connection.commit()
             flash("Product Added Successfully!",category="success")
             return redirect(url_for('products'))
@@ -715,7 +715,7 @@ def delete_products(id):
         if account:
             time = datetime.utcnow()
             cursor.execute('DELETE FROM products WHERE product_id = %s', [id])
-            cursor.execute('INSERT INTO logs_product (log_id ,description, date_created) VALUES (NULL,concat("User has deleted product (ID :",%s," )"),%s)',(id, time))
+            cursor.execute('INSERT INTO logs_product (log_id ,description, date_created) VALUES (NULL,concat("User has deleted product from shopping cart (ID :",%s," )"),%s)',(id, time))
 
             db.connection.commit()
             flash("Product deleted successfully",category="success")
@@ -743,7 +743,7 @@ def update_products(id):
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
         if cursor:
             cursor.execute('UPDATE products SET product_name = %s, price = %s, description =%s WHERE product_id = %s', (name,price,description,id))
-            cursor.execute('INSERT INTO logs_product (log_id ,description, date_created) VALUES (NULL,concat("User has updated product (ID :",%s," )"),%s)',(id, time))
+            cursor.execute('INSERT INTO logs_product (log_id ,description, date_created) VALUES (NULL,concat("User has updated product from shopping cart (ID :",%s," )"),%s)',(id, time))
 
             db.connection.commit()
             flash("Products updated successfully", category="success")
@@ -814,6 +814,8 @@ def check_sc():
                         return redirect(url_for('checkout_verification2'))
                     else:
                         return redirect(url_for('checkout'))
+            else:
+                return redirect(url_for('market'))
         except IOError:
             print('Database problem!')
         except Exception as e:
@@ -821,6 +823,7 @@ def check_sc():
         finally:
             if cursor:
                 cursor.close()
+
     else:
         flash("Please LOG IN!", category="error")
         return redirect(url_for('login'))
@@ -900,24 +903,20 @@ def checkout_verification():
                 id = account['customer_id']
                 # Create session data, we can access this data in other routes
                 cursor.execute(
-                    'SELECT max(login_attempt_no) AS last_login FROM customer_login_history WHERE customer_id = %s',
-                    [id])
+                    'SELECT max(login_attempt_no) AS last_login FROM customer_login_history WHERE customer_id = %s',[id])
                 acc_login = cursor.fetchone()
                 # means first login
                 if acc_login['last_login'] is not None:
                     session['loggedin'] = True
                     session['id'] = account['customer_id']
                     session['name'] = account['full_name']
-                    # Redirect to home page
-                    cursor.execute(
-                        'INSERT INTO logs_product (log_id ,description, date_created) VALUES (NULL,concat("User ID (",%s,") has been verififed for checkout"),%s)',
-                        (id, login_time))
+                    # Redirect to order page
+                    cursor.execute('INSERT INTO logs_product (log_id ,description, date_created) VALUES (NULL,concat("User ID (",%s,") has been verififed for checkout"),%s)',(id, login_time))
                     db.connection.commit()
                     return redirect(url_for('orders'))
             else:
-                flash("Please Verify Again",category="success")
-                return redirect(url_for('checkout'))
-
+                flash("Please Verify Again", category="success")
+                return redirect(url_for('orders'))
 
     return render_template('checkout_verification.html', form=form)
 
@@ -1014,12 +1013,10 @@ def delete_order():
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute('SELECT * FROM shopping_cart WHERE product_id = %s', [id])
         account = cursor.fetchone()
-
         if account:
-            cursor.execute('INSERT INTO orders (orders_id , product_id ,order_date, quantity) VALUES (NULL , %s , %s , %s)',(id, time, 3))
+            cursor.execute('INSERT INTO orders (order_id , product_id ,order_date, quantity) VALUES (NULL, %s , %s , %s)',(id, time, 1))
             cursor.execute('DELETE FROM shopping_cart')
             cursor.execute('INSERT INTO logs_product (log_id ,description, date_created) VALUES (NULL,concat("User has purchased product (ID :",%s," )"),%s)',(id, time))
-
             db.connection.commit()
             flash(id,category="success")
         else:

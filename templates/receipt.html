@@ -58,6 +58,8 @@
                                                 {% for i in shopping %}
 
                             <input id="uuid" name="product-checkout" type="hidden" value="{{i.product_id}}">
+                            {% endfor %}
+
                         </form>
 
                     </div>
@@ -71,7 +73,6 @@
     </div>
 
 </div>
-{% endfor %}
 
 {% endblock %}
 
