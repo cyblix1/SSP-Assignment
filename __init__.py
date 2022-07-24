@@ -715,7 +715,7 @@ def delete_products(id):
         if account:
             time = datetime.utcnow()
             cursor.execute('DELETE FROM products WHERE product_id = %s', [id])
-            cursor.execute('INSERT INTO logs_product (log_id ,description, date_created) VALUES (NULL,concat("User has deleted product from shopping cart (ID :",%s," )"),%s)',(id, time))
+            cursor.execute('INSERT INTO logs_product (log_id ,description, date_created) VALUES (NULL,concat("Admin has deleted product from shopping cart (ID :",%s," )"),%s)',(id, time))
 
             db.connection.commit()
             flash("Product deleted successfully",category="success")
@@ -743,7 +743,7 @@ def update_products(id):
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
         if cursor:
             cursor.execute('UPDATE products SET product_name = %s, price = %s, description =%s WHERE product_id = %s', (name,price,description,id))
-            cursor.execute('INSERT INTO logs_product (log_id ,description, date_created) VALUES (NULL,concat("User has updated product from shopping cart (ID :",%s," )"),%s)',(id, time))
+            cursor.execute('INSERT INTO logs_product (log_id ,description, date_created) VALUES (NULL,concat("Admin has updated product from shopping cart (ID :",%s," )"),%s)',(id, time))
 
             db.connection.commit()
             flash("Products updated successfully", category="success")
@@ -784,21 +784,25 @@ def market():
 
 @app.route('/add_to_checkout', methods=['POST'])
 def add_to_checkout():
+    customer_id = session['id']
     time = datetime.utcnow()
-    id = request.form['product-value']
+    product_id = str(request.form['product-value'])
     try:
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        # cursor.execute('SELECT * FROM shopping_cart')
-        # account = cursor.fetchall()
-        # account['customer_id'] = session['id']
-        # if customer id was in shopping cart table, able to specify each shopping cart for each customer_id
-        cursor.execute('INSERT INTO shopping_cart SELECT product_id, product_name, price , description FROM products WHERE product_id = %s', [id])
-        cursor.execute('INSERT INTO logs_product (log_id ,description, date_created) VALUES (NULL,concat("User has added product to Shopping Cart (ID :",%s," )"),%s)',(id, time))
+        cursor.execute('SELECT * FROM products WHERE product_id = %s ', [product_id])
+        sc = cursor.fetchall()
+        for i in sc:
+            name = i['product_name']
+            price = i['price']
+            description = i['description']
+        cursor.execute('INSERT INTO shopping_cart (product_id, product_name, price , description, customer_id) VALUES (%s,%s,%s,%s,%s)',(product_id,name,price, description, customer_id))
+        cursor.execute('INSERT INTO logs_product (log_id ,description, date_created) VALUES (NULL,concat("User (",%s,") has added product to Shopping Cart (ID :",%s," )"),%s)',(customer_id,product_id, time))
         db.connection.commit()
     except:
-        flash("No Items were added!", category="error")
+        flash("NO", category="error")
 
-    return redirect(url_for('check_sc'))
+
+    return redirect(url_for('checkout'))
 
 @app.route('/check_sc', methods=['POST', 'GET'])
 def check_sc():
@@ -820,6 +824,8 @@ def check_sc():
             print('Database problem!')
         except Exception as e:
             print(f'Error while connecting to MySQL,{e}')
+        except:
+            return redirect(url_for('market'))
         finally:
             if cursor:
                 cursor.close()
@@ -830,6 +836,7 @@ def check_sc():
 
 @app.route('/checkout', methods=['POST', 'GET'])
 def checkout():
+    customer_id = session['id']
     if 'loggedin' in session:
         # session_checkout = stripe.checkout.Session.create(
         #     payment_method_types=['card'],
@@ -844,7 +851,7 @@ def checkout():
         try:
             cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
             if cursor:
-                cursor.execute('SELECT * FROM shopping_cart')
+                cursor.execute('SELECT * FROM shopping_cart WHERE customer_id = %s ', [customer_id])
                 products = cursor.fetchall()
                 cursor.execute('SELECT sum(price) as price FROM shopping_cart')
                 total = cursor.fetchall()
@@ -962,12 +969,13 @@ def checkout_verification2():
 
 @app.route('/checkout/delete_checkout_products/<id>/',  methods=['POST'])
 def delete_checkout_products(id):
+    customer_id = session['id']
     try:
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute('SELECT * FROM shopping_cart WHERE product_id = %s', [id])
+        cursor.execute('SELECT * FROM shopping_cart WHERE product_id = %s and customer_id = %s', [id,customer_id])
         account = cursor.fetchone()
         if account:
-            cursor.execute('DELETE FROM shopping_cart WHERE product_id = %s', [id])
+            cursor.execute('DELETE FROM shopping_cart WHERE product_id = %sand customer_id = %s', [id,customer_id])
             db.connection.commit()
             flash("Product deleted successfully",category="success")
         else:
@@ -983,16 +991,18 @@ def delete_checkout_products(id):
 
 @app.route('/orders')
 def orders():
+    customer_id = session['id']
     # global payment
     global shopping
     global total_products
     try:
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute('SELECT * FROM shopping_cart')
+        cursor.execute('SELECT * FROM shopping_cart WHERE customer_id = %s',[customer_id])
+
         shopping = cursor.fetchall()
         # cursor.execute('SELECT * FROM payment')
         # payment = cursor.fetchall()
-        cursor.execute('SELECT sum(price) as price FROM shopping_cart')
+        cursor.execute('SELECT sum(price) as price FROM shopping_cart WHERE customer_id = %s',[customer_id])
         total_products = cursor.fetchall()
     except IOError:
         print('Database problem!')
@@ -1006,6 +1016,7 @@ def orders():
 
 @app.route('/orders/delete_order',  methods=['POST'])
 def delete_order():
+    customer_id = session['id']
     id = request.form['product-checkout']
     time = datetime.utcnow()
 
@@ -1015,7 +1026,7 @@ def delete_order():
         account = cursor.fetchone()
         if account:
             cursor.execute('INSERT INTO orders (order_id , product_id ,order_date, quantity) VALUES (NULL, %s , %s , %s)',(id, time, 1))
-            cursor.execute('DELETE FROM shopping_cart')
+            cursor.execute('DELETE FROM shopping_cart WHERE customer_id = %s',[customer_id])
             cursor.execute('INSERT INTO logs_product (log_id ,description, date_created) VALUES (NULL,concat("User has purchased product (ID :",%s," )"),%s)',(id, time))
             db.connection.commit()
             flash(id,category="success")
