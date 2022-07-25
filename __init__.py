@@ -271,7 +271,7 @@ def logout():
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
         logout_time = datetime.utcnow()
         #Once fix this done alr
-        cursor.execute('INSERT INTO customer_login_history (logout_time) VALUE (%s) WHERE customer_id = %s AND login_attempt_no = %s',(logout_time,id,login_num))
+        cursor.execute('UPDATE customer_login_history (logout_time) VALUE (%s) WHERE customer_id = %s AND login_attempt_no = %s',(logout_time,id,login_num))
         db.connection.commit()
         session.pop('loggedin', None)
         session.pop('id', None)
