@@ -74,7 +74,7 @@
 
 <div class="card-body border-top">
 {% if cart_items|length > 0  %}
-    <a href="#" id="buy_now_btn" class="btn btn-primary float-md-right"><i class="fa fa-chevron-right"></i> Proceed To Checkout</a>
+    <a href="{{ url_for('checkout_verification') }}" id="buy_now_btn" class="btn btn-primary float-md-right"><i class="fa fa-chevron-right"></i> Proceed To Checkout</a>
     <a href="{{ url_for('market') }}" class="btn btn-light"> <i class="fa fa-chevron-left"></i> Continue shopping </a>
 {% elif cart_items|length == 0 %}
     <a href="{{ url_for('market') }}" class="btn btn-light"> <i class="fa fa-chevron-left"></i> Continue shopping </a>
@@ -84,7 +84,7 @@
 
 <div class="alert alert-success mt-3">
     <p class="icontext"><i class="icon text-success fa fa-truck"></i> Free Delivery within 1-2 weeks</p>
-</div>{% for i in cart_items %}
+</div>{% for i in total %}
     </main> <!-- col.// -->
     <aside class="col-md-3" style="box-shadow: rgb(209, 209, 209) 1px 1px 25px 1px; border-top: 10px solid #2A27A2;">
         <div class="card mb-3">
@@ -94,7 +94,13 @@
             <div class="card-body">
                     <dl class="dlist-align">
                       <dt>Total:</dt>
-                      <dd class="text-right  h5"><strong>${{i.price}}</strong></dd>
+                        {% if cart_items|length > 0  %}
+                        <dd class="text-right  h5"><strong>${{i.price}}</strong></dd>
+                        {% elif cart_items|length == 0 %}
+                        <dd class="text-right  h5"><strong> No Items </strong></dd>
+                        {% endif %}
+
+
                     </dl>
                     <hr>
                     <p class="text-center mb-3">

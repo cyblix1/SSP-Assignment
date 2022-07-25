@@ -44,7 +44,7 @@ app.config['MYSQL_HOST'] = config['account']['host']
 app.config['MYSQL_USER'] = config['account']['user']
 app.config['MYSQL_PASSWORD'] = config['account']['password']
 app.config['MYSQL_DB'] = config['account']['db']
-app.config['PERMANENT_SESSION_LIFETIME'] =  timedelta(seconds=5)
+app.config['PERMANENT_SESSION_LIFETIME'] =  timedelta(minutes=5)
 app.config['RECAPTCHA_PUBLIC_KEY'] = "6Ldzgu0gAAAAAKF5Q8AdFeTRJpvl5mLBncz-dsBv"
 app.config['RECAPTCHA_PRIVATE_KEY'] = "6Ldzgu0gAAAAANuXjmXEv_tLJLQ_s7jtQV3rPwX2"
 app.config['STRIPE_PUBLIC_KEY'] = 'pk_test_51LM6HwJDutS1IqmOR34Em3mZeuTsaUwAaUp40HLvcwrQJpUR5bR60V1e3kkwugBz0A8xAuXObCpte2Y0M251tBeD00p16YXMgE'
@@ -82,7 +82,7 @@ db = MySQL(app)
 
 fileConfig('logging.cfg')
 
-@app.route("/")
+@app.route("/logs")
 def main():
     app.logger.debug("debug")
     app.logger.info("info")
@@ -165,14 +165,6 @@ def register():
 
     return render_template('register.html',form=form)
 
-def home():
-    if 'loggedin' in session: 
-# User is loggedin show them the home page 
-        return render_template('home.html', username=session['username']) 
-# User is not loggedin redirect to login page 
-    return redirect(url_for('login')) 
-
-
 
 @app.route('/expiry')
 @app.route('/login', methods=['GET', 'POST'])
@@ -208,31 +200,34 @@ def login():
                     session['name'] = account['full_name']
                     session['customer_login_no'] = 1
                     session.permanent = True
-                    app.permanent_session_lifetime = timedelta(seconds= 5) 
+                    app.permanent_session_lifetime = timedelta(minutes= 5)
                     # Redirect to home page
                     cursor.execute('INSERT INTO logs_login (log_id ,description, date_created) VALUES (NULL,concat("User ID (",%s,") has logged in"),%s)',(id,login_time))
                     db.connection.commit()
-                    return redirect(url_for('home'))
+                    return redirect(url_for('market'))
+                # elif acc_login['last_login'] == 3 :
+                #     flash('TOO MANY LOGIN ATTEMPTS', category='danger')
+                #     return redirect(url_for('logout'))
                 #means not first login
                 else:
-                    next_login_attempt = acc_login['last_login'] +1
-                    cursor.execute('INSERT INTO customer_login_history (customer_id, login_attempt_no, login_time) VALUES (%s,%s,%s)',(id,next_login_attempt,login_time))
-                    db.connection.commit()
-                    session['loggedin'] = True
-                    session['id'] = account['customer_id']
-                    session['name'] = account['full_name']
-                    session['customer_login_no'] = int(next_login_attempt)
-                    # Redirect to home page
-                    cursor.execute('INSERT INTO logs_login (log_id ,description, date_created) VALUES (NULL,concat("User ID (",%s,") has logged in"," (Number of Times: ",%s, ")"),%s)',(id, next_login_attempt ,login_time))
-                    db.connection.commit()
-                    return redirect(url_for('home'))
+                        next_login_attempt = acc_login['last_login'] +1
+                        cursor.execute('INSERT INTO customer_login_history (customer_id, login_attempt_no, login_time) VALUES (%s,%s,%s)',(id,next_login_attempt,login_time))
+                        db.connection.commit()
+                        session['loggedin'] = True
+                        session['id'] = account['customer_id']
+                        session['name'] = account['full_name']
+                        session['customer_login_no'] = int(next_login_attempt)
+                        # Redirect to home page
+                        cursor.execute('INSERT INTO logs_login (log_id ,description, date_created) VALUES (NULL,concat("User ID (",%s,") has logged in"," (Number of Times: ",%s, ")"),%s)',(id, next_login_attempt ,login_time))
+                        db.connection.commit()
+                        return redirect(url_for('market'))
         else:
-            #check for staff account 
+            #check for staff account
             cursor.execute('SELECT * FROM staff_email_hash')
             all_staff = cursor.fetchall()
             #check if email exists
             id = 0
-            for staff in all_staff: 
+            for staff in all_staff:
                 hash = (staff['email_hash']).encode()
                 if bcrypt.checkpw(email.encode(),hash):
                     id = staff['staff_id']
@@ -259,7 +254,6 @@ def login():
                         session['id'] = id
                         session['name'] = staff['full_name']
                         return redirect(url_for('admins'))
-        flash('Invalid username or Password',category='danger')
     return render_template('login.html', form=form)
 
 @app.route('/logout')
@@ -272,6 +266,8 @@ def logout():
         logout_time = datetime.utcnow()
         #Once fix this done alr
         cursor.execute('UPDATE customer_login_history (logout_time) VALUE (%s) WHERE customer_id = %s AND login_attempt_no = %s',(logout_time,id,login_num))
+        cursor.execute('UPDATE customer_login_history SET logout_time = %s WHERE customer_id = %s AND login_attempt_no = %s',(logout_time,id,login_num))
+        cursor.execute('INSERT INTO logs_login (log_id ,description, date_created) VALUES (NULL,concat("User ID (",%s,") has logged out"),%s)',(id, logout_time))
         db.connection.commit()
         session.pop('loggedin', None)
         session.pop('id', None)
@@ -279,6 +275,7 @@ def logout():
         session.pop('customer_login_no',None)
         flash('Successfully logged out')
         # Redirect to login page]
+        return redirect(url_for('login'))
     else:
         return redirect(url_for('login'))
 
@@ -329,7 +326,7 @@ def updatePassword():
 
 
 
-@app.route('/home')
+@app.route('/')
 def home():
     if 'loggedin' in session:
         # User is loggedin show them the home page
@@ -699,7 +696,7 @@ def create_products():
 
             cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
             cursor.execute('INSERT INTO products VALUES (%s, %s, %s, %s)', (product_id,name,price,description))
-            cursor.execute('INSERT INTO logs_product (log_id ,description, date_created) VALUES (NULL,concat("User has created product (ID :",%s," )"),%s)',(product_id, time))
+            cursor.execute('INSERT INTO logs_product (log_id ,description, date_created) VALUES (NULL,concat("Admin has created product (ID :",%s," )"),%s)',(product_id, time))
             db.connection.commit()
             flash("Product Added Successfully!",category="success")
             return redirect(url_for('products'))
@@ -719,7 +716,7 @@ def delete_products(id):
         if account:
             time = datetime.utcnow()
             cursor.execute('DELETE FROM products WHERE product_id = %s', [id])
-            cursor.execute('INSERT INTO logs_product (log_id ,description, date_created) VALUES (NULL,concat("User has deleted product (ID :",%s," )"),%s)',(id, time))
+            cursor.execute('INSERT INTO logs_product (log_id ,description, date_created) VALUES (NULL,concat("Admin has deleted product from shopping cart (ID :",%s," )"),%s)',(id, time))
 
             db.connection.commit()
             flash("Product deleted successfully",category="success")
@@ -747,7 +744,7 @@ def update_products(id):
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
         if cursor:
             cursor.execute('UPDATE products SET product_name = %s, price = %s, description =%s WHERE product_id = %s', (name,price,description,id))
-            cursor.execute('INSERT INTO logs_product (log_id ,description, date_created) VALUES (NULL,concat("User has updated product (ID :",%s," )"),%s)',(id, time))
+            cursor.execute('INSERT INTO logs_product (log_id ,description, date_created) VALUES (NULL,concat("Admin has updated product from shopping cart (ID :",%s," )"),%s)',(id, time))
 
             db.connection.commit()
             flash("Products updated successfully", category="success")
@@ -788,43 +785,79 @@ def market():
 
 @app.route('/add_to_checkout', methods=['POST'])
 def add_to_checkout():
+    customer_id = session['id']
     time = datetime.utcnow()
-    id = request.form['product-value']
+    product_id = str(request.form['product-value'])
     try:
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        # cursor.execute('SELECT * FROM shopping_cart')
-        # account = cursor.fetchall()
-        # account['customer_id'] = session['id']
-        # if customer id was in shopping cart table, able to specify each shopping cart for each customer_id
-        cursor.execute('INSERT INTO shopping_cart SELECT product_id, product_name, price , description FROM products WHERE product_id = %s', [id])
-        cursor.execute('INSERT INTO logs_product (log_id ,description, date_created) VALUES (NULL,concat("User has added product to Shopping Cart (ID :",%s," )"),%s)',(id, time))
-
+        cursor.execute('SELECT * FROM products WHERE product_id = %s ', [product_id])
+        sc = cursor.fetchall()
+        for i in sc:
+            name = i['product_name']
+            price = i['price']
+            description = i['description']
+        cursor.execute('INSERT INTO shopping_cart (product_id, product_name, price , description, customer_id) VALUES (%s,%s,%s,%s,%s)',(product_id,name,price, description, customer_id))
+        cursor.execute('INSERT INTO logs_product (log_id ,description, date_created) VALUES (NULL,concat("User (",%s,") has added product to Shopping Cart (ID :",%s," )"),%s)',(customer_id,product_id, time))
         db.connection.commit()
-        flash("Product Added Successfully!",category="success")
     except:
-        flash("No Items were added!", category="error")
+        flash("NO", category="error")
+
 
     return redirect(url_for('checkout'))
 
-
-@app.route('/checkout', methods=['POST', 'GET'])
-def checkout():
+@app.route('/check_sc', methods=['POST', 'GET'])
+def check_sc():
     if 'loggedin' in session:
-        session_checkout = stripe.checkout.Session.create(
-            payment_method_types=['card'],
-            line_items=[{
-                'price': 'price_1LMQn6JDutS1IqmOYxizfOAB',
-                'quantity': 1,
-            }],
-            mode='payment',
-            success_url=url_for('orders', _external=True),
-            cancel_url=url_for('market', _external=True),
-        )
         try:
             cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
             if cursor:
-                cursor.execute('SELECT * FROM shopping_cart')
+                cursor.execute('SELECT sum(price) as price FROM shopping_cart')
+                total = cursor.fetchall()
+                for i in total:
+                    if i['price'] > 1000:
+                        flash('Please do a Verification as Amount is too big', category="success")
+                        return redirect(url_for('checkout_verification2'))
+                    else:
+                        return redirect(url_for('checkout'))
+            else:
+                return redirect(url_for('market'))
+        except IOError:
+            print('Database problem!')
+        except Exception as e:
+            print(f'Error while connecting to MySQL,{e}')
+        except:
+            return redirect(url_for('market'))
+        finally:
+            if cursor:
+                cursor.close()
+
+    else:
+        flash("Please LOG IN!", category="error")
+        return redirect(url_for('login'))
+
+@app.route('/checkout', methods=['POST', 'GET'])
+def checkout():
+    customer_id = session['id']
+    if 'loggedin' in session:
+        # session_checkout = stripe.checkout.Session.create(
+        #     payment_method_types=['card'],
+        #     line_items=[{
+        #         'price': 'price_1LMQn6JDutS1IqmOYxizfOAB',
+        #         'quantity': 1,
+        #     }],
+        #     mode='payment',
+        #     success_url=url_for('orders', _external=True),
+        #     cancel_url=url_for('market', _external=True),
+        # )
+        try:
+            cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+            if cursor:
+                cursor.execute('SELECT * FROM shopping_cart WHERE customer_id = %s ', [customer_id])
                 products = cursor.fetchall()
+                cursor.execute('SELECT sum(price) as price FROM shopping_cart')
+                total = cursor.fetchall()
+
+
         except IOError:
             print('Database problem!')
         except Exception as e:
@@ -832,8 +865,9 @@ def checkout():
         finally:
             if cursor:
                 cursor.close()
-        return render_template('checkout.html', cart_items=products, checkout_session_id=session_checkout['id'],
-                               checkout_public_key=app.config['STRIPE_PUBLIC_KEY'])
+        return render_template('checkout.html', cart_items=products , total = total )
+        # checkout_session_id = session_checkout['id'],
+        # checkout_public_key = app.config['STRIPE_PUBLIC_KEY']
     else:
         flash("Please LOG IN!", category="error")
         return redirect(url_for('login'))
@@ -856,15 +890,93 @@ def payment():
 
     return render_template('payment.html', form =form)
 
+@app.route('/checkout_verification', methods=['POST','GET'])
+def checkout_verification():
+    form = LoginForm(request.form)
+    if request.method == 'POST':
+        # Create variables for easy access
+        email = form.email.data
+        password = form.password1.data
+        login_time = datetime.utcnow()
+        # check if its staff account
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        # decryption later + salted hashing + login history
+        # Check if account exists using MySQL
+        cursor.execute('SELECT * FROM customer_accounts WHERE email = %s', [email])
+        # Fetch one record and return result
+        account = cursor.fetchone()
+        if account:
+            user_hashpwd = account['hashed_pw']
+            if bcrypt2.check_password_hash(user_hashpwd, password):
+                id = account['customer_id']
+                # Create session data, we can access this data in other routes
+                cursor.execute(
+                    'SELECT max(login_attempt_no) AS last_login FROM customer_login_history WHERE customer_id = %s',[id])
+                acc_login = cursor.fetchone()
+                # means first login
+                if acc_login['last_login'] is not None:
+                    session['loggedin'] = True
+                    session['id'] = account['customer_id']
+                    session['name'] = account['full_name']
+                    # Redirect to order page
+                    cursor.execute('INSERT INTO logs_product (log_id ,description, date_created) VALUES (NULL,concat("User ID (",%s,") has been verififed for checkout"),%s)',(id, login_time))
+                    db.connection.commit()
+                    return redirect(url_for('orders'))
+            else:
+                flash("Please Verify Again", category="success")
+                return redirect(url_for('orders'))
+
+    return render_template('checkout_verification.html', form=form)
+
+@app.route('/checkout_verification2', methods=['POST','GET'])
+def checkout_verification2():
+    form = LoginForm(request.form)
+    if request.method == 'POST':
+        # Create variables for easy access
+        email = form.email.data
+        password = form.password1.data
+        login_time = datetime.utcnow()
+        # check if its staff account
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        # decryption later + salted hashing + login history
+        # Check if account exists using MySQL
+        cursor.execute('SELECT * FROM customer_accounts WHERE email = %s', [email])
+        # Fetch one record and return result
+        account = cursor.fetchone()
+        if account:
+            user_hashpwd = account['hashed_pw']
+            if bcrypt2.check_password_hash(user_hashpwd, password):
+                id = account['customer_id']
+                # Create session data, we can access this data in other routes
+                cursor.execute(
+                    'SELECT max(login_attempt_no) AS last_login FROM customer_login_history WHERE customer_id = %s',
+                    [id])
+                acc_login = cursor.fetchone()
+                # means first login
+                if acc_login['last_login'] is not None:
+                    session['loggedin'] = True
+                    session['id'] = account['customer_id']
+                    session['name'] = account['full_name']
+                    # Redirect to home page
+                    cursor.execute('INSERT INTO logs_product (log_id ,description, date_created) VALUES (NULL,concat("User ID (",%s,") has been verififed for products"),%s)',(id, login_time))
+                    db.connection.commit()
+                    return redirect(url_for('checkout'))
+            else:
+                flash("Please Verify Again",category="success")
+                return redirect(url_for('checkout_verification2'))
+
+
+    return render_template('checkout_verification2.html', form=form)
 
 @app.route('/checkout/delete_checkout_products/<id>/',  methods=['POST'])
 def delete_checkout_products(id):
+    customer_id = session['id']
     try:
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute('SELECT * FROM shopping_cart WHERE product_id = %s', [id])
+        cursor.execute('SELECT * FROM shopping_cart WHERE product_id = %s and customer_id = %s', [id,customer_id])
         account = cursor.fetchone()
         if account:
-            cursor.execute('DELETE FROM shopping_cart WHERE product_id = %s', [id])
+            cursor.execute('DELETE FROM shopping_cart WHERE product_id = %sand customer_id = %s', [id,customer_id])
             db.connection.commit()
             flash("Product deleted successfully",category="success")
         else:
@@ -880,15 +992,19 @@ def delete_checkout_products(id):
 
 @app.route('/orders')
 def orders():
-    global payment
+    customer_id = session['id']
+    # global payment
     global shopping
+    global total_products
     try:
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        if cursor:
-            cursor.execute('SELECT * FROM shopping_cart')
-            shopping = cursor.fetchall()
-            cursor.execute('SELECT * FROM payment')
-            payment = cursor.fetchall()
+        cursor.execute('SELECT * FROM shopping_cart WHERE customer_id = %s',[customer_id])
+
+        shopping = cursor.fetchall()
+        # cursor.execute('SELECT * FROM payment')
+        # payment = cursor.fetchall()
+        cursor.execute('SELECT sum(price) as price FROM shopping_cart WHERE customer_id = %s',[customer_id])
+        total_products = cursor.fetchall()
     except IOError:
         print('Database problem!')
     except Exception as e:
@@ -896,19 +1012,25 @@ def orders():
     finally:
         if cursor:
             cursor.close()
-    return render_template('receipt.html',shopping=shopping, payment=payment)
+
+    return render_template('receipt.html',shopping=shopping, total=total_products)
 
 @app.route('/orders/delete_order',  methods=['POST'])
 def delete_order():
+    customer_id = session['id']
     id = request.form['product-checkout']
+    time = datetime.utcnow()
+
     try:
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute('SELECT * FROM shopping_cart WHERE product_id = %s', [id])
         account = cursor.fetchone()
         if account:
-            cursor.execute('DELETE FROM shopping_cart WHERE product_id = %s', [id])
+            cursor.execute('INSERT INTO orders (order_id , product_id ,order_date, quantity) VALUES (NULL, %s , %s , %s)',(id, time, 1))
+            cursor.execute('DELETE FROM shopping_cart WHERE customer_id = %s',[customer_id])
+            cursor.execute('INSERT INTO logs_product (log_id ,description, date_created) VALUES (NULL,concat("User has purchased product (ID :",%s," )"),%s)',(id, time))
             db.connection.commit()
-            flash("Purchase successfully",category="success")
+            flash(id,category="success")
         else:
             flash("Something went wrong, please try again!",category="danger")
     except IOError:
