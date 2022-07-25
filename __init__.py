@@ -166,7 +166,6 @@ def register():
     return render_template('register.html',form=form)
 
 
-@app.route('/expiry')
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     form = LoginForm(request.form)
