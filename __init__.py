@@ -253,6 +253,7 @@ def login():
                         session['id'] = id
                         session['name'] = staff['full_name']
                         return redirect(url_for('admins'))
+            
     return render_template('login.html', form=form)
 
 @app.route('/logout')
@@ -328,7 +329,12 @@ def updatePassword():
 def home():
     if 'loggedin' in session:
         # User is loggedin show them the home page
-        return render_template('home.html',id=session['id'], name=session['name'])
+        id=session['id']
+        login_num=session['customer_login_no']
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute('SELECT login_time FROM customer_login_history WHERE customer_id =%s and login_attempt_no =%s',(id, login_num))
+        logintime = cursor.fetchone()
+        return render_template('home.html',id=session['id'], name=session['name'],logintime=logintime)
 # User is not loggedin redirect to login page
     flash('Session timeout')
     return redirect(url_for('login'))
@@ -355,6 +361,7 @@ def dashboard():
             cursor.close()
     return render_template('dashboard.html', items=login , products = products )
 
+
 @app.route('/admins', methods=['POST','GET'])
 def admins():
     form = CreateAdminForm()
@@ -363,6 +370,14 @@ def admins():
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute('SELECT * FROM staff_accounts')
         all_data = cursor.fetchall()
+        for customer in all_data:
+            id = customer['customer_id']
+            cursor.execute('SELECT staff_key FROM staff_key WHERE staff_id=%s',[id])
+            staff = cursor.fetchone()
+            key = staff['staff_key']
+            fernet = Fernet(key)    
+            decrypted = fernet.decrypt(customer['email'].encode())
+            all_data['email'] = decrypted
         if request.form == 'POST'and form.validate_on_submit():
             return redirect(url_for('create_admin'))
         elif request.form == 'POST' and form2.validate_on_submit():
@@ -508,6 +523,7 @@ def customers():
         if cursor:
             cursor.execute('SELECT * FROM customer_accounts')
             customers = cursor.fetchall()
+            cursor.execute('SELECT * FROM customer_accounts where ')
     except IOError:
         print('Database problem!')
     except Exception as e:
@@ -762,6 +778,8 @@ def update_products(id):
 @app.route('/market')
 def market():
     if 'loggedin' in session:
+        id=session['id']
+        login_num=session['customer_login_no']
         try:
             cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
             if cursor:
@@ -769,6 +787,9 @@ def market():
                 products = cursor.fetchall()
                 cursor.execute('SELECT * FROM shopping_cart')
                 shopping_cart = cursor.fetchall()
+                cursor.execute('SELECT login_time FROM customer_login_history WHERE customer_id =%s and login_attempt_no =%s',(id, login_num))
+                logintime = cursor.fetchone()
+                
         except IOError:
             print('Database problem!')
         except Exception as e:
@@ -776,7 +797,7 @@ def market():
         finally:
             if cursor:
                 cursor.close()
-        return render_template('market.html', items=products, cart = shopping_cart,id=session['id'], name=session['name'])
+        return render_template('market.html', items=products, cart = shopping_cart,id=session['id'], name=session['name'], logintime=logintime)
     else:
         flash("Please LOG IN!", category="error")
         return redirect(url_for('login'))
