@@ -25,6 +25,7 @@ class email_verification:
         s.starttls()
         s.login(my_email, my_password)
         s.sendmail('&&&&&&&&&&&',email,verfication_message)
+        return 'email has been sent'
 
     def verify_otp(otp_to_check, final_otp):
         if int(otp_to_check) == int(final_otp):
@@ -34,7 +35,7 @@ class email_verification:
             return False    
 
 # testing
-email = "chamsamuel01@gmail.com"
+email = "nathanaeltzw@gmail.com"
 otp = email_verification.generateOTP()
 email_verification.send_otp(otp,email)
 new_otp= input("ENter otp: ")
