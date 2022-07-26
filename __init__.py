@@ -393,7 +393,7 @@ def admins():
 @app.route('/create_admin', methods=['POST','GET'])
 def create_admin():
     form = CreateAdminForm()
-    if request.form == 'POST' and form.validate_on_submit():
+    if form.validate_on_submit():
         name = form.name.data
         email = form.email.data
         phone = form.phone.data
@@ -404,59 +404,60 @@ def create_admin():
         date_created = datetime.utcnow()
         #Server side validations
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute('SELECT * FROM staff_email_hash')
-        all_staff = cursor.fetchall()
-        #check if email exists
-        for staff in all_staff:
-            if bcrypt.checkpw(email.encode(),staff['email_hash'].encode()):
-                flash('Email exists!',category="danger")
+        if cursor:
+            cursor.execute('SELECT * FROM staff_email_hash')
+            all_staff = cursor.fetchall()
+            #check if email exists
+            for staff in all_staff:
+                if bcrypt.checkpw(email.encode(),staff['email_hash'].encode()):
+                    flash('Email exists!',category="danger")
+                    return redirect(url_for('admins'))
+                continue
+            if password != password2:
+                flash('passwords does not match',category="danger")
                 return redirect(url_for('admins'))
-            continue
-        if password != password2:
-            flash('passwords does not match',category="danger")
-            return redirect(url_for('admins'))
-        #server side confirmations 
-        elif Validations.validate_password(password) == False:
-            flash('Invalid password',category="danger")
-            return redirect(url_for('admins'))
-        elif Validations.validate_email(email) == False:
-            flash('Invalid email',category="danger")
-            return redirect(url_for('admins'))
-        else:
-            #hashing password 
-            salt = bcrypt.gensalt()        
-            hashedpw = bcrypt.hashpw(password.encode(),salt)
+            #server side confirmations 
+            elif Validations.validate_password(password) == False:
+                flash('Invalid password',category="danger")
+                return redirect(url_for('admins'))
+            elif Validations.validate_email(email) == False:
+                flash('Invalid email',category="danger")
+                return redirect(url_for('admins'))
+            else:
+                #hashing password 
+                salt = bcrypt.gensalt()        
+                hashedpw = bcrypt.hashpw(password.encode(),salt)
 
-            #hashing email to find it later in login 
-            email_salt = bcrypt.gensalt()
-            hashed_email = bcrypt.hashpw(email.encode(),email_salt)
-            #encryption of email using password, getting key using salt
-            encoded_password = password.encode()
-            salt = b'\x829\xf0\x9e\x0e\x8bl;\x1a\x95\x8bB\xf9\x16\xd4\xe2'
-            kdf = PBKDF2HMAC(algorithm=hashes.SHA256(),
-                    length=32,
-                    salt=salt,
-                    iterations=100000,
-                    backend=default_backend())
-            key = base64.urlsafe_b64encode(kdf.derive(encoded_password))
+                #hashing email to find it later in login 
+                email_salt = bcrypt.gensalt()
+                hashed_email = bcrypt.hashpw(email.encode(),email_salt)
+                #encryption of email using password, getting key using salt
+                encoded_password = password.encode()
+                salt = b'\x829\xf0\x9e\x0e\x8bl;\x1a\x95\x8bB\xf9\x16\xd4\xe2'
+                kdf = PBKDF2HMAC(algorithm=hashes.SHA256(),
+                        length=32,
+                        salt=salt,
+                        iterations=100000,
+                        backend=default_backend())
+                key = base64.urlsafe_b64encode(kdf.derive(encoded_password))
 
-            #encrypting email
-            encoded_email = email.encode()
-            f = Fernet(key)
-            encrypted_email = f.encrypt(encoded_email)
-            cursor.execute('INSERT INTO staff_accounts VALUES (NULL, %s, %s, %s, %s, %s, %s, %s, %s)', (name,encrypted_email,phone,gender,hashedpw.decode(),30,description,date_created))
-            db.connection.commit()
+                #encrypting email
+                encoded_email = email.encode()
+                f = Fernet(key)
+                encrypted_email = f.encrypt(encoded_email)
+                cursor.execute('INSERT INTO staff_accounts VALUES (NULL, %s, %s, %s, %s, %s, %s, %s, %s)', (name,encrypted_email,phone,gender,hashedpw.decode(),30,description,date_created))
+                db.connection.commit()
 
-            #get staff-id + sorting key
-            cursor.execute('SELECT staff_id FROM staff_accounts WHERE email = %s',[encrypted_email])
-            staff_id = cursor.fetchone()
-            #store email encryption key
-            cursor.execute('INSERT INTO staff_key VALUES (%s,%s)',((staff_id['staff_id']),key.decode()))
-            #store email hash
-            cursor.execute('INSERT INTO staff_email_hash VALUES (%s,%s)',((staff_id['staff_id']),hashed_email.decode()))
-            db.connection.commit()
-            flash("Employee Added Successfully!",category="success")
-            return redirect(url_for('admins'))
+                #get staff-id + sorting key
+                cursor.execute('SELECT staff_id FROM staff_accounts WHERE email = %s',[encrypted_email])
+                staff_id = cursor.fetchone()
+                #store email encryption key
+                cursor.execute('INSERT INTO staff_key VALUES (%s,%s)',((staff_id['staff_id']),key.decode()))
+                #store email hash
+                cursor.execute('INSERT INTO staff_email_hash VALUES (%s,%s)',((staff_id['staff_id']),hashed_email.decode()))
+                db.connection.commit()
+                flash("Employee Added Successfully!",category="success")
+                return redirect(url_for('admins'))
     return render_template('create_admin.html',form=form)
 
 
