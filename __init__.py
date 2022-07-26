@@ -456,7 +456,7 @@ def create_admin():
             cursor.execute('INSERT INTO staff_email_hash VALUES (%s,%s)',((staff_id['staff_id']),hashed_email.decode()))
             db.connection.commit()
             flash("Employee Added Successfully!",category="success")
-            redirect(url_for('admins'))
+            return redirect(url_for('admins'))
     return render_template('create_admin.html',form=form)
 
 
