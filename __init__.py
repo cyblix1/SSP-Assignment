@@ -370,14 +370,14 @@ def admins():
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute('SELECT * FROM staff_accounts')
         all_data = cursor.fetchall()
-        for customer in all_data:
-            id = customer['customer_id']
-            cursor.execute('SELECT staff_key FROM staff_key WHERE staff_id=%s',[id])
-            staff = cursor.fetchone()
-            key = staff['staff_key']
-            fernet = Fernet(key)    
-            decrypted = fernet.decrypt(customer['email'].encode())
-            all_data['email'] = decrypted
+        for staff in all_data:
+            id = staff['staff_id']
+            cursor.execute('SELECT * FROM staff_key WHERE staff_id=%s',[id])
+            staff_key = cursor.fetchone()
+            key_staff = staff_key['staff_key'].encode()
+            fernet = Fernet(key_staff)    
+            decrypted = fernet.decrypt(staff['email'].encode())
+            staff['email'] = decrypted.decode()
         if request.form == 'POST'and form.validate_on_submit():
             return redirect(url_for('create_admin'))
         elif request.form == 'POST' and form2.validate_on_submit():
@@ -1078,6 +1078,30 @@ def error403(e):
 
 
 
+    
+
+@app.route('/test')
+def test():
+    try:
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute('SELECT * FROM staff_accounts')
+        all_data = cursor.fetchall()
+        for staff in all_data:
+            id = staff['staff_id']
+            cursor.execute('SELECT * FROM staff_key WHERE staff_id=%s',[id])
+            staff_key = cursor.fetchone()
+            key_staff = staff_key['staff_key'].encode()
+            fernet = Fernet(key_staff)    
+            decrypted = fernet.decrypt(staff['email'].encode())
+            staff['email'] = decrypted.decode()
+    except IOError:
+        print('Database problem!')
+    except Exception as e:
+        print(f'Error while connecting to MySQL,{e}')
+    finally:
+        if cursor:
+            cursor.close()
+    return render_template('test.html', employees = all_data)
 
 if __name__ == '__main__':
     app.run(debug=True)
