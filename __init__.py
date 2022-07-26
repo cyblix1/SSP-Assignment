@@ -364,7 +364,6 @@ def dashboard():
 
 @app.route('/admins', methods=['POST','GET'])
 def admins():
-    form = CreateAdminForm()
     form2 = UpdateAdminForm()
     try:
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
@@ -378,11 +377,9 @@ def admins():
             fernet = Fernet(key_staff)    
             decrypted = fernet.decrypt(staff['email'].encode())
             staff['email'] = decrypted.decode()
-        if request.form == 'POST'and form.validate_on_submit():
-            return redirect(url_for('create_admin'))
-        elif request.form == 'POST' and form2.validate_on_submit():
+        if request.form == 'POST' and form2.validate_on_submit():
             return redirect(url_for('update_admin'))
-        elif form.csrf_token.errors or form2.csrf_token.errors:
+        elif form2.csrf_token.errors:
             pass
     except IOError:
         print('Database problem!')
@@ -391,74 +388,76 @@ def admins():
     finally:
         if cursor:
             cursor.close()
-    return render_template('admins.html', employees = all_data, form = form, form2=form2)
+    return render_template('admins.html', employees = all_data, form2=form2)
 
-@app.route('/admins/create_admin', methods=['POST','GET'])
+@app.route('/create_admin', methods=['POST','GET'])
 def create_admin():
     form = CreateAdminForm()
-    name = form.name.data
-    email = form.email.data
-    phone = form.phone.data
-    gender = form.gender.data
-    description = form.description.data
-    password = form.password1.data
-    password2 = form.password2.data
-    date_created = datetime.utcnow()
-    #Server side validations
-    cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-    cursor.execute('SELECT * FROM staff_email_hash')
-    all_staff = cursor.fetchall()
-    #check if email exists
-    for staff in all_staff:
-        if bcrypt.checkpw(email.encode(),staff['email_hash'].encode()):
-            flash('Email exists!',category="danger")
+    if request.form == 'POST' and form.validate_on_submit():
+        name = form.name.data
+        email = form.email.data
+        phone = form.phone.data
+        gender = form.gender.data
+        description = form.description.data
+        password = form.password1.data
+        password2 = form.password2.data
+        date_created = datetime.utcnow()
+        #Server side validations
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute('SELECT * FROM staff_email_hash')
+        all_staff = cursor.fetchall()
+        #check if email exists
+        for staff in all_staff:
+            if bcrypt.checkpw(email.encode(),staff['email_hash'].encode()):
+                flash('Email exists!',category="danger")
+                return redirect(url_for('admins'))
+            continue
+        if password != password2:
+            flash('passwords does not match',category="danger")
             return redirect(url_for('admins'))
-        continue
-    if password != password2:
-        flash('passwords does not match',category="danger")
-        return redirect(url_for('admins'))
-    #server side confirmations 
-    elif Validations.validate_password(password) == False:
-        flash('Invalid password',category="danger")
-        return redirect(url_for('admins'))
-    elif Validations.validate_email(email) == False:
-        flash('Invalid email',category="danger")
-        return redirect(url_for('admins'))
-    else:
-        #hashing password 
-        salt = bcrypt.gensalt()        
-        hashedpw = bcrypt.hashpw(password.encode(),salt)
+        #server side confirmations 
+        elif Validations.validate_password(password) == False:
+            flash('Invalid password',category="danger")
+            return redirect(url_for('admins'))
+        elif Validations.validate_email(email) == False:
+            flash('Invalid email',category="danger")
+            return redirect(url_for('admins'))
+        else:
+            #hashing password 
+            salt = bcrypt.gensalt()        
+            hashedpw = bcrypt.hashpw(password.encode(),salt)
 
-        #hashing email to find it later in login 
-        email_salt = bcrypt.gensalt()
-        hashed_email = bcrypt.hashpw(email.encode(),email_salt)
-        #encryption of email using password, getting key using salt
-        encoded_password = password.encode()
-        salt = b'\x829\xf0\x9e\x0e\x8bl;\x1a\x95\x8bB\xf9\x16\xd4\xe2'
-        kdf = PBKDF2HMAC(algorithm=hashes.SHA256(),
-                length=32,
-                salt=salt,
-                iterations=100000,
-                backend=default_backend())
-        key = base64.urlsafe_b64encode(kdf.derive(encoded_password))
+            #hashing email to find it later in login 
+            email_salt = bcrypt.gensalt()
+            hashed_email = bcrypt.hashpw(email.encode(),email_salt)
+            #encryption of email using password, getting key using salt
+            encoded_password = password.encode()
+            salt = b'\x829\xf0\x9e\x0e\x8bl;\x1a\x95\x8bB\xf9\x16\xd4\xe2'
+            kdf = PBKDF2HMAC(algorithm=hashes.SHA256(),
+                    length=32,
+                    salt=salt,
+                    iterations=100000,
+                    backend=default_backend())
+            key = base64.urlsafe_b64encode(kdf.derive(encoded_password))
 
-        #encrypting email
-        encoded_email = email.encode()
-        f = Fernet(key)
-        encrypted_email = f.encrypt(encoded_email)
-        cursor.execute('INSERT INTO staff_accounts VALUES (NULL, %s, %s, %s, %s, %s, %s, %s, %s)', (name,encrypted_email,phone,gender,hashedpw.decode(),30,description,date_created))
-        db.connection.commit()
+            #encrypting email
+            encoded_email = email.encode()
+            f = Fernet(key)
+            encrypted_email = f.encrypt(encoded_email)
+            cursor.execute('INSERT INTO staff_accounts VALUES (NULL, %s, %s, %s, %s, %s, %s, %s, %s)', (name,encrypted_email,phone,gender,hashedpw.decode(),30,description,date_created))
+            db.connection.commit()
 
-        #get staff-id + sorting key
-        cursor.execute('SELECT staff_id FROM staff_accounts WHERE email = %s',[encrypted_email])
-        staff_id = cursor.fetchone()
-        #store email encryption key
-        cursor.execute('INSERT INTO staff_key VALUES (%s,%s)',((staff_id['staff_id']),key.decode()))
-        #store email hash
-        cursor.execute('INSERT INTO staff_email_hash VALUES (%s,%s)',((staff_id['staff_id']),hashed_email.decode()))
-        db.connection.commit()
-        flash("Employee Added Successfully!",category="success")
-        return redirect(url_for('admins'))
+            #get staff-id + sorting key
+            cursor.execute('SELECT staff_id FROM staff_accounts WHERE email = %s',[encrypted_email])
+            staff_id = cursor.fetchone()
+            #store email encryption key
+            cursor.execute('INSERT INTO staff_key VALUES (%s,%s)',((staff_id['staff_id']),key.decode()))
+            #store email hash
+            cursor.execute('INSERT INTO staff_email_hash VALUES (%s,%s)',((staff_id['staff_id']),hashed_email.decode()))
+            db.connection.commit()
+            flash("Employee Added Successfully!",category="success")
+            redirect(url_for('admins'))
+    return render_template('create_admin.html',form=form)
 
 
 @app.route('/admins/update_admin', methods=['POST'])
@@ -495,9 +494,6 @@ def delete_admin(id):
         account = cursor.fetchone()
         if account:
             #have to delete the outer stuff
-            cursor.execute('DELETE FROM staff_key WHERE staff_id = %s',[id])
-            cursor.execute('DELETE FROM staff_email_hash WHERE staff_id = %s',[id])
-            cursor.execute('DELETE FROM staff_login_attempts WHERE staff_id = %s',[id])
             cursor.execute('DELETE FROM staff_accounts WHERE staff_id = %s', [id])
             db.connection.commit()
             flash("Employee deleted successfully",category="success")
@@ -1080,28 +1076,6 @@ def error403(e):
 
     
 
-@app.route('/test')
-def test():
-    try:
-        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute('SELECT * FROM staff_accounts')
-        all_data = cursor.fetchall()
-        for staff in all_data:
-            id = staff['staff_id']
-            cursor.execute('SELECT * FROM staff_key WHERE staff_id=%s',[id])
-            staff_key = cursor.fetchone()
-            key_staff = staff_key['staff_key'].encode()
-            fernet = Fernet(key_staff)    
-            decrypted = fernet.decrypt(staff['email'].encode())
-            staff['email'] = decrypted.decode()
-    except IOError:
-        print('Database problem!')
-    except Exception as e:
-        print(f'Error while connecting to MySQL,{e}')
-    finally:
-        if cursor:
-            cursor.close()
-    return render_template('test.html', employees = all_data)
 
 if __name__ == '__main__':
     app.run(debug=True)

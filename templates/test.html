@@ -1,10 +1,45 @@
 <html>
     <body>
-        {% for employee in employees%}
-
-            {{employee}}
-            <br>
-            <br>
-        {% endfor %}
+        <form action="" method="POST">
+            <div class="modal-body">
+                        {{ form.csrf_token(type='hidden') }}
+                        {% if form.csrf_token.errors %}
+                            <div class="warning">
+                                You have submited an invalid csrf token 
+                            </div>
+                        {% endif %}
+                    <div class="form-group">
+                        {{ form.name(class='form-control form-control-user', placeholder='name') }}
+                    </div>
+                    <div class="form-group">
+                        {{ form.gender(class='form-control form-control-user', placeholder='gender') }}
+                    </div>
+                    <div class="form-group">
+                        {{ form.email(class='form-control form-control-user', placeholder='email') }}
+                    </div>
+                    <div class="form-group">
+                        {{ form.phone(class='form-control form-control-user', placeholder='phone Number') }}
+                    </div>
+                    <div class="form-group">
+                        {{ form.description(class='form-control form-control-user', placeholder='description') }}
+                    </div>
+                    <div class="form-group">
+                        {{ form.password1(class='form-control form-control-user', placeholder='password', pattern='(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}' ,title='Must contain at least one number and one uppercase and lowercacse letter, and 8 or more characters') }}
+                        <div id="message">
+                            <p id="letter" class="invalid float-right">A <b>lowercase</b> letter</p>
+                            <p id="capital" class="invalid">A <b>capital (uppercase)</b> letter</p>
+                            <p id="number" class="invalid float-right">A <b>number</b></p>
+                            <p id="length" class="invalid">Minimum <b>8 characters</b></p>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        {{ form.password2(class='form-control form-control-user', placeholder='confirm password') }}
+                    </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
+                {{ form.submit(class="btn btn-primary" ,type="submit") }}
+            </div>
+        </form>
     </body>
 </html>
