@@ -34,17 +34,11 @@
                             <div class="text-center">
                                 <h1 class="h4 text-gray-900 mb-4">Shopping Cart Authentication Page</h1>
                             </div>
-                            <form action="{{ url_for('checkout') }}" method="POST">
-                                <div class="form-group row">
-                                    <!--userName-->
-                                    {{ form.email.label() }}
-                                    {{ form.email(class='form-control form-control-user', placeholder='Email') }}
-                                    <!-- Flask Forms Feature -->
-                                </div>
+                            <form action="{{ url_for('checkout_verification2') }}" method="POST">
                                 <div class="form-group row">
                                     <!--Password1-->
-                                        {{ form.password1.label() }}
-                                        {{ form.password1(class='form-control form-control-user', placeholder='Password') }}
+                                        {{ form.password.label() }}
+                                        {{ form.password(class='form-control form-control-user', placeholder='Password') }}
 
                                 </div>
                                 {{ form.submit(class='btn btn-primary btn-user btn-block',type='submit') }}
