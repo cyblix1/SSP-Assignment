@@ -29,6 +29,32 @@
         </div>
         <div class="card-body">
             <div class="table-responsive">
+                <form action="" method="post">
+                    <div class="form-group">
+                        {{ form2.csrf_token(type='hidden') }}
+                                {% if form2.csrf_token.errors %}
+                                    <div class="warning">
+                                        You have submited an invalid csrf token 
+                                    </div>
+                                {% endif %}
+                        {{ form2.email(class='form-control form-control-user', placeholder='email')}}
+                        <br>
+                        <button type="submit" class="btn btn-primary btn-sm" >Send Otp</button>
+
+                    </div>
+                </form>
+                <form action="" method="POST">
+                    <div class="modal-body">       
+                            <div class="form-group">
+                                {{ form3.otp(class='form-control form-control-user', placeholder='Enter OTP') }}
+                            </div>
+
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
+                        {{ form3.submit(class="btn btn-primary" ,type="submit") }}
+                    </div>
+                </form>
                 <form action="" method="POST">
                     <div class="modal-body">
                                 {{ form.csrf_token(type='hidden') }}
@@ -42,9 +68,6 @@
                             </div>
                             <div class="form-group">
                                 {{ form.gender(class='form-control form-control-user', placeholder='gender') }}
-                            </div>
-                            <div class="form-group">
-                                {{ form.email(class='form-control form-control-user', placeholder='email') }}
                             </div>
                             <div class="form-group">
                                 {{ form.phone(class='form-control form-control-user', placeholder='phone Number') }}
@@ -65,6 +88,7 @@
                         {{ form.submit(class="btn btn-primary" ,type="submit") }}
                     </div>
                 </form>
+
             </div>
         </div>
     </div>

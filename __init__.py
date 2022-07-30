@@ -1,7 +1,10 @@
+# from crypt import methods
 from distutils import ccompiler
 from distutils.util import byte_compile
+from email.message import Message
 from mimetypes import init
 from tkinter import Image
+from tkinter.tix import Tree
 from flask import Flask, render_template, request, make_response, redirect, url_for, session,flash, json
 from flask_mysqldb import MySQL
 import MySQLdb.cursors
@@ -23,12 +26,13 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from validations import *
-#from verify import *
-bcrypt2 = Bcrypt()
+from verify import email_verification
+from flask_mail import Mail,Message
+
 # import stripe
 import logging
 from logging.config import dictConfig , fileConfig
-
+from random import *
 
 
 
@@ -49,10 +53,17 @@ app.config['RECAPTCHA_PUBLIC_KEY'] = "6Ldzgu0gAAAAAKF5Q8AdFeTRJpvl5mLBncz-dsBv"
 app.config['RECAPTCHA_PRIVATE_KEY'] = "6Ldzgu0gAAAAANuXjmXEv_tLJLQ_s7jtQV3rPwX2"
 app.config['STRIPE_PUBLIC_KEY'] = 'pk_test_51LM6HwJDutS1IqmOR34Em3mZeuTsaUwAaUp40HLvcwrQJpUR5bR60V1e3kkwugBz0A8xAuXObCpte2Y0M251tBeD00p16YXMgE'
 app.config['STRIPE_SECRET_KEY'] = 'sk_test_51LM6HwJDutS1IqmOFhsHKYQcSM2OEF8znqltmmy2vcQCkRUMiKyJrQunP0OlJji6Nlg142NVZ8CpTaMJgZLzzucx00tx6FdjY0'
+
+app.config["MAIL_SERVER"]='smtp.gmail.com'
+app.config["MAIL_PORT"]=465
+app.config["MAIL_USERNAME"]=config['email']['mail']
+app.config['MAIL_PASSWORD']=config['email']['password']    
+app.config['MAIL_USE_TLS']=False
+app.config['MAIL_USE_SSL']=True
 # stripe.api_key = app.config['STRIPE_SECRET_KEY']
 
-
-
+bcrypt2 = Bcrypt()
+mail=Mail(app)
 db = MySQL(app)
 
 # dictConfig({
@@ -377,6 +388,7 @@ def admins():
             fernet = Fernet(key_staff)    
             decrypted = fernet.decrypt(staff['email'].encode())
             staff['email'] = decrypted.decode()
+        
         if request.form == 'POST' and form2.validate_on_submit():
             return redirect(url_for('update_admin'))
         elif form2.csrf_token.errors:
@@ -391,74 +403,91 @@ def admins():
     return render_template('admins.html', employees = all_data, form2=form2)
 
 @app.route('/create_admin', methods=['POST','GET'])
-def create_admin():
+def create_admin():    
     form = CreateAdminForm()
-    if form.validate_on_submit():
-        name = form.name.data
+    form2 = VerifyStaffOtp()
+    form3 = VerifyStaffOtp2()
+    email = form.email.data
+    if form2.validate_on_submit():
         email = form.email.data
-        phone = form.phone.data
-        gender = form.gender.data
-        description = form.description.data
-        password = form.password1.data
-        password2 = form.password2.data
-        date_created = datetime.utcnow()
-        #Server side validations
-        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        if cursor:
-            cursor.execute('SELECT * FROM staff_email_hash')
-            all_staff = cursor.fetchall()
-            #check if email exists
-            for staff in all_staff:
-                if bcrypt.checkpw(email.encode(),staff['email_hash'].encode()):
-                    flash('Email exists!',category="danger")
-                    return redirect(url_for('admins'))
-                continue
-            if password != password2:
-                flash('passwords does not match',category="danger")
-                return redirect(url_for('admins'))
-            #server side confirmations 
-            elif Validations.validate_password(password) == False:
-                flash('Invalid password',category="danger")
-                return redirect(url_for('admins'))
-            elif Validations.validate_email(email) == False:
-                flash('Invalid email',category="danger")
-                return redirect(url_for('admins'))
+        otp=randint(000000,999999)
+        msg=Message(subject='Email OTP', sender='hi@gmail.com',recipients=[email])
+        msg.body=str(otp)
+        mail.send(msg)
+        if form3.validate_on_submit():
+            new_otp=form3.otp.data
+            if otp==int(new_otp):
+                pass
+            if form.validate_on_submit():
+                name = form.name.data
+                phone = form.phone.data
+                gender = form.gender.data
+                description = form.description.data
+                password = form.password1.data
+                password2 = form.password2.data
+                date_created = datetime.utcnow()
+                #Server side validations
+                cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+                if cursor:
+                    cursor.execute('SELECT * FROM staff_email_hash')
+                    all_staff = cursor.fetchall()
+                    #check if email exists
+                    for staff in all_staff:
+                        if bcrypt.checkpw(email.encode(),staff['email_hash'].encode()):
+                            flash('Email exists!',category="danger")
+                            return redirect(url_for('create_admin'))
+                        continue
+                    if password != password2:
+                        flash('passwords does not match',category="danger")
+                        return redirect(url_for('create_admin'))
+                    #server side confirmations 
+                    elif Validations.validate_password(password) == False:
+                        flash('Invalid password',category="danger")
+                        return redirect(url_for('create_admin'))
+                    elif Validations.validate_email(email) == False:
+                        flash('Invalid email',category="danger")
+                        return redirect(url_for('create_admin'))
+                    else:
+                        #hashing password 
+                        salt = bcrypt.gensalt()        
+                        hashedpw = bcrypt.hashpw(password.encode(),salt)
+
+                        #hashing email to find it later in login 
+                        email_salt = bcrypt.gensalt()
+                        hashed_email = bcrypt.hashpw(email.encode(),email_salt)
+                        #encryption of email using password, getting key using salt
+                        encoded_password = password.encode()
+                        salt = b'\x829\xf0\x9e\x0e\x8bl;\x1a\x95\x8bB\xf9\x16\xd4\xe2'
+                        kdf = PBKDF2HMAC(algorithm=hashes.SHA256(),
+                                length=32,
+                                salt=salt,
+                                iterations=100000,
+                                backend=default_backend())
+                        key = base64.urlsafe_b64encode(kdf.derive(encoded_password))
+
+                        #encrypting email
+                        encoded_email = email.encode()
+                        f = Fernet(key)
+                        encrypted_email = f.encrypt(encoded_email)
+                        cursor.execute('INSERT INTO staff_accounts VALUES (NULL, %s, %s, %s, %s, %s, %s, %s, %s)', (name,encrypted_email,phone,gender,hashedpw.decode(),30,description,date_created))
+                        db.connection.commit()
+
+                        #get staff-id + sorting key
+                        cursor.execute('SELECT staff_id FROM staff_accounts WHERE email = %s',[encrypted_email])
+                        staff_id = cursor.fetchone()
+                        #store email encryption key
+                        cursor.execute('INSERT INTO staff_key VALUES (%s,%s)',((staff_id['staff_id']),key.decode()))
+                        #store email hash
+                        cursor.execute('INSERT INTO staff_email_hash VALUES (%s,%s)',((staff_id['staff_id']),hashed_email.decode()))
+                        db.connection.commit()
+                        flash("Employee Added Successfully!",category="success")
+                        return redirect(url_for('admins'))
             else:
-                #hashing password 
-                salt = bcrypt.gensalt()        
-                hashedpw = bcrypt.hashpw(password.encode(),salt)
+                flash('Invalid OTP, please try again')
+                return redirect(url_for('create_admin'))
+    return render_template('create_admin.html',form=form, form2=form2,form3=form3)
 
-                #hashing email to find it later in login 
-                email_salt = bcrypt.gensalt()
-                hashed_email = bcrypt.hashpw(email.encode(),email_salt)
-                #encryption of email using password, getting key using salt
-                encoded_password = password.encode()
-                salt = b'\x829\xf0\x9e\x0e\x8bl;\x1a\x95\x8bB\xf9\x16\xd4\xe2'
-                kdf = PBKDF2HMAC(algorithm=hashes.SHA256(),
-                        length=32,
-                        salt=salt,
-                        iterations=100000,
-                        backend=default_backend())
-                key = base64.urlsafe_b64encode(kdf.derive(encoded_password))
 
-                #encrypting email
-                encoded_email = email.encode()
-                f = Fernet(key)
-                encrypted_email = f.encrypt(encoded_email)
-                cursor.execute('INSERT INTO staff_accounts VALUES (NULL, %s, %s, %s, %s, %s, %s, %s, %s)', (name,encrypted_email,phone,gender,hashedpw.decode(),30,description,date_created))
-                db.connection.commit()
-
-                #get staff-id + sorting key
-                cursor.execute('SELECT staff_id FROM staff_accounts WHERE email = %s',[encrypted_email])
-                staff_id = cursor.fetchone()
-                #store email encryption key
-                cursor.execute('INSERT INTO staff_key VALUES (%s,%s)',((staff_id['staff_id']),key.decode()))
-                #store email hash
-                cursor.execute('INSERT INTO staff_email_hash VALUES (%s,%s)',((staff_id['staff_id']),hashed_email.decode()))
-                db.connection.commit()
-                flash("Employee Added Successfully!",category="success")
-                return redirect(url_for('admins'))
-    return render_template('create_admin.html',form=form)
 
 
 @app.route('/admins/update_admin', methods=['POST'])
@@ -520,7 +549,10 @@ def customers():
         if cursor:
             cursor.execute('SELECT * FROM customer_accounts')
             customers = cursor.fetchall()
-            cursor.execute('SELECT * FROM customer_accounts where ')
+            for customer in customers:
+                cursor.execute('SELECT * FROM customer_login_history WHERE customer_id=%s',[customer['customer_id']])
+                login_logs= cursor.fetchone()
+                customer['cust_logs'] = login_logs
     except IOError:
         print('Database problem!')
     except Exception as e:

@@ -34,6 +34,14 @@ class CreateAdminForm(FlaskForm):
     password2 = PasswordField("Confirm Password", validators=[DataRequired()])
     submit = SubmitField("Add Employee")
 
+class VerifyStaffOtp(FlaskForm):
+    email = EmailField("Email")
+    submit = SubmitField("Verify")
+
+class VerifyStaffOtp2(FlaskForm):
+    otp = StringField(DataRequired())
+    submit = SubmitField("Verify")
+
 
 class UpdateAdminForm(FlaskForm):
     id = IntegerField("Id",validators=[DataRequired()])
