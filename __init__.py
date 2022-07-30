@@ -32,8 +32,15 @@ from flask_mail import Mail,Message
 # import stripe
 import logging
 from logging.config import dictConfig , fileConfig
+
 from random import *
 
+
+
+import smtplib
+from logging.handlers import SMTPHandler
+from email.message import EmailMessage
+import pyotp
 
 
 app = Flask(__name__)
@@ -91,28 +98,83 @@ db = MySQL(app)
 #     },
 # })
 
-fileConfig('logging.cfg')
+# fileConfig('logging.cfg')
 
-@app.route("/logs")
-def main():
-    app.logger.debug("debug")
-    app.logger.info("info")
-    app.logger.warning("warning")
-    app.logger.error("error")
-    app.logger.critical("critical")
-    return ""
+smtp_handler = SMTPHandler(mailhost=('smtp.gmail.com', 587),
+                            fromaddr='chamsamuel01@gmail.com',
+                            toaddrs=['boyixin823@logodez.com','chamsamuel01@gmail.com'],
+                            subject='A dashing subject',
+                            credentials=("chamsamuel01@gmail.com","giyvimnfxcmvszsr"),
+                            secure=None)
 
-# @app.route('/')
-# def hello_world():
-#     app.logger.info('Processing default request')
-#     return 'Hello World!'
+# smtp_handler.setLevel(logging.INFO)
+# formatter = logging.Formatter('%(asctime)s : %(funcName)s : %(levelname)s : %(name)s : %(message)s')
+smtp_handler.setFormatter(logging.Formatter('%(asctime)s : %(funcName)s : %(levelname)s : %(name)s : %(message)s'))
+# smtp_handler.setFormatter(formatter)
+if not app.debug:
+    app.logger.addHandler(smtp_handler)
+
+import logging.handlers
+
+#Define Logger
+logger = logging.getLogger("SSH_Parser")
+
+#Set the Minimum Log Level for logger
+logger.setLevel(logging.DEBUG)
+
+#Create Handlers(Filehandler with filename| StramHandler with stdout)
+file_handler_info = logging.FileHandler('app.log')
+# smtp_handler = SMTPHandler(mailhost=('smtp.gmail.com', 587),
+#                             fromaddr='chamsamuel01@gmail.com',
+#                             toaddrs=['boyixin823@logodez.com','chamsamuel01@gmail.com'],
+#                             subject='A dashing subject',
+#                             credentials=("chamsamuel01@gmail.com","giyvimnfxcmvszsr"),
+#                             secure=None)
+
+#Set Additional log level in Handlers if needed
+file_handler_info.setLevel(logging.INFO)
+smtp_handler.setLevel(logging.WARNING)
+
+#Create Formatter and Associate with Handlers
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(process)d - %(message)s')
+file_handler_info.setFormatter(formatter)
+smtp_handler.setFormatter(formatter)
+
+#Add Handlers to logger
+logger.addHandler(file_handler_info)
+logger.addHandler(smtp_handler)
+
+
+
+
+file_name = "app.log"
+file = open(file_name, "r")
+data_list = []
+order = ["date", "url", "type", "message"]
+
+for line in file.readlines():
+    details = line.split("|")
+    details = [x.strip() for x in details]
+    structure = {key: value for key, value in zip(order, details)}
+    data_list.append(structure)
+
+
+
+# @app.route("/logs")
+# def main():
+#     app.logger.debug("debug")
+#     app.logger.info("info")
+#     app.logger.warning("warning")
+#     app.logger.error("error")
+#     app.logger.critical("critical")
+#     return ""
 
 # logger = logging.getLogger('dev')
 # logger.info('This is an information message')
 
 @app.before_first_request
 def before_first_request():
-    log_level = logging.INFO
+    log_level = logging.ERROR
 
     for handler in app.logger.handlers:
         app.logger.removeHandler(handler)
@@ -130,7 +192,6 @@ def before_first_request():
 
     defaultFormatter = logging.Formatter('[%(asctime)s] %(levelname)s in %(module)s: %(message)s')
     handler.setFormatter(defaultFormatter)
-
 
 
 class checks_exists:
@@ -161,6 +222,7 @@ def register():
         password2 = form.password2.data
         if password != password2:
             flash('passwords do not match',category='danger')
+
             return redirect(url_for('register'))
         elif password == password2:
             flash('Account created successfully!')
@@ -168,9 +230,10 @@ def register():
         time = datetime.utcnow()
         password_age=4
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        print('INSERT INTO customer_accounts VALUES (NULL,%s,%s,%s,%s,%s)',(name,email,hashpassword,password_age,time,))
+        # print('INSERT INTO customer_accounts VALUES (NULL,%s,%s,%s,%s,%s)',(name,email,hashpassword,password_age,time))
         cursor.execute('INSERT INTO customer_accounts VALUES (NULL,%s,%s,%s,%s,%s)',(name,email,hashpassword,password_age,time,))
         cursor.execute('INSERT INTO logs_login (log_id ,description, date_created) VALUES (NULL,concat("User ",%s," has registered"),%s)',(name, time))
+
         db.connection.commit()
         return redirect(url_for('login'))
 
@@ -978,42 +1041,55 @@ def checkout_verification():
 
 @app.route('/checkout_verification2', methods=['POST','GET'])
 def checkout_verification2():
-    form = LoginForm(request.form)
+    form = ShoppingCart_Validation(request.form)
+    password_sc = form.password.data
+    # login_time = datetime.utcnow()
+    customer_id = session['id']
+    cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor.execute('SELECT sc_status AS status_cart FROM sc_attempts WHERE customer_id = %s',[customer_id])
+    status_sc = cursor.fetchone()
+    cursor.execute('SELECT max(product_attempts) AS attempts_cart FROM sc_attempts WHERE customer_id = %s',[customer_id])
+    acc_sc = cursor.fetchone()
+    user_checkout_id = uuid.uuid4()
+    msg = EmailMessage()
+    msg.set_content("This is your OTP {}".format(user_checkout_id))
+    msg["Subject"] = "An Email Alert"
+    msg["From"] = "chamsamuel01@gmail.com"
+    msg["To"] = "chamsamuel01@gmail.com"
+
+    with smtplib.SMTP("smtp.gmail.com", port=587) as smtp:
+        smtp.starttls()
+        smtp.login(msg["From"], "giyvimnfxcmvszsr")
+        smtp.send_message(msg)
     if request.method == 'POST':
-        # Create variables for easy access
-        email = form.email.data
-        password = form.password1.data
-        login_time = datetime.utcnow()
-        # check if its staff account
-        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        # decryption later + salted hashing + login history
-        # Check if account exists using MySQL
-        cursor.execute('SELECT * FROM customer_accounts WHERE email = %s', [email])
-        # Fetch one record and return result
-        account = cursor.fetchone()
-        if account:
-            user_hashpwd = account['hashed_pw']
-            if bcrypt2.check_password_hash(user_hashpwd, password):
-                id = account['customer_id']
-                # Create session data, we can access this data in other routes
-                cursor.execute(
-                    'SELECT max(login_attempt_no) AS last_login FROM customer_login_history WHERE customer_id = %s',
-                    [id])
-                acc_login = cursor.fetchone()
-                # means first login
-                if acc_login['last_login'] is not None:
-                    session['loggedin'] = True
-                    session['id'] = account['customer_id']
-                    session['name'] = account['full_name']
-                    # Redirect to home page
-                    cursor.execute('INSERT INTO logs_product (log_id ,description, date_created) VALUES (NULL,concat("User ID (",%s,") has been verififed for products"),%s)',(id, login_time))
-                    db.connection.commit()
+        if status_sc['status_cart'] != 1 :
+            if acc_sc['attempts_cart'] is None:
+                attempted = 1
+                if password_sc == user_checkout_id:
+                    cursor.execute('INSERT INTO sc_attempts (unique_id ,product_attempts,customer_id,sc_status) VALUES (%s,%s,%s,%s)', (user_checkout_id,attempted,customer_id,1))
                     return redirect(url_for('checkout'))
+                else:
+                    cursor.execute('INSERT INTO sc_attempts (unique_id ,product_attempts,customer_id,sc_status) VALUES (%s,%s,%s,%s)', (user_checkout_id,attempted,customer_id,0))
+                    flash("OTP Unsuccessfully, Try Again!",category="success")
+                    return redirect(url_for('checkout_verification2'))
             else:
-                flash("Please Verify Again",category="success")
-                return redirect(url_for('checkout_verification2'))
+                cursor.execute('SELECT unique_id FROM sc_attempts WHERE customer_id = %s and product_attempts=% ',[customer_id,acc_sc])
+                acc_uuid = cursor.fetchone
+                next_sc_attempt = acc_sc['attempts_cart'] + 1
+                if password_sc == acc_uuid:
+                    cursor.execute('INSERT INTO sc_attempts (unique_id ,product_attempts,customer_id,sc_status) VALUES (%s,%s,%s,%s)', (acc_uuid,next_sc_attempt,customer_id,1))
+                    return redirect(url_for('checkout'))
+                else:
+                    cursor.execute('INSERT INTO sc_attempts (unique_id ,product_attempts,customer_id,sc_status) VALUES (%s,%s,%s,%s)', (acc_uuid,next_sc_attempt,customer_id,0))
+                    flash("OTP Unsuccessfully, Try Again!",category="success")
+                    return redirect(url_for('checkout_verification2'))
+        else:
+            return redirect(url_for('checkout'))
 
+    # cursor.execute('INSERT INTO logs_product (log_id ,description,date_created) VALUES (NULL,concat("User ID (",%s,") has been verififed for products"),%s)',(customer_id, login_time))
+    # db.connection.commit()
 
+    db.connection.commit()
     return render_template('checkout_verification2.html', form=form)
 
 @app.route('/checkout/delete_checkout_products/<id>/',  methods=['POST'])
