@@ -109,8 +109,10 @@ class ShoppingCart_Validation(FlaskForm):
     password = PasswordField("Input OTP:", validators=[DataRequired()])
     submit = SubmitField(label = "Verify")
 
-
-
+class ForgetPassword(FlaskForm):
+    email = EmailField("Email", validators=[Length(min=5, max=100,  message='length is between 5 to 100'), DataRequired(message ='no email')])
+    password = PasswordField("Password:", validators=[DataRequired(message ="no password")])
+    submit = SubmitField(label = "Verify")
 
 
 

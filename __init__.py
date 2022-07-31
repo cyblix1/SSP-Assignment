@@ -271,6 +271,7 @@ def login():
                     session['loggedin'] = True
                     session['id'] = account['customer_id']
                     session['name'] = account['full_name']
+                    session['email']= account['email']
                     session['customer_login_no'] = 1
                     session.permanent = True
                     app.permanent_session_lifetime = timedelta(minutes= 5)
@@ -329,6 +330,62 @@ def login():
                         return redirect(url_for('admins'))
             
     return render_template('login.html', form=form)
+
+@app.route('/forgetpassword1', methods=['GET', 'POST'])
+def forgetpassword1():
+    form = ForgetPassword(request.form)
+    if request.method == 'POST':
+        email_forget = form.email.data
+        login_time = datetime.utcnow()
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute('SELECT * FROM customer_accounts WHERE email = %s', [email_forget])
+        account_forget = cursor.fetchone()
+        if account_forget:
+            if email_forget == account_forget['email']:
+                id = account_forget['customer_id']
+                session['forget_pw'] = account_forget['email']
+                cursor.execute('INSERT INTO logs_product (log_id ,description, date_created) VALUES (NULL,concat("User ID (",%s,") has been verififed for Forget Password"),%s)',(id, login_time))
+                db.connection.commit()
+                return redirect(url_for('forgetpassword2'))
+        else:
+            flash("Please Verify Again", category="success")
+            return redirect(url_for('login'))
+
+    return render_template('forgetpassword.html', form=form)
+
+@app.route('/forgetpassword2', methods=['GET', 'POST'])
+def forgetpassword2():
+    form = ForgetPassword(request.form)
+    # email_forget = form.email.data
+    password_forget = form.password.data
+    login_time = datetime.utcnow()
+    cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+    # cursor.execute('SELECT * FROM customer_accounts WHERE email = %s', [email_forget])
+    # user_email = cursor.fetchone()
+    user_id_forget = 'hello'
+    msg = EmailMessage()
+    msg.set_content("This is your OTP {}".format(user_id_forget))
+    msg["Subject"] = "An Email Alert"
+    msg["From"] = "chamsamuel01@gmail.com"
+    msg["To"] = session['forget_pw']
+
+    with smtplib.SMTP("smtp.gmail.com", port=587) as smtp:
+        smtp.starttls()
+        smtp.login(msg["From"], "giyvimnfxcmvszsr")
+        smtp.send_message(msg)
+
+    if request.method == 'POST':
+            if password_forget == user_id_forget:
+                cursor.execute('INSERT INTO logs_product (log_id ,description, date_created) VALUES (NULL,concat("User ID (",%s,") has been verififed2 for Forget Password"),%s)',(1, login_time))
+                db.connection.commit()
+                flash("will be redirected to Update Password (XF Section)", category="success")
+                return redirect(url_for('market'))
+
+            else:
+                flash("Forget Password Unsuccessfully, Try Again!", category="success")
+                return redirect(url_for('login'))
+    else:
+        return render_template('forgetpassword2.html', form=form)
 
 @app.route('/logout')
 def logout():
@@ -917,34 +974,27 @@ def add_to_checkout():
         flash("NO", category="error")
 
 
-    return redirect(url_for('checkout'))
+    return redirect(url_for('market'))
 
-@app.route('/check_sc', methods=['POST', 'GET'])
+@app.route('/check_sc', methods=['POST','GET'])
 def check_sc():
     if 'loggedin' in session:
         try:
             cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-            if cursor:
-                cursor.execute('SELECT sum(price) as price FROM shopping_cart')
-                total = cursor.fetchall()
-                for i in total:
-                    if i['price'] > 1000:
-                        flash('Please do a Verification as Amount is too big', category="success")
-                        return redirect(url_for('checkout_verification2'))
-                    else:
-                        return redirect(url_for('checkout'))
-            else:
-                return redirect(url_for('market'))
+            cursor.execute('SELECT sum(price) as price FROM shopping_cart')
+            total = cursor.fetchall()
+            for i in total:
+                if i['price'] > 1000:
+                    flash('Please do a Verification as Amount is too big', category="success")
+                    return redirect(url_for('checkout_verification2'))
+                else:
+                    return redirect(url_for('checkout'))
         except IOError:
             print('Database problem!')
         except Exception as e:
             print(f'Error while connecting to MySQL,{e}')
         except:
             return redirect(url_for('market'))
-        finally:
-            if cursor:
-                cursor.close()
-
     else:
         flash("Please LOG IN!", category="error")
         return redirect(url_for('login'))
@@ -1007,38 +1057,26 @@ def payment():
 @app.route('/checkout_verification', methods=['POST','GET'])
 def checkout_verification():
     form = LoginForm(request.form)
+    customer_id = session['id']
     if request.method == 'POST':
-        # Create variables for easy access
-        email = form.email.data
         password = form.password1.data
+        email = form.email.data
         login_time = datetime.utcnow()
-        # check if its staff account
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        # decryption later + salted hashing + login history
-        # Check if account exists using MySQL
-        cursor.execute('SELECT * FROM customer_accounts WHERE email = %s', [email])
-        # Fetch one record and return result
+        cursor.execute('SELECT * FROM customer_accounts WHERE customer_id = %s', [customer_id])
         account = cursor.fetchone()
-        if account:
+        if email == account['email']:
             user_hashpwd = account['hashed_pw']
             if bcrypt2.check_password_hash(user_hashpwd, password):
-                id = account['customer_id']
-                # Create session data, we can access this data in other routes
-                cursor.execute(
-                    'SELECT max(login_attempt_no) AS last_login FROM customer_login_history WHERE customer_id = %s',[id])
-                acc_login = cursor.fetchone()
-                # means first login
-                if acc_login['last_login'] is not None:
-                    session['loggedin'] = True
-                    session['id'] = account['customer_id']
-                    session['name'] = account['full_name']
-                    # Redirect to order page
-                    cursor.execute('INSERT INTO logs_product (log_id ,description, date_created) VALUES (NULL,concat("User ID (",%s,") has been verififed for checkout"),%s)',(id, login_time))
-                    db.connection.commit()
-                    return redirect(url_for('orders'))
+                cursor.execute('INSERT INTO logs_product (log_id ,description, date_created) VALUES (NULL,concat("User ID (",%s,") has been verififed for checkout"),%s)',(customer_id, login_time))
+                db.connection.commit()
+                return redirect(url_for('orders'))
             else:
                 flash("Please Verify Again", category="success")
-                return redirect(url_for('orders'))
+                return redirect(url_for('checkout'))
+        else:
+            flash("Please Verify Again", category="success")
+            return redirect(url_for('checkout'))
 
     return render_template('checkout_verification.html', form=form)
 
