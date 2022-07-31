@@ -106,8 +106,8 @@ class UpdatePassword(FlaskForm):
     submit = SubmitField(label = "Change Password")
 
 class ShoppingCart_Validation(FlaskForm):
-    password = PasswordField("Password:", validators=[DataRequired()])
-    submit = SubmitField(label = "Login")
+    password = PasswordField("Input OTP:", validators=[DataRequired()])
+    submit = SubmitField(label = "Verify")
 
 
 

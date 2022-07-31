@@ -26,7 +26,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from validations import *
-from verify import email_verification
+# from verify import email_verification
 from flask_mail import Mail,Message
 
 # import stripe
@@ -61,12 +61,12 @@ app.config['RECAPTCHA_PRIVATE_KEY'] = "6Ldzgu0gAAAAANuXjmXEv_tLJLQ_s7jtQV3rPwX2"
 app.config['STRIPE_PUBLIC_KEY'] = 'pk_test_51LM6HwJDutS1IqmOR34Em3mZeuTsaUwAaUp40HLvcwrQJpUR5bR60V1e3kkwugBz0A8xAuXObCpte2Y0M251tBeD00p16YXMgE'
 app.config['STRIPE_SECRET_KEY'] = 'sk_test_51LM6HwJDutS1IqmOFhsHKYQcSM2OEF8znqltmmy2vcQCkRUMiKyJrQunP0OlJji6Nlg142NVZ8CpTaMJgZLzzucx00tx6FdjY0'
 
-app.config["MAIL_SERVER"]='smtp.gmail.com'
-app.config["MAIL_PORT"]=465
-app.config["MAIL_USERNAME"]=config['email']['mail']
-app.config['MAIL_PASSWORD']=config['email']['password']    
-app.config['MAIL_USE_TLS']=False
-app.config['MAIL_USE_SSL']=True
+# app.config["MAIL_SERVER"]='smtp.gmail.com'
+# app.config["MAIL_PORT"]=465
+# app.config["MAIL_USERNAME"]=config['email']['mail']
+# app.config['MAIL_PASSWORD']=config['email']['password']
+# app.config['MAIL_USE_TLS']=False
+# app.config['MAIL_USE_SSL']=True
 # stripe.api_key = app.config['STRIPE_SECRET_KEY']
 
 bcrypt2 = Bcrypt()
@@ -426,6 +426,8 @@ def dashboard():
             login = cursor.fetchall()
             cursor.execute('SELECT * FROM logs_product')
             products = cursor.fetchall()
+            cursor.execute('SELECT * FROM logs_error')
+            error = cursor.fetchall()
     except IOError:
         print('Database problem!')
     except Exception as e:
@@ -433,7 +435,8 @@ def dashboard():
     finally:
         if cursor:
             cursor.close()
-    return render_template('dashboard.html', items=login , products = products )
+    return render_template('dashboard.html', items=login , products = products, error = error  )
+
 
 
 @app.route('/admins', methods=['POST','GET'])
@@ -1043,54 +1046,105 @@ def checkout_verification():
 def checkout_verification2():
     form = ShoppingCart_Validation(request.form)
     password_sc = form.password.data
-    # login_time = datetime.utcnow()
+    login_time = datetime.utcnow()
     customer_id = session['id']
     cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-    cursor.execute('SELECT sc_status AS status_cart FROM sc_attempts WHERE customer_id = %s',[customer_id])
+    cursor.execute('SELECT email FROM customer_accounts WHERE customer_id = %s',[customer_id])
+    # Fetch one record and return result
+    user_email = cursor.fetchone()
+    cursor.execute('SELECT max(sc_status) as sc_status FROM sc_attempts WHERE customer_id = %s',[customer_id])
     status_sc = cursor.fetchone()
     cursor.execute('SELECT max(product_attempts) AS attempts_cart FROM sc_attempts WHERE customer_id = %s',[customer_id])
     acc_sc = cursor.fetchone()
-    user_checkout_id = uuid.uuid4()
-    msg = EmailMessage()
-    msg.set_content("This is your OTP {}".format(user_checkout_id))
-    msg["Subject"] = "An Email Alert"
-    msg["From"] = "chamsamuel01@gmail.com"
-    msg["To"] = "chamsamuel01@gmail.com"
+    db.connection.commit()
 
-    with smtplib.SMTP("smtp.gmail.com", port=587) as smtp:
-        smtp.starttls()
-        smtp.login(msg["From"], "giyvimnfxcmvszsr")
-        smtp.send_message(msg)
-    if request.method == 'POST':
-        if status_sc['status_cart'] != 1 :
-            if acc_sc['attempts_cart'] is None:
-                attempted = 1
-                if password_sc == user_checkout_id:
-                    cursor.execute('INSERT INTO sc_attempts (unique_id ,product_attempts,customer_id,sc_status) VALUES (%s,%s,%s,%s)', (user_checkout_id,attempted,customer_id,1))
+    if status_sc['sc_status'] is None:
+        attempted = 1
+        user_checkout_id = uuid.uuid4()
+        cursor.execute('INSERT INTO sc_attempts (unique_id ,product_attempts,customer_id,sc_status,login_time) VALUES (%s,%s,%s,%s,%s)',(user_checkout_id, attempted, customer_id, 0,login_time))
+        db.connection.commit()
+        cursor.execute('SELECT unique_id FROM sc_attempts WHERE customer_id = %s',[customer_id])
+        unique_id_sc = cursor.fetchone()
+        msg = EmailMessage()
+        msg.set_content("This is your OTP {}".format(unique_id_sc['unique_id']))
+        msg["Subject"] = "An Email Alert"
+        msg["From"] = "chamsamuel01@gmail.com"
+        msg["To"] = user_email['email']
+
+        with smtplib.SMTP("smtp.gmail.com", port=587) as smtp:
+            smtp.starttls()
+            smtp.login(msg["From"], "giyvimnfxcmvszsr")
+            # smtp.login(msg["From"], "boktzsjhixxajuix")
+            smtp.send_message(msg)
+
+        if request.method == 'POST':
+                if password_sc == unique_id_sc['unique_id']:
+                    # cursor.execute('INSERT INTO sc_attempts (unique_id ,product_attempts,customer_id,sc_status) VALUES (%s,%s,%s,%s)',(unique_id_sc['unique_id'], attempted, customer_id, 1))
+                    cursor.execute('UPDATE sc_attempts SET unique_id =%s ,product_attempts =%s ,customer_id =%s ,sc_status =%s ,login_time= %s WHERE customer_id = %s and unique_id = %s',(1, customer_id))
+                    db.connection.commit()
                     return redirect(url_for('checkout'))
+
                 else:
-                    cursor.execute('INSERT INTO sc_attempts (unique_id ,product_attempts,customer_id,sc_status) VALUES (%s,%s,%s,%s)', (user_checkout_id,attempted,customer_id,0))
-                    flash("OTP Unsuccessfully, Try Again!",category="success")
-                    return redirect(url_for('checkout_verification2'))
-            else:
-                cursor.execute('SELECT unique_id FROM sc_attempts WHERE customer_id = %s and product_attempts=% ',[customer_id,acc_sc])
-                acc_uuid = cursor.fetchone
-                next_sc_attempt = acc_sc['attempts_cart'] + 1
-                if password_sc == acc_uuid:
-                    cursor.execute('INSERT INTO sc_attempts (unique_id ,product_attempts,customer_id,sc_status) VALUES (%s,%s,%s,%s)', (acc_uuid,next_sc_attempt,customer_id,1))
-                    return redirect(url_for('checkout'))
-                else:
-                    cursor.execute('INSERT INTO sc_attempts (unique_id ,product_attempts,customer_id,sc_status) VALUES (%s,%s,%s,%s)', (acc_uuid,next_sc_attempt,customer_id,0))
-                    flash("OTP Unsuccessfully, Try Again!",category="success")
+                    # cursor.execute('INSERT INTO sc_attempts (unique_id ,product_attempts,customer_id,sc_status) VALUES (%s,%s,%s,%s)',
+                    #     (user_checkout_id, attempted, customer_id, 0))
+                    flash("OTP Unsuccessfully, Try Again!", category="success")
+                    db.connection.commit()
                     return redirect(url_for('checkout_verification2'))
         else:
-            return redirect(url_for('checkout'))
+            return render_template('checkout_verification2.html', form=form)
 
+    elif status_sc['sc_status'] == 0:
+        if acc_sc['attempts_cart'] < 4:
+            cursor.execute('SELECT unique_id FROM sc_attempts WHERE customer_id = %s', [customer_id])
+            acc_uuid = cursor.fetchone()
+            db.connection.commit()
+            if request.method == 'POST':
+                next_sc_attempt = acc_sc['attempts_cart'] + 1
+                if password_sc == acc_uuid['unique_id']:
+                    cursor.execute('INSERT INTO sc_attempts (unique_id ,product_attempts,customer_id,sc_status,login_time) VALUES (%s,%s,%s,%s,%s)', (acc_uuid['unique_id'],next_sc_attempt,customer_id,1,login_time))
+                    db.connection.commit()
+                    return redirect(url_for('checkout'))
+                else:
+                    cursor.execute('INSERT INTO sc_attempts (unique_id ,product_attempts,customer_id,sc_status,login_time) VALUES (%s,%s,%s,%s,%s)', (acc_uuid['unique_id'],next_sc_attempt,customer_id,0,login_time))
+                    flash("OTP Unsuccessfully, Try Again!",category="success")
+                    db.connection.commit()
+
+                    return redirect(url_for('checkout_verification2'))
+            else:
+                return render_template('checkout_verification2.html', form=form)
+        elif acc_sc['attempts_cart'] == 4:
+            flash("This is your Last Attempt", category="success")
+            cursor.execute('SELECT unique_id FROM sc_attempts WHERE customer_id = %s', [customer_id])
+            acc_uuid = cursor.fetchone()
+            db.connection.commit()
+            if request.method == 'POST':
+                next_sc_attempt = acc_sc['attempts_cart'] + 1
+                if password_sc == acc_uuid['unique_id']:
+                    cursor.execute(
+                        'INSERT INTO sc_attempts (unique_id ,product_attempts,customer_id,sc_status,login_time) VALUES (%s,%s,%s,%s,%s)',
+                        (acc_uuid['unique_id'], next_sc_attempt, customer_id, 1, login_time))
+
+                    db.connection.commit()
+                    return redirect(url_for('checkout'))
+                else:
+                    cursor.execute(
+                        'INSERT INTO sc_attempts (unique_id ,product_attempts,customer_id,sc_status,login_time) VALUES (%s,%s,%s,%s,%s)',
+                        (acc_uuid['unique_id'], next_sc_attempt, customer_id, 0, login_time))
+
+                    flash("OTP Unsuccessfully, Try Again AGAIN!", category="success")
+                    db.connection.commit()
+
+                    return redirect(url_for('checkout_verification2'))
+            else:
+                return render_template('checkout_verification2.html', form=form)
+        elif acc_sc['attempts_cart'] > 4:
+            flash("Please Inform Admin", category="success")
+            return redirect(url_for('market'))
+    else:
+        return redirect(url_for('checkout'))
     # cursor.execute('INSERT INTO logs_product (log_id ,description,date_created) VALUES (NULL,concat("User ID (",%s,") has been verififed for products"),%s)',(customer_id, login_time))
     # db.connection.commit()
 
-    db.connection.commit()
-    return render_template('checkout_verification2.html', form=form)
 
 @app.route('/checkout/delete_checkout_products/<id>/',  methods=['POST'])
 def delete_checkout_products(id):
@@ -1169,21 +1223,36 @@ def delete_order():
 # Invalid URL
 @app.errorhandler(404)
 def page_not_found(e):
+    id = session['id']
+    login_time = datetime.utcnow()
+    cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor.execute('INSERT INTO logs_error (log_id ,description, date_created) VALUES (NULL,concat("ERROR 404 has Occured, User ID = ",%s),%s)',(id,login_time))
+    db.connection.commit()
     return render_template('404.html'), 404
 
 # Internal Server Error
 @app.errorhandler(500)
 def error500(e):
+    id = session['id']
+    login_time = datetime.utcnow()
+    cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor.execute(
+        'INSERT INTO logs_error (log_id ,description, date_created) VALUES (NULL,concat("ERROR 505 (Internal Server Error) has Occured, User ID = ",%s),%s)',
+        (id, login_time))
+    db.connection.commit()
     return render_template('500.html'), 500
 
 # Internal Server Error
 @app.errorhandler(403)
 def error403(e):
+    id = session['id']
+    login_time = datetime.utcnow()
+    cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor.execute(
+        'INSERT INTO logs_error (log_id ,description, date_created) VALUES (NULL,concat("ERROR 403 (Internal Server Error) has Occured, User ID = ",%s),%s)',
+        (id, login_time))
+    db.connection.commit()
     return render_template('403.html'), 403
-
-
-
-    
 
 
 if __name__ == '__main__':
