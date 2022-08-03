@@ -18,8 +18,7 @@ class email_verification:
             final_otp = final_otp + str(random.randint(0,9))
         return final_otp
     
-    def send_otp(email):
-        final_otp = email_verification.generateOTP()
+    def send_otp(final_otp,email):
         otp = final_otp + " is your otp"
         verfication_message = otp
         s = smtplib.SMTP('smtp.gmail.com', 587)
@@ -36,12 +35,12 @@ class email_verification:
             return False    
 
 # testing
-# email = "nathanaeltzw@gmail.com"
-# otp = email_verification.generateOTP()
-# email_verification.send_otp(otp,email)
-# new_otp= input("ENter otp: ")
-# verify = email_verification.verify_otp(new_otp,otp)
-# if verify == True:
-#     print("correct")
-# else:
-#     print("wrong")
+email = "nathanaeltzw@gmail.com"
+otp = email_verification.generateOTP()
+email_verification.send_otp(otp,email)
+new_otp= input("ENter otp: ")
+verify = email_verification.verify_otp(new_otp,otp)
+if verify == True:
+    print("correct")
+else:
+    print("wrong")
