@@ -42,7 +42,6 @@
                     </tfoot>
                     <tbody>
                         {{ customers}}
-           
                         {% for customer in customers %}
                         <tr>
                             <td>{{ customer.customer_id }}</td>
@@ -71,7 +70,6 @@
                                             <p>Name: <b>{{customer.full_name}}</b></p>
                                             <p>Email: <b>{{customer.email}}</b></p>
                                             <p>Date Created: <b>{{customer.dateCreated}}</b</p>
-                                            <p>{{ customer.cust_logs}}</p>
                                         </div>
                                         <div class="modal-footer">
                                             <button class="btn btn-success" type="button" data-dismiss="modal">Change Password</button>
@@ -91,7 +89,7 @@
                                         </button>
                                     </div>
                                         <div class="modal-body">
-                                            <p><b>{{customer}}</b></p>
+                                            <p><b>{{customer.cust_logs}}</b></p>
                                         </div>
                                         <div class="modal-footer">
                                             <button class="btn btn-secondary" type="button" data-dismiss="modal">Close</button>

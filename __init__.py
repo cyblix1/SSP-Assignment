@@ -40,7 +40,7 @@ from random import *
 import smtplib
 from logging.handlers import SMTPHandler
 from email.message import EmailMessage
-
+import pyotp
 
 
 app = Flask(__name__)
@@ -675,10 +675,7 @@ def customers():
             for customer in customers:
                 cursor.execute('SELECT * FROM customer_login_history WHERE customer_id=%s',[customer['customer_id']])
                 login_logs= cursor.fetchone()
-                if login_logs == None:
-                    customer['cust_logs'] = 'Customer has not logged in yet'
-                else:    
-                    customer['cust_logs'] = login_logs
+                customer['cust_logs'] = login_logs
     except IOError:
         print('Database problem!')
     except Exception as e:
