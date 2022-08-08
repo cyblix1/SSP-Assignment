@@ -1,0 +1,333 @@
+{% extends "base_admin.html" %}
+{% block title %} Products {% endblock %}
+<!-- Custom styles for this page -->
+{% block content %}
+<!-- Begin Page Content -->
+<div class="container-fluid">
+
+    <!-- Page Heading -->
+    <h1 class="h5 mb-2 text-gray-800">LOGS LOGIN RECORDS</h1>
+    <!-- DataTales Example -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">LOGS</h6>
+
+            <!-- start of modal -->
+            <div class="modal fade" style="margin-top:100px;" id="createadmin" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="exampleModalLabel">LOGS</h5>
+                            <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">×</span>
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+            <!-- End of modal -->
+        </div>
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-success alert-dismissable" role="alert">
+            <button type="button" class="close" data-dismiss="alert" aria-label="close">
+                <span aria-hidden="true">x</span>
+            </button>
+        {{message}}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith%}
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Log ID</th>
+                            <th>Logs Description</th>
+                            <th>Date Created</th>
+                        </tr>
+                    </thead>
+                    <tfoot>
+                        <tr>
+                            <th>Log ID</th>
+                            <th>Logs Description</th>
+                            <th>Date Created</th>
+                        </tr>
+                    </tfoot>
+                    <tbody>
+                        {% for p in items %}
+                        <tr>
+                            <td>{{p.log_id}}</td>
+                            <td>{{p.description}}</td>
+                            <td>{{p.date_created}}</td>
+<!--                            <td>-->
+<!--                                <button type="button" class="btn btn-info btn-sm" data-toggle="modal" data-target="#admininfo{{p.product_id}}">Info</button>-->
+<!--                                <button type="button" class="btn btn-warning btn-sm">History</button>-->
+<!--                            </td>-->
+                        </tr>
+                        <!-- start of modal (view Information) -->
+                            <div class="modal fade" style="margin-top:100px;" id="productsinfo{{p.product_id}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                            <div class="modal-dialog" role="document">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Employee Information</h5>
+                                        <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                                            <span aria-hidden="true">×</span>
+                                        </button>
+                                    </div>
+                                        <div class="modal-body">
+                                            <p>Log ID: <b>{{p.log_id}}</b></p>
+                                            <p>Description: <b>{{p.description}}</b></p>
+                                            <p>Date Created: <b>{{p.date_created}}</b></p>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button class="btn btn-success" type="button" data-dismiss="modal">Change Password</button>
+                                            <button class="btn btn-primary" type="button" data-dismiss="modal">Edit</button>
+                                            <button class="btn btn-secondary" type="button" data-dismiss="modal">Close</button>
+                                        </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- End of modal -->
+                        <!-- start of modal (edit Information)-->
+
+                        <!-- End of modal -->
+
+
+                        <!-- End of modal -->
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+<div class="container-fluid">
+
+    <!-- Page Heading -->
+    <h1 class="h5 mb-2 text-gray-800">LOGS PRODUCTS RECORDS</h1>
+    <!-- DataTales Example -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">LOGS </h6>
+
+            <!-- start of modal -->
+            <div class="modal fade" style="margin-top:100px;" id="createadmin" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="exampleModalLabel">LOGS</h5>
+                            <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">×</span>
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+            <!-- End of modal -->
+        </div>
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-success alert-dismissable" role="alert">
+            <button type="button" class="close" data-dismiss="alert" aria-label="close">
+                <span aria-hidden="true">x</span>
+            </button>
+        {{message}}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith%}
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Log ID</th>
+                            <th>Logs Description</th>
+                            <th>Date Created</th>
+                        </tr>
+                    </thead>
+                    <tfoot>
+                        <tr>
+                            <th>Log ID</th>
+                            <th>Logs Description</th>
+                            <th>Date Created</th>
+                        </tr>
+                    </tfoot>
+                    <tbody>
+                        {% for p in products %}
+                        <tr>
+                            <td>{{p.log_id}}</td>
+                            <td>{{p.description}}</td>
+                            <td>{{p.date_created}}</td>
+<!--                            <td>-->
+<!--                                <button type="button" class="btn btn-info btn-sm" data-toggle="modal" data-target="#admininfo{{p.product_id}}">Info</button>-->
+<!--                                <button type="button" class="btn btn-warning btn-sm">History</button>-->
+<!--                            </td>-->
+                        </tr>
+                        <!-- start of modal (view Information) -->
+                            <div class="modal fade" style="margin-top:100px;" id="productsinfo{{p.product_id}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                            <div class="modal-dialog" role="document">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Employee Information</h5>
+                                        <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                                            <span aria-hidden="true">×</span>
+                                        </button>
+                                    </div>
+                                        <div class="modal-body">
+                                            <p>Log ID: <b>{{p.log_id}}</b></p>
+                                            <p>Description: <b>{{p.description}}</b></p>
+                                            <p>Date Created: <b>{{p.date_created}}</b></p>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button class="btn btn-success" type="button" data-dismiss="modal">Change Password</button>
+                                            <button class="btn btn-primary" type="button" data-dismiss="modal">Edit</button>
+                                            <button class="btn btn-secondary" type="button" data-dismiss="modal">Close</button>
+                                        </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- End of modal -->
+                        <!-- start of modal (edit Information)-->
+
+                        <!-- End of modal -->
+
+
+                        <!-- End of modal -->
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+<div class="container-fluid">
+
+    <!-- Page Heading -->
+    <h1 class="h5 mb-2 text-gray-800">LOGS ERROR RECORDS</h1>
+    <!-- DataTales Example -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">LOGS</h6>
+
+            <!-- start of modal -->
+            <div class="modal fade" style="margin-top:100px;" id="createadmin" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="exampleModalLabel">LOGS</h5>
+                            <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">×</span>
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+            <!-- End of modal -->
+        </div>
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-success alert-dismissable" role="alert">
+            <button type="button" class="close" data-dismiss="alert" aria-label="close">
+                <span aria-hidden="true">x</span>
+            </button>
+        {{message}}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith%}
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Log ID</th>
+                            <th>Logs Description</th>
+                            <th>Date Created</th>
+                        </tr>
+                    </thead>
+                    <tfoot>
+                        <tr>
+                            <th>Log ID</th>
+                            <th>Logs Description</th>
+                            <th>Date Created</th>
+                        </tr>
+                    </tfoot>
+                    <tbody>
+                        {% for p in error %}
+                        <tr>
+                            <td>{{p.log_id}}</td>
+                            <td>{{p.description}}</td>
+                            <td>{{p.date_created}}</td>
+<!--                            <td>-->
+<!--                                <button type="button" class="btn btn-info btn-sm" data-toggle="modal" data-target="#admininfo{{p.product_id}}">Info</button>-->
+<!--                                <button type="button" class="btn btn-warning btn-sm">History</button>-->
+<!--                            </td>-->
+                        </tr>
+                        <!-- start of modal (view Information) -->
+                            <div class="modal fade" style="margin-top:100px;" id="productsinfo{{p.product_id}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                            <div class="modal-dialog" role="document">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Employee Information</h5>
+                                        <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                                            <span aria-hidden="true">×</span>
+                                        </button>
+                                    </div>
+                                        <div class="modal-body">
+                                            <p>Log ID: <b>{{p.log_id}}</b></p>
+                                            <p>Description: <b>{{p.description}}</b></p>
+                                            <p>Date Created: <b>{{p.date_created}}</b></p>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button class="btn btn-success" type="button" data-dismiss="modal">Change Password</button>
+                                            <button class="btn btn-primary" type="button" data-dismiss="modal">Edit</button>
+                                            <button class="btn btn-secondary" type="button" data-dismiss="modal">Close</button>
+                                        </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- End of modal -->
+                        <!-- start of modal (edit Information)-->
+
+                        <!-- End of modal -->
+
+
+                        <!-- End of modal -->
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+<!-- /.container-fluid -->
+
+            <!-- Footer -->
+            <footer class="sticky-footer bg-white">
+                <div class="container my-auto">
+                    <div class="copyright text-center my-auto">
+                        <span>Copyright &copy; Your Website 2020</span>
+                    </div>
+                </div>
+            </footer>
+            <!-- End of Footer -->
+
+        </div>
+        <!-- End of Content Wrapper -->
+
+    </div>
+    <!-- End of Page Wrapper -->
+
+{% endblock %}

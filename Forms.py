@@ -34,6 +34,14 @@ class CreateAdminForm(FlaskForm):
     password2 = PasswordField("Confirm Password", validators=[DataRequired()])
     submit = SubmitField("Add Employee")
 
+class VerifyStaffOtp(FlaskForm):
+    email = EmailField("Email")
+    submit = SubmitField("Verify")
+
+class VerifyStaffOtp2(FlaskForm):
+    otp = StringField(DataRequired())
+    submit = SubmitField("Verify")
+
 
 class UpdateAdminForm(FlaskForm):
     id = IntegerField("Id",validators=[DataRequired()])
@@ -97,10 +105,14 @@ class UpdatePassword(FlaskForm):
     confirmpassword = PasswordField("Confirm New Password:",validators=[DataRequired()])
     submit = SubmitField(label = "Change Password")
 
+class ShoppingCart_Validation(FlaskForm):
+    password = PasswordField("Input OTP:", validators=[DataRequired()])
+    submit = SubmitField(label = "Verify")
 
-
-
-
+class ForgetPassword(FlaskForm):
+    email = EmailField("Email", validators=[Length(min=5, max=100,  message='length is between 5 to 100'), DataRequired(message ='no email')])
+    password = PasswordField("Password:", validators=[DataRequired(message ="no password")])
+    submit = SubmitField(label = "Verify")
 
 
 

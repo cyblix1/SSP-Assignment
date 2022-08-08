@@ -1,4 +1,4 @@
-{% extends "base_login.html" %}
+{% extends "base.html" %}
 <!-- Custom fonts for this template-->
 <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
 <link
@@ -9,15 +9,15 @@
 <link href="css/sb-admin-2.min.css" rel="stylesheet">
 {% block content %}
 <body class="bg-gradient-primary">
-    {% with messages = get_flashed_messages() %}
-        {% if messages %}
+{% with messages = get_flashed_messages() %}
+    {% if messages %}
             {% for message in messages %}
                 <div class="alert alert-success alert-dismissable" role="alert">
                     <button type="button" class="close" data-dismiss="alert" aria-label="close">
                         <span aria-hidden="true">x</span>
                     </button>
                     {{message}}
-                </div> 
+                </div>
             {% endfor %}
         {% endif %}
     {% endwith%}
@@ -32,26 +32,18 @@
                     <div class="col-lg-7">
                         <div class="p-5">
                             <div class="text-center">
-                                <h1 class="h4 text-gray-900 mb-4">Login Page</h1>
+                                <h1 class="h4 text-gray-900 mb-4">Shopping Cart Authentication Page</h1>
                             </div>
-                            <form action="{{ url_for('login') }}" method="POST">
-                                <div class="form-group row">
-                                    <!--userName-->
-                                    {{ form.email.label() }}
-                                    {{ form.email(class='form-control form-control-user', placeholder='Email') }}
-                                    <!-- Flask Forms Feature -->
-                                </div>
+                            <form action="{{ url_for('checkout_verification2') }}" method="POST">
                                 <div class="form-group row">
                                     <!--Password1-->
-                                        {{ form.password1.label() }}
-                                        {{ form.password1(class='form-control form-control-user', placeholder='Password') }}
+                                        {{ form.password.label() }}
+                                        {{ form.password(class='form-control form-control-user', placeholder='Password') }}
 
                                 </div>
-                                <a href="{{ url_for('forgetpassword1')}}" class="btn-user">Forget Password?</a>
                                 {{ form.submit(class='btn btn-primary btn-user btn-block',type='submit') }}
                             </form>
                             <br>
-                            <a href="{{ url_for('register')}}" class="btn btn-secondary btn-user btn-block">Register</a>
                             <hr>
                         </div>
                     </div>
