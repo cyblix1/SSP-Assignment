@@ -23,7 +23,7 @@ config.read(file)
 RECAPTCHA_PUBLIC_KEY = "6Ldzgu0gAAAAAKF5Q8AdFeTRJpvl5mLBncz-dsBv"
 RECAPTCHA_PRIVATE_KEY = "6Ldzgu0gAAAAANuXjmXEv_tLJLQ_s7jtQV3rPwX2"
 
-                
+
 class CreateAdminForm(FlaskForm):
     name = StringField("Name", validators=[Length(min=1, max=50),DataRequired()])
     gender = SelectField("gender",validators=[DataRequired()],choices=[('M', 'Male'), ('F', 'Female')], default='M')
@@ -64,11 +64,17 @@ class Update_Gender(FlaskForm):
     gender = SelectField("gender",validators=[DataRequired()],choices=[('M', 'Male'), ('F', 'Female')], default='M')
     submit = SubmitField(label='Done')
 
-
+class UpdatePasswordForm(FlaskForm):
+    oldpassword = PasswordField("Old Password:", validators=[DataRequired(message ="no password")])
+    newpassword = PasswordField("New Password:", validators=[DataRequired(message ="no password")])
+    coonfirmpassword = PasswordField("Confirm New Password:",validators=[DataRequired(message ="no password")])
 
 class Register_Users(FlaskForm):
     name = StringField("Name", validators=[Length(min=1, max=50, message='length is between 1 to 50'), DataRequired(message="no name")])
     email = EmailField("Email", validators=[Length(min=5, max=100,  message='length is between 5 to 100'), DataRequired(message ='no email')])
+    question = SelectField("Security Question", validators=[DataRequired(message="Please Select a question")], choices=[("When is your dog's birthday?"),
+    ("Where did your parents meet?"),("What city did you first go to college?")])
+    answer = StringField("Answer", validators=[DataRequired(message="Please answer")])
     password1 = PasswordField("Password:", validators=[DataRequired(message ="no password")])
     password2 = PasswordField("Confirm:",validators=[DataRequired(message ="no password")])
     recaptcha = RecaptchaField(validators=[DataRequired(message="Click here")])
