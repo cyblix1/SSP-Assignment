@@ -54,11 +54,8 @@ app.config['MYSQL_HOST'] = config['account']['host']
 app.config['MYSQL_USER'] = config['account']['user']
 app.config['MYSQL_PASSWORD'] = config['account']['password']
 app.config['MYSQL_DB'] = config['account']['db']
-<<<<<<< HEAD
 app.config['PERMANENT_SESSION_LIFETIME'] =  timedelta(minutes = 15)
-=======
 app.config['PERMANENT_SESSION_LIFETIME'] =  timedelta(minutes=5)
->>>>>>> 6f9da2d2da0d3720ad7199434019aad31c63ba03
 app.config['RECAPTCHA_PUBLIC_KEY'] = "6Ldzgu0gAAAAAKF5Q8AdFeTRJpvl5mLBncz-dsBv"
 app.config['RECAPTCHA_PRIVATE_KEY'] = "6Ldzgu0gAAAAANuXjmXEv_tLJLQ_s7jtQV3rPwX2"
 app.config['STRIPE_PUBLIC_KEY'] = 'pk_test_51LM6HwJDutS1IqmOR34Em3mZeuTsaUwAaUp40HLvcwrQJpUR5bR60V1e3kkwugBz0A8xAuXObCpte2Y0M251tBeD00p16YXMgE'
@@ -277,11 +274,8 @@ def login():
                     session['email']= account['email']
                     session['customer_login_no'] = 1
                     session.permanent = True
-<<<<<<< HEAD
                     app.permanent_session_lifetime = timedelta(minutes = 15) 
-=======
                     app.permanent_session_lifetime = timedelta(minutes= 5)
->>>>>>> 6f9da2d2da0d3720ad7199434019aad31c63ba03
                     # Redirect to home page
                     cursor.execute('INSERT INTO logs_login (log_id ,description, date_created) VALUES (NULL,concat("User ID (",%s,") has logged in"),%s)',(id,login_time))
                     db.connection.commit()
@@ -331,7 +325,7 @@ def login():
                     encrypted_email = staff['email']
                     decrypted = f.decrypt(encrypted_email.encode())
                     if decrypted:
-                        session['staffloggedin'] = True
+                        session['loggedin2'] = True
                         session['id'] = id
                         session['name'] = staff['full_name']
                         return redirect(url_for('admins'))
@@ -507,32 +501,36 @@ def dashboard():
 def admins():
     form2 = UpdateAdminForm()
     form = CreateAdminForm()
-    try:
-        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute('SELECT * FROM staff_accounts')
-        all_data = cursor.fetchall()
-        for staff in all_data:
-            id = staff['staff_id']
-            cursor.execute('SELECT * FROM staff_key WHERE staff_id=%s',[id])
-            staff_key = cursor.fetchone()
-            key_staff = staff_key['staff_key'].encode()
-            fernet = Fernet(key_staff)    
-            decrypted = fernet.decrypt(staff['email'].encode())
-            staff['email'] = decrypted.decode()
-        if request.form == 'POST' and form2.validate_on_submit():
-            return redirect(url_for('update_admin'))
-        elif request.form == 'POST' and form.validate_on_submit():
-            return redirect(url_for('create_admin'))
-        elif form2.csrf_token.errors or form.csrf_token.errors:
-            pass
-    except IOError:
-        print('Database problem!')
-    except Exception as e:
-        print(f'Error while connecting to MySQL,{e}')
-    finally:
-        if cursor:
-            cursor.close()
-    return render_template('admins.html', employees = all_data, form2=form2,form=form)
+    if 'loggedin2' in session:
+        try:
+            cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+            cursor.execute('SELECT * FROM staff_accounts')
+            all_data = cursor.fetchall()
+            for staff in all_data:
+                id = staff['staff_id']
+                cursor.execute('SELECT * FROM staff_key WHERE staff_id=%s',[id])
+                staff_key = cursor.fetchone()
+                key_staff = staff_key['staff_key'].encode()
+                fernet = Fernet(key_staff)    
+                decrypted = fernet.decrypt(staff['email'].encode())
+                staff['email'] = decrypted.decode()
+            if request.form == 'POST' and form2.validate_on_submit():
+                return redirect(url_for('update_admin'))
+            elif request.form == 'POST' and form.validate_on_submit():
+                return redirect(url_for('create_admin'))
+            elif form2.csrf_token.errors or form.csrf_token.errors:
+                pass
+        except IOError:
+            print('Database problem!')
+        except Exception as e:
+            print(f'Error while connecting to MySQL,{e}')
+        finally:
+            if cursor:
+                cursor.close()
+        return render_template('admins.html', employees = all_data, form2=form2,form=form)
+    else:
+        flash('Error,you are not logged in')
+        return redirect(url_for('login'))
 
 @app.route('/create_admin', methods=['POST','GET'])
 def create_admin(): 
@@ -809,13 +807,16 @@ def update_email(email,id):
 
 @app.route('/logoutstaff')
 def logoutstaff():
-
-    session.pop('staffloggedin', None)
-    session.pop('id', None)
-    session.pop('username', None)
-    flash('Successfully logged out')
-    # Redirect to login page
-    return redirect(url_for('login'))
+    if 'loggedin2' in session:
+        session.pop('loggedin2', None)
+        session.pop('id', None)
+        session.pop('name', None)
+        flash('Successfully logged out')
+        # Redirect to login page
+        return redirect(url_for('login'))
+    else:
+        flash('Something went wrong!')
+        return redirect(url_for('admins'))
 
 # incomplete need session
 @app.route("/profile/update_gender/<gender>")
