@@ -702,7 +702,7 @@ def delete_admin(id):
 #customers section
 @app.route('/customers')
 def customers():
-    if 'loggedin2' in session:
+    if 'loggedin2' in session or 'loggedin3' in session:
         try:
             cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
             if cursor:
@@ -899,6 +899,7 @@ def products():
         return render_template('products.html', items=products,form=form , form2 = form2)
     else:
         flash('Something went wrong!, please relog')
+        return redirect(url_for('login'))
 
 @app.route('/create_products', methods=['POST','GET'])
 def create_products():
