@@ -64,10 +64,6 @@ class Update_Gender(FlaskForm):
     gender = SelectField("gender",validators=[DataRequired()],choices=[('M', 'Male'), ('F', 'Female')], default='M')
     submit = SubmitField(label='Done')
 
-class UpdatePasswordForm(FlaskForm):
-    oldpassword = PasswordField("Old Password:", validators=[DataRequired(message ="no password")])
-    newpassword = PasswordField("New Password:", validators=[DataRequired(message ="no password")])
-    coonfirmpassword = PasswordField("Confirm New Password:",validators=[DataRequired(message ="no password")])
 
 class Register_Users(FlaskForm):
     name = StringField("Name", validators=[Length(min=1, max=50, message='length is between 1 to 50'), DataRequired(message="no name")])

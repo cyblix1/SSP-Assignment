@@ -383,9 +383,12 @@ def forgetpassword2():
     if request.method == 'POST':
             if password_forget == user_id_forget:
                 cursor.execute('INSERT INTO logs_product (log_id ,description, date_created) VALUES (NULL,concat("User ID (",%s,") has been verififed2 for Forget Password"),%s)',(1, login_time))
+                cursor.execute('SELECT * FROM customer_accounts WHERE email = %s', [session['forget_pw']])
+                # Fetch one record and return result
+                account = cursor.fetchone()
+                session['id'] = account['customer_id']
                 db.connection.commit()
-                flash("will be redirected to Update Password (XF Section)", category="success")
-                return redirect(url_for('market'))
+                return redirect(url_for('updatePassword'))
 
             else:
                 flash("Forget Password Unsuccessfully, Try Again!", category="success")
@@ -453,12 +456,35 @@ def password_check(password):
         'lowercase_error' : lowercase_error,
         'symbol_error' : symbol_error,
     }
-@app.route('/updatePassword', methods=['GET', 'POST'])
+@app.route('/updatepassword', methods=['GET', 'POST'])
 def updatePassword():
-    form = UpdatePasswordForm(request.form)
-    oldpassword = form.oldpassword.data
+    id=session['id']
+    form = UpdatePassword(request.form)
     newpassword = form.newpassword.data
     confirmpassword = form.confirmpassword.data
+    cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor.execute('SELECT * FROM customer_accounts WHERE customer_id = %s', [id])
+    # Fetch one record and return result
+    account = cursor.fetchone()
+    user_hashpwd = account['hashed_pw']
+
+    if request.method == 'POST':
+        if newpassword == confirmpassword:
+            if bcrypt2.check_password_hash(user_hashpwd, newpassword):
+                flash("Same Password as Old , Try Again", category="success")
+                return redirect(url_for('updatePassword'))
+
+            else:
+                update_hashpassword = bcrypt2.generate_password_hash(newpassword)
+                cursor.execute('UPDATE customer_accounts SET hashed_pw = %s WHERE customer_id = %s',(update_hashpassword, id))
+                db.connection.commit()
+                flash("Successful", category="success")
+                return redirect(url_for('login'))
+
+    else:
+        return render_template('updatePassword.html', form=form)
+
+
 
 
 
@@ -589,6 +615,7 @@ def create_admin():
                 key = base64.urlsafe_b64encode(kdf.derive(encoded_password))
 
                 #encrypting email
+                encoded_email = email.encode()
                 encoded_email = email.encode()
                 f = Fernet(key)
                 encrypted_email = f.encrypt(encoded_email)
@@ -1170,7 +1197,7 @@ def checkout_verification2():
                         'INSERT INTO sc_attempts (unique_otp ,attempts,customer_id,sc_status,attempt_time) VALUES (%s,%s,%s,%s,%s)',
                         (acc_uuid['unique_otp'], next_sc_attempt, customer_id, 0, login_time))
                     cursor.execute('INSERT INTO sc_logs (unique_otp ,attempts,customer_id,attempt_time) VALUES (%s,%s,%s,%s)', (acc_uuid['unique_otp'],next_sc_attempt,customer_id,login_time))
-                    retry_time = datetime.utcnow() + timedelta(minutes=30)
+                    retry_time = datetime.utcnow() + timedelta(seconds=30)
                     cursor.execute('INSERT INTO sc_time (sc_status ,customer_id,now_time, attempt_time) VALUES (%s,%s,NULL,%s)',(0, customer_id, retry_time))
                     flash("OTP Unsuccessfully, Try Again AGAIN!", category="success")
                     db.connection.commit()
