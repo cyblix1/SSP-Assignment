@@ -218,6 +218,8 @@ def register():
     form = Register_Users()
     if form.is_submitted() and request.method == 'POST' and RecaptchaField != NULL:
         name = form.name.data
+        question = form.question.data
+        answer = form.answer.data
         password = form.password1.data
         hashpassword = bcrypt2.generate_password_hash(password)
         password2 = form.password2.data
@@ -232,7 +234,7 @@ def register():
         password_age=4
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
         # print('INSERT INTO customer_accounts VALUES (NULL,%s,%s,%s,%s,%s)',(name,email,hashpassword,password_age,time))
-        cursor.execute('INSERT INTO customer_accounts VALUES (NULL,%s,%s,%s,%s,%s)',(name,email,hashpassword,password_age,time,))
+        cursor.execute('INSERT INTO customer_accounts VALUES (NULL,%s,%s,%s,%s,%s,%s,%s)',(name,email,question,answer,hashpassword,password_age,time,))
         cursor.execute('INSERT INTO logs_login (log_id ,description, date_created) VALUES (NULL,concat("User ",%s," has registered"),%s)',(name, time))
 
         db.connection.commit()
@@ -465,6 +467,7 @@ def password_check(password):
 def updatePassword():
     id=session['id']
     form = UpdatePassword(request.form)
+    oldpassword = form.oldpassword.data
     newpassword = form.newpassword.data
     confirmpassword = form.confirmpassword.data
     cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
@@ -477,6 +480,10 @@ def updatePassword():
         if newpassword == confirmpassword:
             if bcrypt2.check_password_hash(user_hashpwd, newpassword):
                 flash("Same Password as Old , Try Again", category="success")
+                return redirect(url_for('updatePassword'))
+            
+            elif bcrypt2.check_password_hash(user_hashpwd, oldpassword):
+                flash("Please enter the correct old password")
                 return redirect(url_for('updatePassword'))
 
             else:
