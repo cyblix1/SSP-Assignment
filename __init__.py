@@ -3,6 +3,7 @@ from distutils import ccompiler
 from distutils.util import byte_compile
 from email.message import Message
 from mimetypes import init
+from nis import cat
 from tkinter import Image
 from tkinter.tix import Tree
 from flask import Flask, render_template, request, make_response, redirect, url_for, session,flash, json
@@ -315,7 +316,17 @@ def login():
             #decryption of email
             #get key
             if id == 0:
-                pass
+                #checks for admin accounts 
+                cursor.execute('SELECT * from admin_accounts')
+                admin = cursor.fetchone()
+                if admin['email'] == email and admin['password'] == password:
+                    session['loggedin3'] = True
+                    session['id'] = admin['admin_id']
+                    session['name'] = admin['full_name']
+                    return redirect(url_for('admins'))
+                else:
+                    flash('invalid login details')
+                    return redirect(url_for('login'))
             else:
                 cursor.execute('SELECT staff_key FROM staff_key WHERE staff_id = %s',[id])
                 columns = cursor.fetchone()
@@ -333,7 +344,7 @@ def login():
                         session['loggedin2'] = True
                         session['id'] = id
                         session['name'] = staff['full_name']
-                        return redirect(url_for('admins'))
+                        return redirect(url_for('customers'))
             
     return render_template('login.html', form=form)
 
@@ -532,7 +543,7 @@ def dashboard():
 def admins():
     form2 = UpdateAdminForm()
     form = CreateAdminForm()
-    if 'loggedin2' in session:
+    if 'loggedin3' in session:
         try:
             cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
             cursor.execute('SELECT * FROM staff_accounts')
@@ -559,6 +570,9 @@ def admins():
             if cursor:
                 cursor.close()
         return render_template('admins.html', employees = all_data, form2=form2,form=form)
+    elif 'loggedin2' in session:
+        flash('You are not allowed into this section',category='danger')
+        return redirect(url_for('customers'))
     else:
         flash('Error,you are not logged in')
         return redirect(url_for('login'))
@@ -690,23 +704,28 @@ def delete_admin(id):
 #customers section
 @app.route('/customers')
 def customers():
-    try:
-        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        if cursor:
-            cursor.execute('SELECT * FROM customer_accounts')
-            customers = cursor.fetchall()
-            for customer in customers:
-                cursor.execute('SELECT * FROM customer_login_history WHERE customer_id=%s',[customer['customer_id']])
-                login_logs= cursor.fetchone()
-                customer['cust_logs'] = login_logs
-    except IOError:
-        print('Database problem!')
-    except Exception as e:
-        print(f'Error while connecting to MySQL,{e}')
-    finally:
-        if cursor:
-            cursor.close()
-    return render_template('customers.html',customers=customers)
+    if 'loggedin2' in session:
+        try:
+            cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+            if cursor:
+                cursor.execute('SELECT * FROM customer_accounts')
+                customers = cursor.fetchall()
+                for customer in customers:
+                    cursor.execute('SELECT * FROM customer_login_history WHERE customer_id=%s',[customer['customer_id']])
+                    login_logs= cursor.fetchone()
+                    customer['cust_logs'] = login_logs
+        except IOError:
+            print('Database problem!')
+        except Exception as e:
+            print(f'Error while connecting to MySQL,{e}')
+        finally:
+            if cursor:
+                cursor.close()
+        return render_template('customers.html',customers=customers)
+    else:
+        flash('Error,you are not logged in')
+        return redirect(url_for('login'))
+
 
 @app.route('/customers/delete/<int:id>/', methods=['GET','POST'])
 def delete_customer(id):
@@ -846,9 +865,15 @@ def logoutstaff():
         flash('Successfully logged out')
         # Redirect to login page
         return redirect(url_for('login'))
+    elif 'loggedin3' in session:
+        session.pop('loggedin3',None)
+        session.pop('id',None)
+        session.pop('name',None)
+        flash('Successfully logged out')
+        # Redirect to login page
+        return redirect(url_for('login'))
     else:
         flash('Something went wrong!')
-        return redirect(url_for('admins'))
 
 # incomplete need session
 @app.route("/profile/update_gender/<gender>")
@@ -860,20 +885,22 @@ def update_gender(gender):
 def products():
     form = Create_Products()
     form2 = Update_Products()
-
-    try:
-        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        if cursor:
-            cursor.execute('SELECT * FROM products')
-            products = cursor.fetchall()
-    except IOError:
-        print('Database problem!')
-    except Exception as e:
-        print(f'Error while connecting to MySQL,{e}')
-    finally:
-        if cursor:
-            cursor.close()
-    return render_template('products.html', items=products,form=form , form2 = form2)
+    if 'loggedin2' in session or 'loggedin3' in session:
+        try:
+            cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+            if cursor:
+                cursor.execute('SELECT * FROM products')
+                products = cursor.fetchall()
+        except IOError:
+            print('Database problem!')
+        except Exception as e:
+            print(f'Error while connecting to MySQL,{e}')
+        finally:
+            if cursor:
+                cursor.close()
+        return render_template('products.html', items=products,form=form , form2 = form2)
+    else:
+        flash('Something went wrong!, please relog')
 
 @app.route('/create_products', methods=['POST','GET'])
 def create_products():
