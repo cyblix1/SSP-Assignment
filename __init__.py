@@ -3,6 +3,7 @@ from distutils import ccompiler
 from distutils.util import byte_compile
 from email.message import Message
 from mimetypes import init
+from pydoc import render_doc
 # from nis import cat
 # from nis import cat
 from tkinter import Image
@@ -319,6 +320,7 @@ def login():
                     session['loggedin3'] = True
                     session['id'] = admin['admin_id']
                     session['name'] = admin['full_name']
+                    flash(f"Successfully logged in as {admin['full_name']}!",category="success")
                     return redirect(url_for('admins'))
                 else:
                     flash('invalid login details')
@@ -340,6 +342,7 @@ def login():
                         session['loggedin2'] = True
                         session['id'] = id
                         session['name'] = staff['full_name']
+                        flash(f"Successfully logged in as {staff['full_name']}!",category="success")
                         return redirect(url_for('customers'))
             
     return render_template('login.html', form=form)
@@ -591,7 +594,7 @@ def create_admin():
         phone = form.phone.data
         gender = form.gender.data
         description = form.description.data
-        password = form.password1.data
+        password = form.psw.data
         password2 = form.password2.data
         date_created = datetime.utcnow()
         #Server side validations
@@ -717,8 +720,8 @@ def customers():
                 customers = cursor.fetchall()
                 for customer in customers:
                     cursor.execute('SELECT * FROM customer_login_history WHERE customer_id=%s',[customer['customer_id']])
-                    login_logs= cursor.fetchone()
-                    customer['cust_logs'] = login_logs
+                    login_logs= cursor.fetchall()
+                    customer['history'] = login_logs
         except IOError:
             print('Database problem!')
         except Exception as e:
@@ -1369,6 +1372,7 @@ def error403(e):
         (id, login_time))
     db.connection.commit()
     return render_template('403.html'), 403
+
 
 
 if __name__ == '__main__':

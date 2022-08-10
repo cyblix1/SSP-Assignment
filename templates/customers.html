@@ -41,14 +41,18 @@
                         </tr>
                     </tfoot>
                     <tbody>
+
+                            {{customers}}
+                        
                         {% for customer in customers %}
                         <tr>
                             <td>{{ customer.customer_id }}</td>
                             <td>{{ customer.full_name}}</td>
                             <td>{{ customer.email}}</td>
+                            <td>{{ customer.history }}</td>
                             <td>
                                 <button type="button" class="btn btn-info btn-sm" data-toggle="modal" data-target="#customerinfo{{customer.id}}">Info</button>
-                                <button type="button" class="btn btn-warning btn-sm">History</button>
+                                <button type="button" class="btn btn-warning btn-sm" data-toggle="modal" data-target="#customerhistory{{customer.id}}">History</button>
                                 <button type="button" class="btn btn-secondary btn-sm">Orders</button>
                                 <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#customeredit{{customer.id}}" >Disable Account</button>
                                 <a href="" class="btn btn-danger btn-xs btn-sm" onclick="return confirm('Are you sure to delete?')">Delete</a>
@@ -69,6 +73,31 @@
                                             <p>Name: <b>{{customer.full_name}}</b></p>
                                             <p>Email: <b>{{customer.email}}</b></p>
                                             <p>Date Created: <b>{{customer.dateCreated}}</b</p>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button class="btn btn-success" type="button" data-dismiss="modal">Change Password</button>
+                                            <button class="btn btn-primary" type="button" data-dismiss="modal">Edit</button>
+                                            <button class="btn btn-secondary" type="button" data-dismiss="modal">Close</button>
+                                        </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="modal fade" style="margin-top:100px;" id="customerhistory{{customer.id}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                            <div class="modal-dialog" role="document">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="exampleModalLabel">customer Information</h5>
+                                        <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                                            <span aria-hidden="true">×</span>
+                                        </button>
+                                    </div>
+                                        <div class="modal-body">
+                                            {% for histor in history %}
+                                                {{histor.customer_id}}
+                                                {{histor.login_time}}
+                                                {{histor.logout_time}}
+                                            {% endfor %}
                                         </div>
                                         <div class="modal-footer">
                                             <button class="btn btn-success" type="button" data-dismiss="modal">Change Password</button>
