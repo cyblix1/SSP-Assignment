@@ -3,7 +3,8 @@ from distutils import ccompiler
 from distutils.util import byte_compile
 from email.message import Message
 from mimetypes import init
-from nis import cat
+# from nis import cat
+# from nis import cat
 from tkinter import Image
 from tkinter.tix import Tree
 from flask import Flask, render_template, request, make_response, redirect, url_for, session,flash, json
@@ -512,23 +513,27 @@ def home():
 #base template
 @app.route('/dashboard')
 def dashboard():
-    try:
-        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        if cursor:
-            cursor.execute('SELECT * FROM logs_login')
-            login = cursor.fetchall()
-            cursor.execute('SELECT * FROM logs_product')
-            products = cursor.fetchall()
-            cursor.execute('SELECT * FROM logs_error')
-            error = cursor.fetchall()
-    except IOError:
-        print('Database problem!')
-    except Exception as e:
-        print(f'Error while connecting to MySQL,{e}')
-    finally:
-        if cursor:
-            cursor.close()
-    return render_template('dashboard.html', items=login , products = products, error = error  )
+    if 'loggedin2' in session or 'loggedin3' in session:
+        try:
+            cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+            if cursor:
+                cursor.execute('SELECT * FROM logs_login')
+                login = cursor.fetchall()
+                cursor.execute('SELECT * FROM logs_product')
+                products = cursor.fetchall()
+                cursor.execute('SELECT * FROM logs_error')
+                error = cursor.fetchall()
+        except IOError:
+            print('Database problem!')
+        except Exception as e:
+            print(f'Error while connecting to MySQL,{e}')
+        finally:
+            if cursor:
+                cursor.close()
+        return render_template('dashboard.html', items=login , products = products, error = error  )
+    else:
+        flash('You are not allowed to access this page', category='danger')
+        return redirect(url_for('login'))
 
 
 
