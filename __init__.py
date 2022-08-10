@@ -3,6 +3,7 @@ from distutils import ccompiler
 from distutils.util import byte_compile
 from email.message import Message
 from mimetypes import init
+from pydoc import render_doc
 # from nis import cat
 # from nis import cat
 from tkinter import Image
@@ -1362,6 +1363,7 @@ def error403(e):
         (id, login_time))
     db.connection.commit()
     return render_template('403.html'), 403
+
 
 
 if __name__ == '__main__':
