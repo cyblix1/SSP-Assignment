@@ -55,14 +55,7 @@ app.config['MYSQL_HOST'] = config['account']['host']
 app.config['MYSQL_USER'] = config['account']['user']
 app.config['MYSQL_PASSWORD'] = config['account']['password']
 app.config['MYSQL_DB'] = config['account']['db']
-
 app.config['PERMANENT_SESSION_LIFETIME'] =  timedelta(minutes = 15)
-#=======
-app.config['PERMANENT_SESSION_LIFETIME'] =  timedelta(minutes=5)
-
-app.config['PERMANENT_SESSION_LIFETIME'] =  timedelta(minutes = 15)
-app.config['PERMANENT_SESSION_LIFETIME'] =  timedelta(minutes=5)
-
 app.config['RECAPTCHA_PUBLIC_KEY'] = "6Ldzgu0gAAAAAKF5Q8AdFeTRJpvl5mLBncz-dsBv"
 app.config['RECAPTCHA_PRIVATE_KEY'] = "6Ldzgu0gAAAAANuXjmXEv_tLJLQ_s7jtQV3rPwX2"
 app.config['STRIPE_PUBLIC_KEY'] = 'pk_test_51LM6HwJDutS1IqmOR34Em3mZeuTsaUwAaUp40HLvcwrQJpUR5bR60V1e3kkwugBz0A8xAuXObCpte2Y0M251tBeD00p16YXMgE'
