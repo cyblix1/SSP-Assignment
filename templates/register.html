@@ -54,6 +54,16 @@
  
                                 </div>
                                 <div class="form-group row">
+                                    {{ form.question.label() }}
+                                    {{ form.question(class='form-control form-control-user', placeholder='Security Question') }}
+                                    <p></p>
+                                </div>
+                                <div class="form-group row">
+                                    {{ form.answer.label() }}
+                                    {{ form.answer(class='form-control form-control-user', placeholder='Answer to Security Question') }}
+                                    <p></p>
+                                </div>
+                                <div class="form-group row">
                                     <!--Password1-->
                                         {{ form.password1.label() }}
                                         {{ form.password1(class='form-control form-control-user', placeholder='Password') }}

@@ -40,7 +40,6 @@ from random import *
 import smtplib
 from logging.handlers import SMTPHandler
 from email.message import EmailMessage
-import pyotp
 
 
 app = Flask(__name__)
@@ -324,7 +323,7 @@ def login():
                     encrypted_email = staff['email']
                     decrypted = f.decrypt(encrypted_email.encode())
                     if decrypted:
-                        session['staffloggedin'] = True
+                        session['loggedin2'] = True
                         session['id'] = id
                         session['name'] = staff['full_name']
                         return redirect(url_for('admins'))
@@ -377,9 +376,12 @@ def forgetpassword2():
     if request.method == 'POST':
             if password_forget == user_id_forget:
                 cursor.execute('INSERT INTO logs_product (log_id ,description, date_created) VALUES (NULL,concat("User ID (",%s,") has been verififed2 for Forget Password"),%s)',(1, login_time))
+                cursor.execute('SELECT * FROM customer_accounts WHERE email = %s', [session['forget_pw']])
+                # Fetch one record and return result
+                account = cursor.fetchone()
+                session['id'] = account['customer_id']
                 db.connection.commit()
-                flash("will be redirected to Update Password (XF Section)", category="success")
-                return redirect(url_for('market'))
+                return redirect(url_for('updatePassword'))
 
             else:
                 flash("Forget Password Unsuccessfully, Try Again!", category="success")
@@ -447,12 +449,35 @@ def password_check(password):
         'lowercase_error' : lowercase_error,
         'symbol_error' : symbol_error,
     }
-@app.route('/updatePassword', methods=['GET', 'POST'])
+@app.route('/updatepassword', methods=['GET', 'POST'])
 def updatePassword():
-    form = UpdatePasswordForm(request.form)
-    oldpassword = form.oldpassword.data
+    id=session['id']
+    form = UpdatePassword(request.form)
     newpassword = form.newpassword.data
     confirmpassword = form.confirmpassword.data
+    cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor.execute('SELECT * FROM customer_accounts WHERE customer_id = %s', [id])
+    # Fetch one record and return result
+    account = cursor.fetchone()
+    user_hashpwd = account['hashed_pw']
+
+    if request.method == 'POST':
+        if newpassword == confirmpassword:
+            if bcrypt2.check_password_hash(user_hashpwd, newpassword):
+                flash("Same Password as Old , Try Again", category="success")
+                return redirect(url_for('updatePassword'))
+
+            else:
+                update_hashpassword = bcrypt2.generate_password_hash(newpassword)
+                cursor.execute('UPDATE customer_accounts SET hashed_pw = %s WHERE customer_id = %s',(update_hashpassword, id))
+                db.connection.commit()
+                flash("Successful", category="success")
+                return redirect(url_for('login'))
+
+    else:
+        return render_template('updatePassword.html', form=form)
+
+
 
 
 
@@ -499,117 +524,108 @@ def dashboard():
 @app.route('/admins', methods=['POST','GET'])
 def admins():
     form2 = UpdateAdminForm()
-    try:
-        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute('SELECT * FROM staff_accounts')
-        all_data = cursor.fetchall()
-        for staff in all_data:
-            id = staff['staff_id']
-            cursor.execute('SELECT * FROM staff_key WHERE staff_id=%s',[id])
-            staff_key = cursor.fetchone()
-            key_staff = staff_key['staff_key'].encode()
-            fernet = Fernet(key_staff)    
-            decrypted = fernet.decrypt(staff['email'].encode())
-            staff['email'] = decrypted.decode()
-        
-        if request.form == 'POST' and form2.validate_on_submit():
-            return redirect(url_for('update_admin'))
-        elif form2.csrf_token.errors:
-            pass
-    except IOError:
-        print('Database problem!')
-    except Exception as e:
-        print(f'Error while connecting to MySQL,{e}')
-    finally:
-        if cursor:
-            cursor.close()
-    return render_template('admins.html', employees = all_data, form2=form2)
+    form = CreateAdminForm()
+    if 'loggedin2' in session:
+        try:
+            cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+            cursor.execute('SELECT * FROM staff_accounts')
+            all_data = cursor.fetchall()
+            for staff in all_data:
+                id = staff['staff_id']
+                cursor.execute('SELECT * FROM staff_key WHERE staff_id=%s',[id])
+                staff_key = cursor.fetchone()
+                key_staff = staff_key['staff_key'].encode()
+                fernet = Fernet(key_staff)    
+                decrypted = fernet.decrypt(staff['email'].encode())
+                staff['email'] = decrypted.decode()
+            if request.form == 'POST' and form2.validate_on_submit():
+                return redirect(url_for('update_admin'))
+            elif request.form == 'POST' and form.validate_on_submit():
+                return redirect(url_for('create_admin'))
+            elif form2.csrf_token.errors or form.csrf_token.errors:
+                pass
+        except IOError:
+            print('Database problem!')
+        except Exception as e:
+            print(f'Error while connecting to MySQL,{e}')
+        finally:
+            if cursor:
+                cursor.close()
+        return render_template('admins.html', employees = all_data, form2=form2,form=form)
+    else:
+        flash('Error,you are not logged in')
+        return redirect(url_for('login'))
 
 @app.route('/create_admin', methods=['POST','GET'])
-def create_admin():    
-    form = CreateAdminForm()
-    form2 = VerifyStaffOtp()
-    form3 = VerifyStaffOtp2()
-    email = form.email.data
-    if form2.validate_on_submit():
+def create_admin(): 
+    form = CreateAdminForm()   
+    if form.validate_on_submit():
         email = form.email.data
-        otp=randint(000000,999999)
-        msg=Message(subject='Email OTP', sender='hi@gmail.com',recipients=[email])
-        msg.body=str(otp)
-        mail.send(msg)
-        if form3.validate_on_submit():
-            new_otp=form3.otp.data
-            if otp==int(new_otp):
-                pass
-            if form.validate_on_submit():
-                name = form.name.data
-                phone = form.phone.data
-                gender = form.gender.data
-                description = form.description.data
-                password = form.password1.data
-                password2 = form.password2.data
-                date_created = datetime.utcnow()
-                #Server side validations
-                cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-                if cursor:
-                    cursor.execute('SELECT * FROM staff_email_hash')
-                    all_staff = cursor.fetchall()
-                    #check if email exists
-                    for staff in all_staff:
-                        if bcrypt.checkpw(email.encode(),staff['email_hash'].encode()):
-                            flash('Email exists!',category="danger")
-                            return redirect(url_for('create_admin'))
-                        continue
-                    if password != password2:
-                        flash('passwords does not match',category="danger")
-                        return redirect(url_for('create_admin'))
-                    #server side confirmations 
-                    elif Validations.validate_password(password) == False:
-                        flash('Invalid password',category="danger")
-                        return redirect(url_for('create_admin'))
-                    elif Validations.validate_email(email) == False:
-                        flash('Invalid email',category="danger")
-                        return redirect(url_for('create_admin'))
-                    else:
-                        #hashing password 
-                        salt = bcrypt.gensalt()        
-                        hashedpw = bcrypt.hashpw(password.encode(),salt)
-
-                        #hashing email to find it later in login 
-                        email_salt = bcrypt.gensalt()
-                        hashed_email = bcrypt.hashpw(email.encode(),email_salt)
-                        #encryption of email using password, getting key using salt
-                        encoded_password = password.encode()
-                        salt = b'\x829\xf0\x9e\x0e\x8bl;\x1a\x95\x8bB\xf9\x16\xd4\xe2'
-                        kdf = PBKDF2HMAC(algorithm=hashes.SHA256(),
-                                length=32,
-                                salt=salt,
-                                iterations=100000,
-                                backend=default_backend())
-                        key = base64.urlsafe_b64encode(kdf.derive(encoded_password))
-
-                        #encrypting email
-                        encoded_email = email.encode()
-                        f = Fernet(key)
-                        encrypted_email = f.encrypt(encoded_email)
-                        cursor.execute('INSERT INTO staff_accounts VALUES (NULL, %s, %s, %s, %s, %s, %s, %s, %s)', (name,encrypted_email,phone,gender,hashedpw.decode(),30,description,date_created))
-                        db.connection.commit()
-
-                        #get staff-id + sorting key
-                        cursor.execute('SELECT staff_id FROM staff_accounts WHERE email = %s',[encrypted_email])
-                        staff_id = cursor.fetchone()
-                        #store email encryption key
-                        cursor.execute('INSERT INTO staff_key VALUES (%s,%s)',((staff_id['staff_id']),key.decode()))
-                        #store email hash
-                        cursor.execute('INSERT INTO staff_email_hash VALUES (%s,%s)',((staff_id['staff_id']),hashed_email.decode()))
-                        db.connection.commit()
-                        flash("Employee Added Successfully!",category="success")
-                        return redirect(url_for('admins'))
+        name = form.name.data
+        phone = form.phone.data
+        gender = form.gender.data
+        description = form.description.data
+        password = form.password1.data
+        password2 = form.password2.data
+        date_created = datetime.utcnow()
+        #Server side validations
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        if cursor:
+            cursor.execute('SELECT * FROM staff_email_hash')
+            all_staff = cursor.fetchall()
+            #check if email exists
+            for staff in all_staff:
+                if bcrypt.checkpw(email.encode(),staff['email_hash'].encode()):
+                    flash('Email exists!',category="danger")
+                    return redirect(url_for('admins'))
+                continue
+            if password != password2:
+                flash('passwords does not match',category="danger")
+                return redirect(url_for('admins'))
+            #server side confirmations 
+            elif Validations.validate_password(password) == False:
+                flash('Invalid password',category="danger")
+                return redirect(url_for('admins'))
+            elif Validations.validate_email(email) == False:
+                flash('Invalid email',category="danger")
+                return redirect(url_for('admins'))
             else:
-                flash('Invalid OTP, please try again')
-                return redirect(url_for('create_admin'))
-    return render_template('create_admin.html',form=form, form2=form2,form3=form3)
+                  #hashing password 
+                salt = bcrypt.gensalt()        
+                hashedpw = bcrypt.hashpw(password.encode(),salt)
 
+                #hashing email to find it later in login 
+                email_salt = bcrypt.gensalt()
+                hashed_email = bcrypt.hashpw(email.encode(),email_salt)
+                #encryption of email using password, getting key using salt
+                encoded_password = password.encode()
+                salt = b'\x829\xf0\x9e\x0e\x8bl;\x1a\x95\x8bB\xf9\x16\xd4\xe2'
+                kdf = PBKDF2HMAC(algorithm=hashes.SHA256(),
+                        length=32,
+                        salt=salt,
+                        iterations=100000,
+                        backend=default_backend())
+                key = base64.urlsafe_b64encode(kdf.derive(encoded_password))
+
+                #encrypting email
+                encoded_email = email.encode()
+                encoded_email = email.encode()
+                f = Fernet(key)
+                encrypted_email = f.encrypt(encoded_email)
+                cursor.execute('INSERT INTO staff_accounts VALUES (NULL, %s, %s, %s, %s, %s, %s, %s, %s)', (name,encrypted_email,phone,gender,hashedpw.decode(),30,description,date_created))
+                db.connection.commit()
+
+                #get staff-id + sorting key
+                cursor.execute('SELECT staff_id FROM staff_accounts WHERE email = %s',[encrypted_email])
+                staff_id = cursor.fetchone()
+                #store email encryption key
+                cursor.execute('INSERT INTO staff_key VALUES (%s,%s)',((staff_id['staff_id']),key.decode()))
+                #store email hash
+                cursor.execute('INSERT INTO staff_email_hash VALUES (%s,%s)',((staff_id['staff_id']),hashed_email.decode()))
+                db.connection.commit()
+                flash("Employee Added Successfully!",category="success")
+                return redirect(url_for('admins'))
+                
 
 
 
@@ -816,13 +832,16 @@ def update_email(email,id):
 
 @app.route('/logoutstaff')
 def logoutstaff():
-
-    session.pop('staffloggedin', None)
-    session.pop('id', None)
-    session.pop('username', None)
-    flash('Successfully logged out')
-    # Redirect to login page
-    return redirect(url_for('login'))
+    if 'loggedin2' in session:
+        session.pop('loggedin2', None)
+        session.pop('id', None)
+        session.pop('name', None)
+        flash('Successfully logged out')
+        # Redirect to login page
+        return redirect(url_for('login'))
+    else:
+        flash('Something went wrong!')
+        return redirect(url_for('admins'))
 
 # incomplete need session
 @app.route("/profile/update_gender/<gender>")
@@ -1092,19 +1111,20 @@ def checkout_verification2():
     user_email = cursor.fetchone()
     cursor.execute('SELECT max(sc_status) as sc_status FROM sc_attempts WHERE customer_id = %s',[customer_id])
     status_sc = cursor.fetchone()
-    cursor.execute('SELECT max(product_attempts) AS attempts_cart FROM sc_attempts WHERE customer_id = %s',[customer_id])
+    cursor.execute('SELECT max(attempts) AS attempts FROM sc_attempts WHERE customer_id = %s',[customer_id])
     acc_sc = cursor.fetchone()
     db.connection.commit()
 
     if status_sc['sc_status'] is None:
         attempted = 1
-        user_checkout_id = uuid.uuid4()
-        cursor.execute('INSERT INTO sc_attempts (unique_id ,product_attempts,customer_id,sc_status,login_time) VALUES (%s,%s,%s,%s,%s)',(user_checkout_id, attempted, customer_id, 0,login_time))
+        user_checkout_id = randint(000000,999999)
+        # retry_time = datetime.utcnow() + timedelta(minutes=30)
+        cursor.execute('INSERT INTO sc_attempts (unique_otp ,attempts,customer_id,sc_status,attempt_time) VALUES (%s,%s,%s,%s,%s)',(user_checkout_id, attempted, customer_id, 0,login_time))
         db.connection.commit()
-        cursor.execute('SELECT unique_id FROM sc_attempts WHERE customer_id = %s',[customer_id])
-        unique_id_sc = cursor.fetchone()
+        cursor.execute('SELECT unique_otp FROM sc_attempts WHERE customer_id = %s',[customer_id])
+        unique_otp_sc = cursor.fetchone()
         msg = EmailMessage()
-        msg.set_content("This is your OTP {}".format(unique_id_sc['unique_id']))
+        msg.set_content("This is your OTP {}".format(unique_otp_sc['unique_otp']))
         msg["Subject"] = "An Email Alert"
         msg["From"] = "chamsamuel01@gmail.com"
         msg["To"] = user_email['email']
@@ -1116,9 +1136,9 @@ def checkout_verification2():
             smtp.send_message(msg)
 
         if request.method == 'POST':
-                if password_sc == unique_id_sc['unique_id']:
+                if password_sc == unique_otp_sc['unique_otp']:
                     # cursor.execute('INSERT INTO sc_attempts (unique_id ,product_attempts,customer_id,sc_status) VALUES (%s,%s,%s,%s)',(unique_id_sc['unique_id'], attempted, customer_id, 1))
-                    cursor.execute('UPDATE sc_attempts SET unique_id =%s ,product_attempts =%s ,customer_id =%s ,sc_status =%s ,login_time= %s WHERE customer_id = %s and unique_id = %s',(1, customer_id))
+                    cursor.execute('UPDATE sc_attempts SET unique_otp =%s ,attempts =%s ,customer_id =%s ,sc_status =%s ,attempt_time= %s WHERE customer_id = %s and unique_id = %s',(1, customer_id))
                     db.connection.commit()
                     return redirect(url_for('checkout'))
 
@@ -1132,52 +1152,70 @@ def checkout_verification2():
             return render_template('checkout_verification2.html', form=form)
 
     elif status_sc['sc_status'] == 0:
-        if acc_sc['attempts_cart'] < 4:
-            cursor.execute('SELECT unique_id FROM sc_attempts WHERE customer_id = %s', [customer_id])
+        if acc_sc['attempts'] < 4:
+            cursor.execute('SELECT unique_otp FROM sc_attempts WHERE customer_id = %s', [customer_id])
             acc_uuid = cursor.fetchone()
             db.connection.commit()
             if request.method == 'POST':
-                next_sc_attempt = acc_sc['attempts_cart'] + 1
-                if password_sc == acc_uuid['unique_id']:
-                    cursor.execute('INSERT INTO sc_attempts (unique_id ,product_attempts,customer_id,sc_status,login_time) VALUES (%s,%s,%s,%s,%s)', (acc_uuid['unique_id'],next_sc_attempt,customer_id,1,login_time))
+                next_sc_attempt = acc_sc['attempts'] + 1
+                if password_sc == acc_uuid['unique_otp']:
+                    cursor.execute('INSERT INTO sc_attempts (unique_otp ,attempts,customer_id,sc_status,attempt_time) VALUES (%s,%s,%s,%s,%s)', (acc_uuid['unique_otp'],next_sc_attempt,customer_id,1,login_time))
+                    cursor.execute('INSERT INTO sc_logs (unique_otp ,attempts,customer_id,attempt_time) VALUES (%s,%s,%s,%s)', (acc_uuid['unique_otp'],next_sc_attempt,customer_id,login_time))
                     db.connection.commit()
                     return redirect(url_for('checkout'))
                 else:
-                    cursor.execute('INSERT INTO sc_attempts (unique_id ,product_attempts,customer_id,sc_status,login_time) VALUES (%s,%s,%s,%s,%s)', (acc_uuid['unique_id'],next_sc_attempt,customer_id,0,login_time))
-                    flash("OTP Unsuccessfully, Try Again!",category="success")
+                    cursor.execute('INSERT INTO sc_attempts (unique_otp ,attempts,customer_id,sc_status,attempt_time) VALUES (%s,%s,%s,%s,%s)', (acc_uuid['unique_otp'],next_sc_attempt,customer_id,0,login_time))
+                    cursor.execute('INSERT INTO sc_logs (unique_otp ,attempts,customer_id,attempt_time) VALUES (%s,%s,%s,%s)', (acc_uuid['unique_otp'],next_sc_attempt,customer_id,login_time))
+                    flash("TRY",category="success")
                     db.connection.commit()
 
                     return redirect(url_for('checkout_verification2'))
             else:
                 return render_template('checkout_verification2.html', form=form)
-        elif acc_sc['attempts_cart'] == 4:
+        elif acc_sc['attempts'] == 4:
             flash("This is your Last Attempt", category="success")
-            cursor.execute('SELECT unique_id FROM sc_attempts WHERE customer_id = %s', [customer_id])
+            cursor.execute('SELECT unique_otp FROM sc_attempts WHERE customer_id = %s', [customer_id])
             acc_uuid = cursor.fetchone()
             db.connection.commit()
             if request.method == 'POST':
-                next_sc_attempt = acc_sc['attempts_cart'] + 1
-                if password_sc == acc_uuid['unique_id']:
-                    cursor.execute(
-                        'INSERT INTO sc_attempts (unique_id ,product_attempts,customer_id,sc_status,login_time) VALUES (%s,%s,%s,%s,%s)',
-                        (acc_uuid['unique_id'], next_sc_attempt, customer_id, 1, login_time))
+                next_sc_attempt = acc_sc['attempts'] + 1
+                if password_sc == acc_uuid['unique_otp']:
+                    cursor.execute('INSERT INTO sc_attempts (unique_otp ,attempts,customer_id,sc_status,attempt_time) VALUES (%s,%s,%s,%s,%s)',(acc_uuid['unique_otp'], next_sc_attempt, customer_id, 1, login_time))
+                    cursor.execute('INSERT INTO sc_logs (unique_otp ,attempts,customer_id,attempt_time) VALUES (%s,%s,%s,%s)', (acc_uuid['unique_otp'],next_sc_attempt,customer_id,login_time))
 
                     db.connection.commit()
                     return redirect(url_for('checkout'))
                 else:
                     cursor.execute(
-                        'INSERT INTO sc_attempts (unique_id ,product_attempts,customer_id,sc_status,login_time) VALUES (%s,%s,%s,%s,%s)',
-                        (acc_uuid['unique_id'], next_sc_attempt, customer_id, 0, login_time))
-
+                        'INSERT INTO sc_attempts (unique_otp ,attempts,customer_id,sc_status,attempt_time) VALUES (%s,%s,%s,%s,%s)',
+                        (acc_uuid['unique_otp'], next_sc_attempt, customer_id, 0, login_time))
+                    cursor.execute('INSERT INTO sc_logs (unique_otp ,attempts,customer_id,attempt_time) VALUES (%s,%s,%s,%s)', (acc_uuid['unique_otp'],next_sc_attempt,customer_id,login_time))
+                    retry_time = datetime.utcnow() + timedelta(seconds=30)
+                    cursor.execute('INSERT INTO sc_time (sc_status ,customer_id,now_time, attempt_time) VALUES (%s,%s,NULL,%s)',(0, customer_id, retry_time))
                     flash("OTP Unsuccessfully, Try Again AGAIN!", category="success")
                     db.connection.commit()
 
                     return redirect(url_for('checkout_verification2'))
             else:
                 return render_template('checkout_verification2.html', form=form)
-        elif acc_sc['attempts_cart'] > 4:
-            flash("Please Inform Admin", category="success")
-            return redirect(url_for('market'))
+        elif acc_sc['attempts'] > 4:
+
+            cursor.execute('UPDATE sc_time SET now_time = %s WHERE customer_id = %s',(login_time, customer_id))
+            db.connection.commit()
+
+            cursor.execute('SELECT * from sc_time where now_time > attempt_time and customer_id = %s',[customer_id])
+            check_time = cursor.fetchone()
+            db.connection.commit()
+
+            if check_time is not None:
+                # current time has not exceeded 30mins
+                cursor.execute('DELETE FROM sc_attempts WHERE customer_id = %s', [customer_id])
+                db.connection.commit()
+                return redirect(url_for('checkout_verification2'))
+
+            else:
+                flash("Please Wait for 30 Minutes, Thank You", category="success")
+                return redirect(url_for('market'))
     else:
         return redirect(url_for('checkout'))
     # cursor.execute('INSERT INTO logs_product (log_id ,description,date_created) VALUES (NULL,concat("User ID (",%s,") has been verififed for products"),%s)',(customer_id, login_time))
