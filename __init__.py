@@ -719,7 +719,7 @@ def customers():
                 cursor.execute('SELECT * FROM customer_accounts')
                 customers = cursor.fetchall()
                 for customer in customers:
-                    cursor.execute('SELECT * FROM customer_login_history WHERE customer_id=%s',[customer['customer_id']])
+                    cursor.execute('SELECT login_attempt_no,login_time,logout_time FROM customer_login_history WHERE customer_id=%s',[customer['customer_id']])
                     login_logs= cursor.fetchall()
                     customer['history'] = login_logs
         except IOError:

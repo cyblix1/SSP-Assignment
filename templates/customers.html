@@ -1,32 +1,38 @@
 {% extends "base_admin.html" %}
-{% block title %} Customers {% endblock %}
+{% block title %} Admins {% endblock %}
 <!-- Custom styles for this page -->
+
 {% block content %}
 <!-- Begin Page Content -->
 <div class="container-fluid">
-
     <!-- Page Heading -->
-    <h1 class="h3 mb-2 text-gray-800">CUSTOMER RECORDS</h1>
+    <h1 class="h3 mb-2 text-gray-800">STAFF RECORDS</h1>
     <!-- DataTales Example -->
     <div class="card shadow mb-4">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-        {% for category, message in messages %}
-            <div class="alert alert-{{category}} alert-dismissable" role="alert">
-                <button type="button" class="close" data-dismiss="alert" aria-label="close">
-                    <span aria-hidden="true">x</span>
-                </button>
-                {{message}}
-            </div>
-        {% endfor %}
-        {% endif %}
-        {% endwith %}
+        <div class="card-header py-3">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{category}} alert-dismissable" role="alert">
+                    <button type="button" class="close" data-dismiss="alert" aria-label="close">
+                        <span aria-hidden="true">x</span>
+                    </button>
+                    {{message}}
+                </div>
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
+           
+           
+            <h6 class="m-0 font-weight-bold text-primary">Staff</h6>       
+
+        </div>
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
                     <thead>
                         <tr>
-                            <th>Customer ID</th>
+                            <th>Staff ID</th>
                             <th>Name</th>
                             <th>Email</th>
                             <th>Actions</th>
@@ -34,79 +40,84 @@
                     </thead>
                     <tfoot>
                         <tr>
-                            <th>Customer ID</th>
+                            <th>Staff ID</th>
                             <th>Name</th>
                             <th>Email</th>
                             <th>Actions</th>
                         </tr>
+                
                     </tfoot>
                     <tbody>
-
-                            {{customers}}
                         
-                        {% for customer in customers %}
+                   
+                        {% for cus in customers %}
                         <tr>
-                            <td>{{ customer.customer_id }}</td>
-                            <td>{{ customer.full_name}}</td>
-                            <td>{{ customer.email}}</td>
-                            <td>{{ customer.history }}</td>
+                            <td>{{cus.customer_id}}</td>
+                            <td>{{cus.full_name}}</td>
+                            <td>{{cus.email}}</td>
                             <td>
-                                <button type="button" class="btn btn-info btn-sm" data-toggle="modal" data-target="#customerinfo{{customer.id}}">Info</button>
-                                <button type="button" class="btn btn-warning btn-sm" data-toggle="modal" data-target="#customerhistory{{customer.id}}">History</button>
+                                <button type="button" class="btn btn-info btn-sm" data-toggle="modal" data-target="#cusinfo{{cus.customer_id}}">Info</button>
+                                <button type="button" class="btn btn-warning btn-sm" data-toggle="modal" data-target="#cushis{{cus.customer_id}}">History</button>
                                 <button type="button" class="btn btn-secondary btn-sm">Orders</button>
-                                <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#customeredit{{customer.id}}" >Disable Account</button>
+                                <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#" >Disable Account</button>
                                 <a href="" class="btn btn-danger btn-xs btn-sm" onclick="return confirm('Are you sure to delete?')">Delete</a>
+
                             </td>
                         </tr>
                         <!-- start of modal (view Information) -->
-                        <div class="modal fade" style="margin-top:100px;" id="customerinfo{{customer.id}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                        <div class="modal fade" style="margin-top:100px;" id="cusinfo{{cus.customer_id}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
                             <div class="modal-dialog" role="document">
                                 <div class="modal-content">
                                     <div class="modal-header">
-                                        <h5 class="modal-title" id="exampleModalLabel">customer Information</h5>
+                                        <h5 class="modal-title">cus Information</h5>
                                         <button class="close" type="button" data-dismiss="modal" aria-label="Close">
                                             <span aria-hidden="true">×</span>
                                         </button>
                                     </div>
                                         <div class="modal-body">
-                                            <p>Customer_ID: <b>{{customer.id}}</b></p>
-                                            <p>Name: <b>{{customer.full_name}}</b></p>
-                                            <p>Email: <b>{{customer.email}}</b></p>
-                                            <p>Date Created: <b>{{customer.dateCreated}}</b</p>
+                                            <p>Customer ID: <b>{{cus.customer_id}}</b></p>
+                                            <p>Name: <b>{{cus.full_name}}</b></p>
+                                            <p>Email: <b>{{cus.email}}</b></p>
+                                            <p>Date Created: <b>{{cus.date_created}}</b></p>
                                         </div>
                                         <div class="modal-footer">
-                                            <button class="btn btn-success" type="button" data-dismiss="modal">Change Password</button>
-                                            <button class="btn btn-primary" type="button" data-dismiss="modal">Edit</button>
-                                            <button class="btn btn-secondary" type="button" data-dismiss="modal">Close</button>
+                                            <button class="btn btn-success btn-sm" type="button" data-dismiss="modal" data-target="#" data-dismiss="modal">Change Password</button>
+                                            <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#adminedit{{cus.staff_id}}" data-dismiss="modal" >Edit</button>
+                                            <button class="btn btn-secondary btn-sm" type="button" data-dismiss="modal">Close</button>
                                         </div>
                                 </div>
                             </div>
                         </div>
-
-                        <div class="modal fade" style="margin-top:100px;" id="customerhistory{{customer.id}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-                            <div class="modal-dialog" role="document">
+                        <!-- End of modal -->
+                        <!-- start of modal (view Information) -->
+                        <div class="modal fade" style="margin-top:100px;" id="cushis{{cus.customer_id}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-scrollable" role="document">
                                 <div class="modal-content">
                                     <div class="modal-header">
-                                        <h5 class="modal-title" id="exampleModalLabel">customer Information</h5>
+                                        <h5 class="modal-title">cus Information</h5>
                                         <button class="close" type="button" data-dismiss="modal" aria-label="Close">
                                             <span aria-hidden="true">×</span>
                                         </button>
                                     </div>
                                         <div class="modal-body">
-                                            {% for histor in history %}
-                                                {{histor.customer_id}}
-                                                {{histor.login_time}}
-                                                {{histor.logout_time}}
+                                            {% for item in cus.history %}
+                                                <p><em>No.</em><b>{{item.login_attempt_no}}</b></p>
+                                                <p><em>Login time:</em><b>{{item.login_time}}</b></p>
+                                                <p><em>Logout time:</em><b>{{item.logout_time}}</b></p>
+                                                <br>
                                             {% endfor %}
                                         </div>
                                         <div class="modal-footer">
-                                            <button class="btn btn-success" type="button" data-dismiss="modal">Change Password</button>
-                                            <button class="btn btn-primary" type="button" data-dismiss="modal">Edit</button>
                                             <button class="btn btn-secondary" type="button" data-dismiss="modal">Close</button>
                                         </div>
                                 </div>
                             </div>
                         </div>
+                        <!-- End of modal -->
+
+
+                        
+
                         {% endfor %}
                     </tbody>
                 </table>
@@ -132,5 +143,6 @@
 
     </div>
     <!-- End of Page Wrapper -->
-
+    <!-- #password validation javascript -->
 {% endblock %}
+
