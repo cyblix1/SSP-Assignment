@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+{% block title %}Add Products {% endblock %}
+{% block content %}
+
+<!-- <script class="jsbin" src="https://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
+<script>
+  function readURL(input) {
+if (input.files && input.files[0]) {
+
+  var reader = new FileReader();
+
+  reader.onload = function(e) {
+    $('.image-upload-wrap').hide();
+
+    $('.file-upload-image').attr('src', e.target.result);
+    $('.file-upload-content').show();
+
+    $('.image-title').html(input.files[0].name);
+  };
+
+  reader.readAsDataURL(input.files[0]);
+
+} else {
+  removeUpload();
+}
+}
+
+function removeUpload() {
+$('.file-upload-input').replaceWith($('.file-upload-input').clone());
+$('.file-upload-content').hide();
+$('.image-upload-wrap').show();
+}
+$('.image-upload-wrap').bind('dragover', function () {
+  $('.image-upload-wrap').addClass('image-dropping');
+});
+$('.image-upload-wrap').bind('dragleave', function () {
+  $('.image-upload-wrap').removeClass('image-dropping');
+});
+</script> -->
+<style>
+
+.file-upload {
+  background-color: #ffffff;
+  width: 600px;
+
+  padding: 20px;
+}
+
+.file-upload-btn {
+  width: 100%;
+  margin: 0;
+  color: #fff;
+  background: #4571ff;
+  border: none;
+  padding: 10px;
+  border-radius: 4px;
+  border-bottom: 4px solid #15824B;
+  transition: all .2s ease;
+  outline: none;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.file-upload-btn:hover {
+  background: #000000;
+  color: #ffffff;
+  transition: all .2s ease;
+  cursor: pointer;
+}
+
+.file-upload-btn:active {
+  border: 0;
+  transition: all .2s ease;
+}
+
+.file-upload-content {
+  display: none;
+  text-align: center;
+}
+
+.file-upload-input {
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  outline: none;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.image-upload-wrap {
+  margin-top: 20px;
+  border: 4px dashed #1FB264;
+  position: relative;
+}
+
+.image-dropping,
+.image-upload-wrap:hover {
+  background-color: #497ce9;
+  border: 4px dashed #ffffff;
+}
+
+.image-title-wrap {
+  padding: 0 15px 15px 15px;
+  color: #222;
+}
+
+.drag-text {
+  text-align: center;
+}
+
+.drag-text h3 {
+  font-weight: 100;
+  text-transform: uppercase;
+  color: #15824B;
+  padding: 60px 0;
+}
+
+.file-upload-image {
+  max-height: 200px;
+  max-width: 200px;
+
+  padding: 20px;
+}
+
+.remove-image {
+  width: 200px;
+  margin: 0;
+  color: #fff;
+  background: #cd4535;
+  border: none;
+  padding: 10px;
+  border-radius: 4px;
+  border-bottom: 4px solid #b02818;
+  transition: all .2s ease;
+  outline: none;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.remove-image:hover {
+  background: #c13b2a;
+  color: #ffffff;
+  transition: all .2s ease;
+  cursor: pointer;
+}
+
+.remove-image:active {
+  border: 0;
+  transition: all .2s ease;
+}
+
+</style>
+
+<div class="container-fluid" style="margin-top: 30px;">
+    <div class="bg-gradient-primary text-white shadow-lg " style="padding: 35px;">
+      <h1 class="h3 mb-2 " style=" color:white;">Adding Product</h1>
+      <p class="mb-4">Adding products for your users needs.</p>
+    </div>
+    <div class="card mx-auto shadow" style="margin: 5px auto 20px auto;" >
+        <div class="card-body">
+        <h4 class="card-title mb-4" style="margin-bottom: 30px;">Add Product</h4>
+       <form method="POST" style="margin-top: 60px;" enctype="multipart/form-data">
+       {{ add_item_form.hidden_tag() }}
+
+           <div class="form-group">
+               <img src='' class="img-sm rounded-circle border">
+           </div>
+
+          <div class="form-row">
+                {{ add_item_form.description.label() }}
+                {{ add_item_form.description(class='form-control form-control-user', placeholder='Enter Item Description Name') }}
+          </div> <!-- form-group end.// -->
+
+
+
+
+          <button style="margin: 30px auto 30px auto; width: 60%;" class="btn btn-primary btn-block">{{ add_item_form.submit(class="btn btn-primary" ,type="submit") }}</button>
+
+
+        </form>
+        </div> <!-- card-body.// -->
+      </div>
+      </div>
+
+{% endblock %}

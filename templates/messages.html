@@ -1,0 +1,177 @@
+
+{% extends "base.html" %}
+{% block title %} Profile {% endblock %}
+
+{% block content %}
+<section class="section-content padding-y">
+<div class="container">
+
+<div class="row">
+    <aside class="col-md-3">
+        <ul class="list-group">
+            <a class="list-group-item" href="{{ url_for('profile') }}"> Account overview  </a>
+            <a class="list-group-item" href="#"> My Orders </a>
+            <a class="list-group-item" href="#"> My wishlist </a>
+            <a class="list-group-item active" href="#">Messages</a>
+            <a class="list-group-item" href="#"> My Selling Items </a>
+            <a class="list-group-item" href=""> Ticket History </a>
+        </ul>
+    </aside> <!-- col.// -->
+    <main class="col-md-9">
+
+<!-- Begin Page Content -->
+<div class="container-fluid">
+
+    <!-- Page Heading -->
+    <h1 class="h3 mb-2 text-gray-800">PRODUCTS RECORDS</h1>
+    <!-- DataTales Example -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Staff <button type="button" class="btn btn-success float-right"
+                data-toggle="modal" data-target="#createadmin">Add New Message</button></h6>
+
+            <!-- start of modal -->
+            <div class="modal fade" style="margin-top:100px;" id="createadmin" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="exampleModalLabel">ADD PRODUCT</h5>
+                            <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">×</span>
+                            </button>
+                        </div>
+                        <form action="{{url_for('create_messages')}}" method="POST">
+                            <div class="modal-body">
+                                    <div class="form-group">
+                                        {{ form.description(class='form-control form-control-user', placeholder='Product Description') }}
+                                    </div>
+
+                            </div>
+
+                            <div class="modal-footer">
+                                <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
+                                {{ form.submit(class="btn btn-primary" ,type="submit") }}
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <!-- End of modal -->
+        </div>
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-success alert-dismissable" role="alert">
+            <button type="button" class="close" data-dismiss="alert" aria-label="close">
+                <span aria-hidden="true">x</span>
+            </button>
+        {{message}}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith%}
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Message ID</th>
+                            <th>Message Description</th>
+                            <th>Message Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tfoot>
+                        <tr>
+                            <th>Message ID</th>
+                            <th>Message Description</th>
+                            <th>Message Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </tfoot>
+                    <tbody>
+                        {% for p in items %}
+                        <tr>
+                            <td>{{p.message_id}}</td>
+                            <td>Description: {{p.message}} <br><br> Time:{{p.message_time}}</td>
+                            {% if p.reply is not none %}
+                                <td>STAFF HAS REPLIED</td>
+                            {% else %}
+                                 <td>NO REPLY</td>
+                            {% endif %}
+                            <td>
+                                <button type="button" class="btn btn-info btn-sm" data-toggle="modal" data-target="#admininfo{{p.product_id}}">Info</button>
+                            </td>
+                        </tr>
+                        <!-- start of modal (view Information) -->
+                            <div class="modal fade" style="margin-top:100px;" id="productsinfo{{p.product_id}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                            <div class="modal-dialog" role="document">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Employee Information</h5>
+                                        <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                                            <span aria-hidden="true">×</span>
+                                        </button>
+                                    </div>
+                                        <div class="modal-body">
+                                            <p>Product ID: <b>{{p.product_id}}</b></p>
+                                            <p>Name: <b>{{p.product_name}}</b></p>
+                                            <p>Price: <b>{{p.price}}</b></p>
+                                            <p>Description: <b>{{p.description}}</b></p>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button class="btn btn-success" type="button" data-dismiss="modal">Change Password</button>
+                                            <button class="btn btn-primary" type="button" data-dismiss="modal">Edit</button>
+                                            <button class="btn btn-secondary" type="button" data-dismiss="modal">Close</button>
+                                        </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- End of modal -->
+                        <!-- start of modal (edit Information)-->
+                        <div class="modal fade" style="margin-top:100px;" id="productsedit{{p.product_id}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                            <div class="modal-dialog" role="document">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Edit Product Information</h5>
+                                        <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                                            <span aria-hidden="true">×</span>
+                                        </button>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                        <!-- End of modal -->
+
+
+                        <!-- End of modal -->
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+<!-- /.container-fluid -->
+
+            <!-- Footer -->
+            <footer class="sticky-footer bg-white">
+                <div class="container my-auto">
+                    <div class="copyright text-center my-auto">
+                        <span>Copyright &copy; Your Website 2020</span>
+                    </div>
+                </div>
+            </footer>
+            <!-- End of Footer -->
+
+        </div>
+        <!-- End of Content Wrapper -->
+
+    </div>
+    <!-- End of Page Wrapper -->
+
+
+
+{% endblock %}

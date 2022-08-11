@@ -1233,12 +1233,31 @@ def checkout_verification2():
                         'INSERT INTO sc_attempts (unique_otp ,attempts,customer_id,sc_status,attempt_time) VALUES (%s,%s,%s,%s,%s)',
                         (acc_uuid['unique_otp'], next_sc_attempt, customer_id, 0, login_time))
                     cursor.execute('INSERT INTO sc_logs (unique_otp ,attempts,customer_id,attempt_time) VALUES (%s,%s,%s,%s)', (acc_uuid['unique_otp'],next_sc_attempt,customer_id,login_time))
-                    retry_time = datetime.utcnow() + timedelta(seconds=30)
-                    cursor.execute('INSERT INTO sc_time (sc_status ,customer_id,now_time, attempt_time) VALUES (%s,%s,NULL,%s)',(0, customer_id, retry_time))
-                    flash("OTP Unsuccessfully, Try Again AGAIN!", category="success")
+                    # retry_time = datetime.utcnow() + timedelta(minutes=30)
+                    cursor.execute('SELECT now_time as a_time from sc_time where customer_id = %s',[customer_id])
+                    a_time = cursor.fetchone()
                     db.connection.commit()
 
-                    return redirect(url_for('checkout_verification2'))
+                    if a_time is None:
+                        # retry_time = datetime.utcnow() + timedelta(minutes=30)
+                        retry_time = datetime.utcnow() + timedelta(seconds=15)
+                        cursor.execute('INSERT INTO sc_time (sc_status ,customer_id,now_time, attempt_time) VALUES (%s,%s,NULL,%s)',(0, customer_id, retry_time))
+                        flash("OTP Unsuccessfully, Try Again AGAIN!", category="success")
+                        db.connection.commit()
+                        return redirect(url_for('checkout_verification2'))
+                    else:
+                        cursor.execute('DELETE FROM sc_time WHERE customer_id = %s', [customer_id])
+                        db.connection.commit()
+                        # retry_time = datetime.utcnow() + timedelta(minutes=30)
+                        retry_time = datetime.utcnow() + timedelta(seconds=15)
+                        cursor.execute(
+                            'INSERT INTO sc_time (sc_status ,customer_id,now_time, attempt_time) VALUES (%s,%s,NULL,%s)',
+                            (0, customer_id, retry_time))
+                        flash("OTP Unsuccessfully, Try Again AGAIN!", category="success")
+                        db.connection.commit()
+                        return redirect(url_for('checkout_verification2'))
+
+
             else:
                 return render_template('checkout_verification2.html', form=form)
         elif acc_sc['attempts'] > 4:
@@ -1250,20 +1269,132 @@ def checkout_verification2():
             check_time = cursor.fetchone()
             db.connection.commit()
 
-            if check_time is not None:
-                # current time has not exceeded 30mins
-                cursor.execute('DELETE FROM sc_attempts WHERE customer_id = %s', [customer_id])
-                db.connection.commit()
-                return redirect(url_for('checkout_verification2'))
+            cursor.execute('SELECT count(attempts) as attempts from sc_logs where customer_id = %s and attempts = 5', [customer_id])
+            attempt_check = cursor.fetchone()
+            db.connection.commit()
 
+            if check_time is not None:
+                if attempt_check['attempts'] <= 3 :
+                    # current time has exceeded 30mins
+                    cursor.execute('DELETE FROM sc_attempts WHERE customer_id = %s', [customer_id])
+                    db.connection.commit()
+                    return redirect(url_for('checkout_verification2'))
+                else:
+                    flash("Admin Client Session Message", category="success")
+                    # implement message here
+                    return redirect(url_for('market'))
             else:
                 flash("Please Wait for 30 Minutes, Thank You", category="success")
                 return redirect(url_for('market'))
     else:
+
         return redirect(url_for('checkout'))
     # cursor.execute('INSERT INTO logs_product (log_id ,description,date_created) VALUES (NULL,concat("User ID (",%s,") has been verififed for products"),%s)',(customer_id, login_time))
     # db.connection.commit()
 
+
+
+@app.route('/messages',methods=['GET','POST'])
+def messages():
+    form = Create_Message(request.form)
+    id = session['id']
+    if 'loggedin' in session:
+        try:
+            cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+            if cursor:
+                cursor.execute('SELECT * FROM messages WHERE customer_id = %s',[id])
+                messages = cursor.fetchall()
+        except IOError:
+            print('Database problem!')
+        except Exception as e:
+            print(f'Error while connecting to MySQL,{e}')
+        finally:
+            if cursor:
+                cursor.close()
+        return render_template('messages.html', items=messages, form=form)
+    else:
+        flash('Something went wrong!, please relog')
+        return redirect(url_for('login'))
+
+@app.route('/messages_admin',methods=['GET','POST'])
+def messages_admin():
+    form = Update_Message(request.form)
+    if 'loggedin2' in session or 'loggedin3' in session:
+        try:
+            cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+            if cursor:
+                cursor.execute('SELECT * FROM messages')
+                messages = cursor.fetchall()
+        except IOError:
+            print('Database problem!')
+        except Exception as e:
+            print(f'Error while connecting to MySQL,{e}')
+        finally:
+            if cursor:
+                cursor.close()
+        return render_template('messages_admin.html', items=messages, form=form)
+    else:
+        flash('Something went wrong!, please relog')
+        return redirect(url_for('login'))
+
+@app.route('/create_messages', methods=['POST','GET'])
+def create_messages():
+    form = Create_Message(request.form)
+    id = session['id']
+    try:
+        if form.validate_on_submit():
+            description = form.description.data
+            time = datetime.utcnow()
+
+
+            cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+            cursor.execute('SELECT max(message_id) as message_id from messages WHERE customer_id = %s',[id])
+            message_id = cursor.fetchone()
+            db.connection.commit()
+
+            if message_id['message_id'] is None:
+                cursor.execute('INSERT INTO messages VALUES (%s, %s, %s, %s, NULL, NULL, NULL)', (1, id , description, time))
+                db.connection.commit()
+                flash("Message Added Successfully!",category="success")
+                return redirect(url_for('messages'))
+            else:
+                updated_message_id = message_id['message_id'] + 1
+                cursor.execute('INSERT INTO messages VALUES (%s, %s, %s, %s, NULL, NULL, NULL)',
+                               (updated_message_id,id, description, time))
+                db.connection.commit()
+                flash("Message Added Successfully!", category="success")
+                return redirect(url_for('messages'))
+
+
+    except Exception :
+        flash("Error Adding Products", category="error")
+        return redirect(url_for('messages'))
+
+    return render_template('AddMessage.html', add_item_form=form)
+
+@app.route('/products/delete_products/<id>/',  methods=['POST'])
+def delete_message(id):
+    try:
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute('SELECT * FROM products WHERE product_id = %s', [id])
+        account = cursor.fetchone()
+        if account:
+            time = datetime.utcnow()
+            cursor.execute('DELETE FROM products WHERE product_id = %s', [id])
+            cursor.execute('INSERT INTO logs_product (log_id ,description, date_created) VALUES (NULL,concat("Admin has deleted product from shopping cart (ID :",%s," )"),%s)',(id, time))
+
+            db.connection.commit()
+            flash("Product deleted successfully",category="success")
+        else:
+            flash("Something went wrong, please try again!",category="danger")
+    except IOError:
+        print('Database problem!')
+    except Exception as e:
+        print(f'Error while connecting to MySQL,{e}')
+    finally:
+        cursor.close()
+        db.connection.close()
+        return redirect(url_for('products'))
 
 @app.route('/checkout/delete_checkout_products/<id>/',  methods=['POST'])
 def delete_checkout_products(id):
