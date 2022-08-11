@@ -2,13 +2,9 @@ import random
 import smtplib
 from configparser import ConfigParser
 
-#configuration files
-file = 'config.properties'
-config = ConfigParser()
-config.read(file)
 
-my_email = config['email']['mail']
-my_password = config['email']['password']
+my_email = 'tannathanael24@gmail.com'
+my_password = 'cwlohogbtlrqfsmq'
 
 #to generate OTP is generateOTP()
 class email_verification:

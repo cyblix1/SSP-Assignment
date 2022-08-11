@@ -31,15 +31,10 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from validations import *
 # from verify import email_verification
 from flask_mail import Mail,Message
-
 # import stripe
 import logging
 from logging.config import dictConfig , fileConfig
-
 from random import *
-
-
-
 import smtplib
 from logging.handlers import SMTPHandler
 from email.message import EmailMessage
@@ -63,13 +58,12 @@ app.config['RECAPTCHA_PRIVATE_KEY'] = "6Ldzgu0gAAAAANuXjmXEv_tLJLQ_s7jtQV3rPwX2"
 app.config['STRIPE_PUBLIC_KEY'] = 'pk_test_51LM6HwJDutS1IqmOR34Em3mZeuTsaUwAaUp40HLvcwrQJpUR5bR60V1e3kkwugBz0A8xAuXObCpte2Y0M251tBeD00p16YXMgE'
 app.config['STRIPE_SECRET_KEY'] = 'sk_test_51LM6HwJDutS1IqmOFhsHKYQcSM2OEF8znqltmmy2vcQCkRUMiKyJrQunP0OlJji6Nlg142NVZ8CpTaMJgZLzzucx00tx6FdjY0'
 
-# app.config["MAIL_SERVER"]='smtp.gmail.com'
-# app.config["MAIL_PORT"]=465
-# app.config["MAIL_USERNAME"]=config['email']['mail']
-# app.config['MAIL_PASSWORD']=config['email']['password']
-# app.config['MAIL_USE_TLS']=False
-# app.config['MAIL_USE_SSL']=True
-# stripe.api_key = app.config['STRIPE_SECRET_KEY']
+app.config["MAIL_SERVER"]='smtp.gmail.com'
+app.config["MAIL_PORT"]=465
+app.config["MAIL_USERNAME"]= 'nathanaeltzw@gmail.com'
+app.config['MAIL_PASSWORD']= 'mxdbfpagawywnxgu'
+app.config['MAIL_USE_TLS']=False
+app.config['MAIL_USE_SSL']=True
 
 bcrypt2 = Bcrypt()
 mail=Mail(app)
@@ -1521,7 +1515,11 @@ def error403(e):
     db.connection.commit()
     return render_template('403.html'), 403
 
-
+@app.route("/sendmessage")
+def sendmessage():
+    msg = Message("Hello", sender='tannathanael24@gmail.com',recipients=["nathanaeltzw@gmail.com"])
+    mail.send(msg)
+    return "message sent successfully"
 
 if __name__ == '__main__':
     app.run(debug=True)
