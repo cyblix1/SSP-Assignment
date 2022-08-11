@@ -1,4 +1,4 @@
-from ast import Sub, pattern
+# from ast import Sub, pattern
 from dataclasses import dataclass
 import email
 from tkinter import W
@@ -117,3 +117,10 @@ class ForgetPassword(FlaskForm):
     password = PasswordField("Password:", validators=[DataRequired(message ="no password")])
     submit = SubmitField(label = "Verify")
 
+class Create_Message(FlaskForm):
+    description = TextAreaField(label='Description', validators=[DataRequired(), Length(min=1, max=1000)])
+    submit = SubmitField(label='Add Item')
+
+class Update_Message(FlaskForm):
+    description = TextAreaField(label='Description', validators=[DataRequired(), Length(min=1, max=1000)])
+    submit = SubmitField(label='Add Item')
