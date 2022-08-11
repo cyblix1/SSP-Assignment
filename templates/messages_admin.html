@@ -87,61 +87,56 @@
                                  <td>NO REPLY</td>
                             {% endif %}
                             <td>
-                                <button type="button" class="btn btn-info btn-sm" data-toggle="modal" data-target="#admininfo{{p.product_id}}">Info</button>
-                                <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#messageedit{{p.}}" >Edit</button>
+                                <button type="button" class="btn btn-info btn-sm" data-toggle="modal" data-target="#admininfo{{p.index_id}}">Info</button>
+                                <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#editinfo{{p.index_id}}" >Reply</button>
                             </td>
                         </tr>
+
                         <!-- start of modal (view Information) -->
-                            <div class="modal fade" style="margin-top:100px;" id="productsinfo{{p.product_id}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                            <div class="modal fade" style="margin-top:100px;" id="admininfo{{p.index_id}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
                             <div class="modal-dialog" role="document">
                                 <div class="modal-content">
                                     <div class="modal-header">
-                                        <h5 class="modal-title">Employee Information</h5>
+                                        <h5 class="modal-title">Message Information</h5>
                                         <button class="close" type="button" data-dismiss="modal" aria-label="Close">
                                             <span aria-hidden="true">×</span>
                                         </button>
                                     </div>
                                         <div class="modal-body">
-                                            <p>Product ID: <b>{{p.product_id}}</b></p>
-                                            <p>Name: <b>{{p.product_name}}</b></p>
-                                            <p>Price: <b>{{p.price}}</b></p>
-                                            <p>Description: <b>{{p.description}}</b></p>
+                                            <p>Message ID: <b>{{p.message_id}}</b></p>
+                                            <p>Customer ID: <b>{{p.customer_id}}</b></p>
+                                            <p>Description: <b>{{p.message}}</b></p>
+                                            <p>Reply: <b>{{p.reply}}</b></p>
+                                            <p>Time (Post): <b>{{p.message_time}}</b></p>
+                                            <p>Time (Response) : <b>{{p.reply_time}}</b></p>
+
                                         </div>
-                                        <div class="modal-footer">
-                                            <button class="btn btn-success" type="button" data-dismiss="modal">Change Password</button>
-                                            <button class="btn btn-primary" type="button" data-dismiss="modal">Edit</button>
-                                            <button class="btn btn-secondary" type="button" data-dismiss="modal">Close</button>
-                                        </div>
+
                                 </div>
                             </div>
                         </div>
                         <!-- End of modal -->
                         <!-- start of modal (edit Information)-->
-                        <div class="modal fade" style="margin-top:100px;" id="productsedit{{p.product_id}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                        <div class="modal fade" style="margin-top:100px;" id="editinfo{{p.index_id}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
                             <div class="modal-dialog" role="document">
                                 <div class="modal-content">
                                     <div class="modal-header">
-                                        <h5 class="modal-title">Edit Product Information</h5>
+                                        <h5 class="modal-title">Reply to User</h5>
                                         <button class="close" type="button" data-dismiss="modal" aria-label="Close">
                                             <span aria-hidden="true">×</span>
                                         </button>
                                     </div>
-                                        <form action="{{url_for('update_products' , id=p.product_id)}}" method="POST">
+                                        <form action="{{url_for('update_messages' , id=p.index_id)}}" method="POST">
 
                                             <div class="modal-body">
+
                                                     <div class="form-group">
-                                                        {{ form.product_name(class='form-control', placeholder='Product Name', value=p.product_name) }}
-                                                    </div>
-                                                    <div class="form-group">
-                                                        {{ form2.price(class='form-control',  placeholder='Product Price',value=p.price) }}
-                                                    </div>
-                                                    <div class="form-group">
-                                                        {{ form2.description(class='form-control', value=p.description, placeholder='Product Description') }}
+                                                        {{ form.description(class='form-control', value=p.description, placeholder='Product Description') }}
                                                     </div>
                                             </div>
                                             <div class="modal-footer">
                                                 <button class="btn btn-success" type="button" data-dismiss="modal">Exit</button>
-                                                {{ form2.submit(class="btn btn-primary" ,type="submit") }}
+                                                {{ form.submit(class="btn btn-primary" ,type="submit") }}
                                             </div>
                                         </form>
                                 </div>

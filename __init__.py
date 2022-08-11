@@ -1014,6 +1014,8 @@ def market():
                 products = cursor.fetchall()
                 cursor.execute('SELECT * FROM shopping_cart')
                 shopping_cart = cursor.fetchall()
+                cursor.execute('SELECT * FROM messages')
+                messages = cursor.fetchall()
                 cursor.execute('SELECT login_time FROM customer_login_history WHERE customer_id =%s and login_attempt_no =%s',(id, login_num))
                 logintime = cursor.fetchone()
                 
@@ -1024,7 +1026,7 @@ def market():
         finally:
             if cursor:
                 cursor.close()
-        return render_template('market.html', items=products, cart = shopping_cart,id=session['id'], name=session['name'], logintime=logintime)
+        return render_template('market.html', items=products, cart = shopping_cart,id=session['id'], name=session['name'], logintime=logintime,messages = messages)
     else:
         flash("Please LOG IN!", category="error")
         return redirect(url_for('login'))
@@ -1293,9 +1295,9 @@ def checkout_verification2():
                     db.connection.commit()
                     return redirect(url_for('checkout_verification2'))
                 else:
-                    flash("Admin Client Session Message", category="success")
+                    flash("Please Contact Admin", category="success")
                     # implement message here
-                    return redirect(url_for('market'))
+                    return redirect(url_for('messages'))
             else:
                 flash("Please Wait for 30 Minutes, Thank You", category="success")
                 return redirect(url_for('market'))
@@ -1350,6 +1352,7 @@ def messages_admin():
         flash('Something went wrong!, please relog')
         return redirect(url_for('login'))
 
+
 @app.route('/create_messages', methods=['POST','GET'])
 def create_messages():
     form = Create_Message(request.form)
@@ -1366,13 +1369,13 @@ def create_messages():
             db.connection.commit()
 
             if message_id['message_id'] is None:
-                cursor.execute('INSERT INTO messages VALUES (%s, %s, %s, %s, NULL, NULL, NULL)', (1, id , description, time))
+                cursor.execute('INSERT INTO messages VALUES (NULL, %s, %s, %s, %s, NULL, NULL, NULL)', (1, id , description, time))
                 db.connection.commit()
                 flash("Message Added Successfully!",category="success")
                 return redirect(url_for('messages'))
             else:
                 updated_message_id = message_id['message_id'] + 1
-                cursor.execute('INSERT INTO messages VALUES (%s, %s, %s, %s, NULL, NULL, NULL)',
+                cursor.execute('INSERT INTO messages VALUES (NULL, %s, %s, %s, %s, NULL, NULL, NULL)',
                                (updated_message_id,id, description, time))
                 db.connection.commit()
                 flash("Message Added Successfully!", category="success")
@@ -1385,29 +1388,30 @@ def create_messages():
 
     return render_template('AddMessage.html', add_item_form=form)
 
-@app.route('/products/delete_products/<id>/',  methods=['POST'])
-def delete_message(id):
+@app.route('/messages_admin/update_messages/<id>/', methods=['POST'])
+def update_messages(id):
+    form = Update_Message(request.form)
+    description = form.description.data
+    time = datetime.utcnow()
+
     try:
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute('SELECT * FROM products WHERE product_id = %s', [id])
-        account = cursor.fetchone()
-        if account:
-            time = datetime.utcnow()
-            cursor.execute('DELETE FROM products WHERE product_id = %s', [id])
-            cursor.execute('INSERT INTO logs_product (log_id ,description, date_created) VALUES (NULL,concat("Admin has deleted product from shopping cart (ID :",%s," )"),%s)',(id, time))
-
+        if cursor:
+            cursor.execute('UPDATE messages SET staff_id = %s, reply = %s, reply_time =%s WHERE index_id = %s', (1,description,time,id))
             db.connection.commit()
-            flash("Product deleted successfully",category="success")
+            flash("Message Replied successfully", category="success")
         else:
-            flash("Something went wrong, please try again!",category="danger")
+            flash('Something went wrong!')
     except IOError:
         print('Database problem!')
     except Exception as e:
         print(f'Error while connecting to MySQL,{e}')
+        flash("Error Updating Products", category="error")
+        return redirect(url_for('messages_admin'))
     finally:
         cursor.close()
         db.connection.close()
-        return redirect(url_for('products'))
+        return redirect(url_for('messages_admin'))
 
 @app.route('/checkout/delete_checkout_products/<id>/',  methods=['POST'])
 def delete_checkout_products(id):

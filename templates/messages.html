@@ -9,12 +9,9 @@
 <div class="row">
     <aside class="col-md-3">
         <ul class="list-group">
-            <a class="list-group-item" href="{{ url_for('profile') }}"> Account overview  </a>
+            <a class="list-group-item active" href="{{ url_for('profile') }}"> Account overview  </a>
             <a class="list-group-item" href="#"> My Orders </a>
-            <a class="list-group-item" href="#"> My wishlist </a>
-            <a class="list-group-item active" href="#">Messages</a>
-            <a class="list-group-item" href="#"> My Selling Items </a>
-            <a class="list-group-item" href=""> Ticket History </a>
+            <a class="list-group-item" href="{{ url_for('messages') }}">Messages</a>
         </ul>
     </aside> <!-- col.// -->
     <main class="col-md-9">
@@ -76,6 +73,7 @@
                     <thead>
                         <tr>
                             <th>Message ID</th>
+                            <th>Customer ID</th>
                             <th>Message Description</th>
                             <th>Message Status</th>
                             <th>Actions</th>
@@ -84,6 +82,7 @@
                     <tfoot>
                         <tr>
                             <th>Message ID</th>
+                            <th>Customer ID</th>
                             <th>Message Description</th>
                             <th>Message Status</th>
                             <th>Actions</th>
@@ -93,6 +92,7 @@
                         {% for p in items %}
                         <tr>
                             <td>{{p.message_id}}</td>
+                            <td>{{p.customer_id}}</td>
                             <td>Description: {{p.message}} <br><br> Time:{{p.message_time}}</td>
                             {% if p.reply is not none %}
                                 <td>STAFF HAS REPLIED</td>
@@ -100,49 +100,33 @@
                                  <td>NO REPLY</td>
                             {% endif %}
                             <td>
-                                <button type="button" class="btn btn-info btn-sm" data-toggle="modal" data-target="#admininfo{{p.product_id}}">Info</button>
+                                <button type="button" class="btn btn-info btn-sm" data-toggle="modal" data-target="#admininfo{{p.index_id}}">Info</button>
                             </td>
                         </tr>
+
                         <!-- start of modal (view Information) -->
-                            <div class="modal fade" style="margin-top:100px;" id="productsinfo{{p.product_id}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                            <div class="modal fade" style="margin-top:100px;" id="admininfo{{p.index_id}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
                             <div class="modal-dialog" role="document">
                                 <div class="modal-content">
                                     <div class="modal-header">
-                                        <h5 class="modal-title">Employee Information</h5>
+                                        <h5 class="modal-title">Message Information</h5>
                                         <button class="close" type="button" data-dismiss="modal" aria-label="Close">
                                             <span aria-hidden="true">×</span>
                                         </button>
                                     </div>
                                         <div class="modal-body">
-                                            <p>Product ID: <b>{{p.product_id}}</b></p>
-                                            <p>Name: <b>{{p.product_name}}</b></p>
-                                            <p>Price: <b>{{p.price}}</b></p>
-                                            <p>Description: <b>{{p.description}}</b></p>
+                                            <p>Message ID: <b>{{p.message_id}}</b></p>
+                                            <p>Customer ID: <b>{{p.customer_id}}</b></p>
+                                            <p>Description: <b>{{p.message}}</b></p>
+                                            <p>Reply: <b>{{p.reply}}</b></p>
+                                            <p>Time (Post): <b>{{p.message_time}}</b></p>
+                                            <p>Time (Response) : <b>{{p.reply_time}}</b></p>
+
                                         </div>
-                                        <div class="modal-footer">
-                                            <button class="btn btn-success" type="button" data-dismiss="modal">Change Password</button>
-                                            <button class="btn btn-primary" type="button" data-dismiss="modal">Edit</button>
-                                            <button class="btn btn-secondary" type="button" data-dismiss="modal">Close</button>
-                                        </div>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- End of modal -->
-                        <!-- start of modal (edit Information)-->
-                        <div class="modal fade" style="margin-top:100px;" id="productsedit{{p.product_id}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-                            <div class="modal-dialog" role="document">
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title">Edit Product Information</h5>
-                                        <button class="close" type="button" data-dismiss="modal" aria-label="Close">
-                                            <span aria-hidden="true">×</span>
-                                        </button>
-                                    </div>
 
                                 </div>
                             </div>
                         </div>
-                        <!-- End of modal -->
 
 
                         <!-- End of modal -->
