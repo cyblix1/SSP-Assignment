@@ -1501,7 +1501,7 @@ def error500(e):
         'INSERT INTO logs_error (log_id ,description, date_created) VALUES (NULL,concat("ERROR 505 (Internal Server Error) has Occured, User ID = ",%s),%s)',
         (id, login_time))
     db.connection.commit()
-    return render_template('500.html'), 500
+    return render_template('500.html'), 500 
 
 # Internal Server Error
 @app.errorhandler(403)
@@ -1520,6 +1520,17 @@ def sendmessage():
     msg = Message("Hello", sender='tannathanael24@gmail.com',recipients=["nathanaeltzw@gmail.com"])
     mail.send(msg)
     return "message sent successfully"
+
+@app.route('/firstloginstaff')
+def firstloginstaff():
+    return render_template('firstloginstaff.html')
+
+
+
+
+
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)
