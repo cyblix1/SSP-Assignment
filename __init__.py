@@ -761,7 +761,20 @@ def delete_customer(id):
             db.connection.close()
             return redirect(url_for('login'))
 
-
+@app.route('/customers/disable/<int:id>/')
+def disable(id):
+    try:
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        
+    except IOError:
+        print('Database problem!')
+    except Exception as e:
+        print(f'Error while connecting to MySQL,{e}')
+    finally:
+        if cursor:
+            cursor.close()
+            db.connection.close()
+    return redirect(url_for('customers'))
 
 @app.route('/profile',methods=['GET','POST'])
 def profile():
