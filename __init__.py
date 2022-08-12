@@ -3,10 +3,7 @@ from distutils import ccompiler
 from distutils.util import byte_compile
 from email.message import Message
 from mimetypes import init
-from nis import cat
 from pydoc import render_doc
-# from nis import cat
-# from nis import cat
 from tkinter import Image
 from tkinter.tix import Tree
 from flask import Flask, render_template, request, make_response, redirect, url_for, session,flash, json
