@@ -3,6 +3,7 @@ from distutils import ccompiler
 from distutils.util import byte_compile
 from email.message import Message
 from mimetypes import init
+from nis import cat
 from pydoc import render_doc
 # from nis import cat
 # from nis import cat
@@ -320,7 +321,7 @@ def login():
                     flash(f"Successfully logged in as {admin['full_name']}!",category="success")
                     return redirect(url_for('admins'))
                 else:
-                    flash('invalid login details')
+                    flash('invalid login details',category='danger')
                     return redirect(url_for('login'))
             else:
                 #This is staff account
@@ -341,23 +342,23 @@ def login():
                         acc_login = cursor.fetchone()
                         #means first login so need 3fa
                         if acc_login['last_login'] is None:
-                            # zero = 1
-                            # cursor.execute('INSERT INTO staff_login_history (staff_id, login_attempt_no, login_time) VALUES (%s,%s,%s)',(id,zero,login_time))
-                            # db.connection.commit()
-                            # session['loggedin2'] = True
-                            # session['id'] = id
-                            # session['name'] = staff['full_name']
-                            # session['staff_login_no'] = 1
-                            # flash(f"Successfully logged in as {staff['full_name']}!",category="success")
-                            
                             #otp is a string
                             otp = str(generateOTP())
                             msg = Message("Hello", sender='tannathanael24@gmail.com',recipients=["nathanaeltzw@gmail.com"])
                             body = "Your OTP is " + otp
                             msg.body = body
                             mail.send(msg)
-                            #idk need to encrypt or hash
-                            session['OTP'] = otp
+                            #Encrypting OTP to put in session
+                            key = Fernet.generate_key()
+                            #storing key
+                            cursor.execute('INSERT INTO staff__otp_key VALUES (%s,%s)',(id,key.decode()))
+                            db.connection.commit()
+                            f= Fernet(key)
+                            encrypted_otp = f.encrypt(otp.encode())
+                            decoded_otp = encrypted_otp.decode()
+                            session['id'] = id
+                            #stored the otp in a session, after need to encode and key in database
+                            session['OTP'] = decoded_otp
                             return redirect(url_for('firstloginstaff'))
                         #means not first login
                         else:
@@ -667,7 +668,7 @@ def create_admin():
                 flash('Invalid email',category="danger")
                 return redirect(url_for('admins'))
             else:
-                  #hashing password 
+                #hashing password 
                 salt = bcrypt.gensalt()        
                 hashedpw = bcrypt.hashpw(password.encode(),salt)
 
@@ -1244,7 +1245,7 @@ def checkout_verification2():
 
         if status_sc['sc_status'] is None:
             attempted = 1
-            user_checkout_id = randint(00000000,99999999)
+            user_checkout_id = random.randint(00000000,99999999)
             # otp_time = datetime.utcnow() + timedelta(minutes=15)
             otp_time = datetime.utcnow() + timedelta(minutes=1)
             cursor.execute('INSERT INTO sc_attempts (unique_otp ,attempts,customer_id,sc_status,attempt_time,otp_time) VALUES (%s,%s,%s,%s,%s,%s)',(user_checkout_id, attempted, customer_id, 0,login_time,otp_time))
@@ -1599,20 +1600,33 @@ def error403(e):
     db.connection.commit()
     return render_template('403.html'), 403
 
-
-#working message 
-@app.route("/sendmessage")
-def sendmessage():
-    msg = Message("Hello", sender='tannathanael24@gmail.com',recipients=["nathanaeltzw@gmail.com"])
-    msg.body = "Hello your OTP is 123456"
-    mail.send(msg)
-    return "message sent successfully"
-
 @app.route('/firstloginstaff')
 def firstloginstaff():
-    
-    return render_template('firstloginstaff.html')
-
+    form = getotpform()
+    id=session['id']
+    encrypted_otp = session['OTP']
+    cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor.execute('SELECT otp_key FROM staff_otp_key WHERE staff_id= %s',[id])
+    k = cursor.fetchone()
+    key = (k['otp_key']).encode()
+    f= Fernet(key)
+    decrypted_otp = f.decrypt(encrypted_otp.encode())
+    inputed_otp = form.otp.data
+    if inputed_otp == decrypted_otp:
+        zero = 1
+        login_time = datetime.utcnow()
+        cursor.execute('SELECT * FROM staff_accounts WHERE staff_id= %s',[id])
+        staff = cursor.fetchone()
+        cursor.execute('INSERT INTO staff_login_history (staff_id, login_attempt_no, login_time) VALUES (%s,%s,%s)',(id,zero,login_time))
+        db.connection.commit()
+        session['loggedin2'] = True
+        session['id'] = id  
+        session['name'] = staff['full_name']
+        session['staff_login_no'] = 1
+        flash(f"Successfully logged in as {staff['full_name']}!",category="success")
+    else:
+        flash('Incorrect OTP!', category='danger')
+    return render_template('firstloginstaff.html'form=form)
 
 
 
