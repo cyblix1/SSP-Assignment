@@ -394,6 +394,8 @@ def login():
                             session['staff_login_no'] = int(next_login_attempt)
                             flash(f"Successfully logged in as {staff['full_name']}!",category="success")
                             return redirect(url_for('customers'))
+        flash('invalid login details!',category='danger')
+        return redirect(url_for('login'))
     return render_template('login.html', form=form)
 
 @app.route('/forgetpassword1', methods=['GET', 'POST'])
