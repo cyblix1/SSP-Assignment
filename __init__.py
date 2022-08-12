@@ -320,6 +320,7 @@ def login():
                     flash('invalid login details')
                     return redirect(url_for('login'))
             else:
+                #This is staff account
                 cursor.execute('SELECT staff_key FROM staff_key WHERE staff_id = %s',[id])
                 columns = cursor.fetchone()
                 staff_key = columns['staff_key']
@@ -333,12 +334,30 @@ def login():
                     encrypted_email = staff['email']
                     decrypted = f.decrypt(encrypted_email.encode())
                     if decrypted:
-                        session['loggedin2'] = True
-                        session['id'] = id
-                        session['name'] = staff['full_name']
-                        flash(f"Successfully logged in as {staff['full_name']}!",category="success")
-                        return redirect(url_for('customers'))
-            
+                        cursor.execute('SELECT max(login_attempt_no) AS last_login FROM staff_login_history WHERE staff_id = %s',[id])
+                        acc_login = cursor.fetchone()
+                            #means first login
+                        if acc_login['last_login'] is None:
+                            zero = 1
+                            cursor.execute('INSERT INTO staff_login_history (staff_id, login_attempt_no, login_time) VALUES (%s,%s,%s)',(id,zero,login_time))
+                            db.connection.commit()
+                            session['loggedin2'] = True
+                            session['id'] = id
+                            session['name'] = staff['full_name']
+                            session['staff_login_no'] = 1
+                            flash(f"Successfully logged in as {staff['full_name']}!",category="success")
+                            return redirect(url_for('customers'))
+                        #means not first login
+                        else:
+                            next_login_attempt = acc_login['last_login'] +1
+                            cursor.execute('INSERT INTO staff_login_history (staff_id, login_attempt_no, login_time) VALUES (%s,%s,%s)',(id,next_login_attempt,login_time))
+                            db.connection.commit()
+                            session['loggedin2'] = True
+                            session['id'] = id
+                            session['name'] = staff['full_name']
+                            session['staff_login_no'] = int(next_login_attempt)
+                            flash(f"Successfully logged in as {staff['full_name']}!",category="success")
+                            return redirect(url_for('customers'))
     return render_template('login.html', form=form)
 
 @app.route('/forgetpassword1', methods=['GET', 'POST'])
@@ -870,9 +889,16 @@ def update_email(email,id):
 @app.route('/logoutstaff')
 def logoutstaff():
     if 'loggedin2' in session:
+        id = session['id']
+        login_num = session['staff_login_no']
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        logout_time = datetime.utcnow()
+        cursor.execute('UPDATE staff_login_history SET logout_time = %s WHERE staff_id = %s AND login_attempt_no = %s',(logout_time,id,login_num))
+        db.connection.commit()
         session.pop('loggedin2', None)
         session.pop('id', None)
         session.pop('name', None)
+        session.pop('staff_login_no', None)
         flash('Successfully logged out')
         # Redirect to login page
         return redirect(url_for('login'))
@@ -1534,9 +1560,12 @@ def error403(e):
     db.connection.commit()
     return render_template('403.html'), 403
 
+
+#working message 
 @app.route("/sendmessage")
 def sendmessage():
     msg = Message("Hello", sender='tannathanael24@gmail.com',recipients=["nathanaeltzw@gmail.com"])
+    msg.body = "Hello your OTP is 123456"
     mail.send(msg)
     return "message sent successfully"
 
