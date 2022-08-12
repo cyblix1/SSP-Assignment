@@ -23,16 +23,7 @@ config = ConfigParser()
 config.read(file)
 
 RECAPTCHA_PUBLIC_KEY = "6Ldzgu0gAAAAAKF5Q8AdFeTRJpvl5mLBncz-dsBv"
-RECAPTCHA_PRIVATE_KEY = "6Ldzgu0gAAAAANuXjmXEv_tLJLQ_s7jtQV3rPwX2"
-
-class check_answer():
-    def check_answer(answer):
-        regex = re.compile('[@_!#$%^&*()<>?/\|}{~:]')
-
-        if(regex.search(answer) == None):
-            print("acceptable answer")
-        else:
-            print("illegal characters in answer.")
+RECAPTCHA_PRIVATE_KEY = "6Ldzgu0gAAAAANuXjmXEv_tLJLQ_s7jtQV3rPwX2"    
 
 class CreateAdminForm(FlaskForm):
     name = StringField("Name", validators=[Length(min=1, max=50),DataRequired()])
@@ -80,7 +71,7 @@ class Register_Users(FlaskForm):
     email = EmailField("Email", validators=[Length(min=5, max=100,  message='length is between 5 to 100'), DataRequired(message ='no email')])
     question = SelectField("Security Question", validators=[DataRequired(message="Please Select a question")], choices=[("When is your dog's birthday?"),
     ("Where did your parents meet?"),("What city did you first go to college?")])
-    answer = StringField("Answer", validators=[Length(max=50),check_answer(regex="^(?=.*[-+_!@#$%^&*., ?])"),DataRequired(message="Please answer")])
+    answer = StringField("Answer", validators=[Length(max=50),DataRequired(message="Please answer")])
     password1 = PasswordField("Password:", validators=[DataRequired(message ="no password")])
     password2 = PasswordField("Confirm:",validators=[DataRequired(message ="no password")])
     recaptcha = RecaptchaField(validators=[DataRequired(message="Click here")])

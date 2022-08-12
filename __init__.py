@@ -211,32 +211,58 @@ class checks_exists:
 @app.route('/register',methods =['POST','GET'])
 def register():
     form = Register_Users()
+
     if form.is_submitted() and request.method == 'POST' and RecaptchaField != NULL:
         name = form.name.data
         question = form.question.data
+        if question == 'Where did your parents meet?':
+            question_number = 1
+        elif question == 'What city did you first go to college?':
+            question_number = 2
+        else:
+            question_number = 3
         answer = form.answer.data
+        validate_ans = Validations.validate_answer(answer)
+        if validate_ans is True:
+            pass
+        else:
+            flash('Answer is unacceptable',category='danger')
+
+
         password = form.password1.data
         hashpassword = bcrypt2.generate_password_hash(password)
         password2 = form.password2.data
+        email = form.email.data
+        time = datetime.utcnow()
+        password_age = 4
+
         if password != password2:
             flash('passwords do not match',category='danger')
 
             return redirect(url_for('register'))
-        elif password == password2:
-            flash('Account created successfully!')
-        email = form.email.data
-        time = datetime.utcnow()
-        password_age=4
-        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        # print('INSERT INTO customer_accounts VALUES (NULL,%s,%s,%s,%s,%s)',(name,email,hashpassword,password_age,time))
-        cursor.execute('INSERT INTO customer_accounts VALUES (NULL,%s,%s,%s,%s,%s,%s,%s)',(name,email,question,answer,hashpassword,password_age,time,))
-        cursor.execute('INSERT INTO logs_login (log_id ,description, date_created) VALUES (NULL,concat("User ",%s," has registered"),%s)',(name, time))
+        else:
+            cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+            cursor.execute('SELECT * from customer_accounts where email = %s',[email])
+            email_check = cursor.fetchone
+            db.connection.commit()
 
-        db.connection.commit()
-        return redirect(url_for('login'))
+            if email_check is None:
+                # print('INSERT INTO customer_accounts VALUES (NULL,%s,%s,%s,%s,%s)',(name,email,hashpassword,password_age,time))
+                cursor.execute('INSERT INTO customer_accounts VALUES (NULL,%s,%s,%s,%s,%s,%s,%s)',(name,email,question_number,answer,hashpassword,password_age,time,))
+                db.connection.commit()
+                # cursor.execute('SELECT customer_id from customer_accounts where hashed_pw = %s',[hashpassword])
+                # customer_id_logs = cursor.fetchone()
+                # db.connection.commit()
+                # cursor.execute('INSERT INTO logs_info (log_id ,date_created, description) VALUES (NULL, %s, CONCAT("User ",%s," has been created") )',(name, time,customer_id_logs))
+                db.connection.commit()
+                flash('Account Successfully Created ',category='danger')
+                return redirect(url_for('login'))
+            else:
+                flash('Email has been registered before ',category='danger')
+                return redirect(url_for('register'))
+
 
     return render_template('register.html',form=form)
-
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -274,7 +300,7 @@ def login():
                     session.permanent = True
                     app.permanent_session_lifetime = timedelta(minutes = 15)
                     # Redirect to home page
-                    cursor.execute('INSERT INTO logs_login (log_id ,description, date_created) VALUES (NULL,concat("User ID (",%s,") has logged in"),%s)',(id,login_time))
+                    #cursor.execute('INSERT INTO logs_login (log_id ,description, date_created) VALUES (NULL,concat("User ID (",%s,") has logged in"),%s)',(id,login_time))
                     db.connection.commit()
                     return redirect(url_for('market'))
                 # elif acc_login['last_login'] == 3 :
@@ -290,7 +316,7 @@ def login():
                         session['name'] = account['full_name']
                         session['customer_login_no'] = int(next_login_attempt)
                         # Redirect to home page
-                        cursor.execute('INSERT INTO logs_login (log_id ,description, date_created) VALUES (NULL,concat("User ID (",%s,") has logged in"," (Number of Times: ",%s, ")"),%s)',(id, next_login_attempt ,login_time))
+                        #cursor.execute('INSERT INTO logs_login (log_id ,description, date_created) VALUES (NULL,concat("User ID (",%s,") has logged in"," (Number of Times: ",%s, ")"),%s)',(id, next_login_attempt ,login_time))
                         db.connection.commit()
                         return redirect(url_for('market'))
         else:
