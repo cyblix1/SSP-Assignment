@@ -21,3 +21,12 @@ class Validations:
             return True
         else:
             return False
+    #validate security answer
+    def validate_answer(answer):
+            regex = re.compile('[@_!#$%^&*()<>?/\|}{~:]')
+
+            if(regex.search(answer) == None):
+                return True
+            else:
+                return False
+                print("illegal characters in answer.") 
