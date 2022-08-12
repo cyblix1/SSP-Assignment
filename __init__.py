@@ -3,7 +3,7 @@ from distutils import ccompiler
 from distutils.util import byte_compile
 from email.message import Message
 from mimetypes import init
-
+from nis import cat
 from pydoc import render_doc
 # from nis import cat
 # from nis import cat
@@ -1653,12 +1653,6 @@ def firstloginstaff():
     else:
         flash('Incorrect OTP!', category='danger')
     return render_template('firstloginstaff.html',form=form)
-
-
-
-
-
-
 
 if __name__ == '__main__':
     app.run(debug=True)
