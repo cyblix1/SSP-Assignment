@@ -411,13 +411,40 @@ def forgetpassword2():
                 account = cursor.fetchone()
                 session['id'] = account['customer_id']
                 db.connection.commit()
-                return redirect(url_for('updatePassword'))
+                return redirect(url_for('ResetPassword'))
 
             else:
                 flash("Forget Password Unsuccessfully, Try Again!", category="success")
                 return redirect(url_for('login'))
     else:
         return render_template('forgetpassword2.html', form=form)
+
+@app.route('/resetpassword', methods=['GET', 'POST'])
+def resetpassword():
+    form = ResetPassword(request.form)
+    # email_forget = form.email.data
+    newpassword = form.newpassword.data
+    confirmpassword = form.confirmpassword.data
+    cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+    if newpassword != confirmpassword:
+            flash('passwords do not match',category='danger')
+        
+            return redirect(url_for('register'))
+        
+    elif newpassword == confirmpassword:
+            flash('Password changed successfully!')
+            time = datetime.utcnow()
+            password_age=4
+            cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+            update_hashpassword = bcrypt2.generate_password_hash(newpassword)
+            cursor.execute('UPDATE customer_accounts SET hashed_pw = %s WHERE customer_id = %s',(update_hashpassword, id))
+            db.connection.commit()
+            flash("Successful", category="success")
+            db.connection.commit()
+            return redirect(url_for('login'))
+
+    return render_template('resetpassword.html',form=form)
+
 
 @app.route('/logout')
 def logout():
