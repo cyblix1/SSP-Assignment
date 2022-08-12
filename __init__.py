@@ -29,12 +29,11 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from validations import *
-# from verify import email_verification
+import random
 from flask_mail import Mail,Message
 # import stripe
 import logging
 from logging.config import dictConfig , fileConfig
-from random import *
 import smtplib
 from logging.handlers import SMTPHandler
 from email.message import EmailMessage
@@ -141,7 +140,11 @@ logger.addHandler(file_handler_info)
 logger.addHandler(smtp_handler)
 
 
-
+def generateOTP(otp_size = 6):
+        final_otp = ''
+        for i in range(otp_size):
+            final_otp = final_otp + str(random.randint(0,9))
+        return final_otp
 
 file_name = "app.log"
 file = open(file_name, "r")
@@ -336,17 +339,26 @@ def login():
                     if decrypted:
                         cursor.execute('SELECT max(login_attempt_no) AS last_login FROM staff_login_history WHERE staff_id = %s',[id])
                         acc_login = cursor.fetchone()
-                            #means first login
+                        #means first login so need 3fa
                         if acc_login['last_login'] is None:
-                            zero = 1
-                            cursor.execute('INSERT INTO staff_login_history (staff_id, login_attempt_no, login_time) VALUES (%s,%s,%s)',(id,zero,login_time))
-                            db.connection.commit()
-                            session['loggedin2'] = True
-                            session['id'] = id
-                            session['name'] = staff['full_name']
-                            session['staff_login_no'] = 1
-                            flash(f"Successfully logged in as {staff['full_name']}!",category="success")
-                            return redirect(url_for('customers'))
+                            # zero = 1
+                            # cursor.execute('INSERT INTO staff_login_history (staff_id, login_attempt_no, login_time) VALUES (%s,%s,%s)',(id,zero,login_time))
+                            # db.connection.commit()
+                            # session['loggedin2'] = True
+                            # session['id'] = id
+                            # session['name'] = staff['full_name']
+                            # session['staff_login_no'] = 1
+                            # flash(f"Successfully logged in as {staff['full_name']}!",category="success")
+                            
+                            #otp is a string
+                            otp = str(generateOTP())
+                            msg = Message("Hello", sender='tannathanael24@gmail.com',recipients=["nathanaeltzw@gmail.com"])
+                            body = "Your OTP is " + otp
+                            msg.body = body
+                            mail.send(msg)
+                            #idk need to encrypt or hash
+                            session['OTP'] = otp
+                            return redirect(url_for('firstloginstaff'))
                         #means not first login
                         else:
                             next_login_attempt = acc_login['last_login'] +1
@@ -1571,6 +1583,7 @@ def sendmessage():
 
 @app.route('/firstloginstaff')
 def firstloginstaff():
+    
     return render_template('firstloginstaff.html')
 
 
