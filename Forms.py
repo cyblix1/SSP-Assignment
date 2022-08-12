@@ -72,7 +72,7 @@ class Update_Gender(FlaskForm):
 class Register_Users(FlaskForm):
     name = StringField("Name", validators=[Length(min=1, max=50, message='length is between 1 to 50'), DataRequired(message="no name")])
     email = EmailField("Email", validators=[Length(min=5, max=100,  message='length is between 5 to 100'), DataRequired(message ='no email')])
-    question = SelectField("Security Question", validators=[DataRequired(message="Please Select a question")], choices=[("When is your dog's birthday?"),
+    question = SelectField("Security Question", validators=[DataRequired(message="Please Select a question")], choices=[("What was the name of your first stuffed toy?"),
     ("Where did your parents meet?"),("What city did you first go to college?")])
     answer = StringField("Answer", validators=[Length(max=50),DataRequired(message="Please answer")])
     password1 = PasswordField("Password:", validators=[DataRequired(message ="no password")])
