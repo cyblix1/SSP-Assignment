@@ -671,6 +671,10 @@ def create_admin():
         password = form.psw.data
         password2 = form.password2.data
         date_created = datetime.utcnow()
+        flash(password+password2,category='danger')
+        if password != password2:
+            flash('passwords does not match',category='danger')
+            return redirect(url_for('admins'))
         #Server side validations
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
         if cursor:
@@ -682,11 +686,8 @@ def create_admin():
                     flash('Email exists!',category="danger")
                     return redirect(url_for('admins'))
                 continue
-            if password != password2:
-                flash('passwords does not match',category="danger")
-                return redirect(url_for('admins'))
             #server side confirmations 
-            elif Validations.validate_password(password) == False:
+            if Validations.validate_password(password) == False:
                 flash('Invalid password',category="danger")
                 return redirect(url_for('admins'))
             elif Validations.validate_email(email) == False:
@@ -1701,11 +1702,12 @@ def firstloginphone():
 
 @app.route('/firstchangepassword',methods=['GET','POST'])
 def firstchangepassword():
-    form = ChangePasswordStaffForm()
     if 'OTP' in session and 'OTP2' in session and 'id' in session:
         id = session['id']
+        form = ChangePasswordStaffForm()
         password1 = form.psw.data
         password2 = form.password2.data
+        flash(password1,category='success')
         if password1 == password2:
             session.pop('OTP', None)
             session.pop('OTP2', None)
@@ -1721,10 +1723,13 @@ def firstchangepassword():
             session['staff_login_no'] = 1
             flash(f"Successfully logged in as {staff['full_name']}!",category="success")
             return redirect(url_for('customers'))
+        else:
+            flash('Passwords do not match',category='danger')
         return render_template('firstchangepassword.html',form=form)
     else:
         flash('Something went wrong please relog!',category='danger')
         return redirect(url_for('login'))
+    
 
 
 
