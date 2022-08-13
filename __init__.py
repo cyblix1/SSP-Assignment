@@ -54,19 +54,18 @@ app.config['RECAPTCHA_PUBLIC_KEY'] = "6Ldzgu0gAAAAAKF5Q8AdFeTRJpvl5mLBncz-dsBv"
 app.config['RECAPTCHA_PRIVATE_KEY'] = "6Ldzgu0gAAAAANuXjmXEv_tLJLQ_s7jtQV3rPwX2"
 app.config['STRIPE_PUBLIC_KEY'] = 'pk_test_51LM6HwJDutS1IqmOR34Em3mZeuTsaUwAaUp40HLvcwrQJpUR5bR60V1e3kkwugBz0A8xAuXObCpte2Y0M251tBeD00p16YXMgE'
 app.config['STRIPE_SECRET_KEY'] = 'sk_test_51LM6HwJDutS1IqmOFhsHKYQcSM2OEF8znqltmmy2vcQCkRUMiKyJrQunP0OlJji6Nlg142NVZ8CpTaMJgZLzzucx00tx6FdjY0'
-
 app.config["MAIL_SERVER"]='smtp.gmail.com'
 app.config["MAIL_PORT"]=465
 app.config["MAIL_USERNAME"]= 'nathanaeltzw@gmail.com'
 app.config['MAIL_PASSWORD']= 'mxdbfpagawywnxgu'
 app.config['MAIL_USE_TLS']=False
 app.config['MAIL_USE_SSL']=True
-account_sid = 'AC4b097493ecb42f35f5b0d02e420aeed5'
-auth_token = 'bceaef1a0777ba782d22699ea1371cbf'
+account_sid = config['twilio']['account']
+auth_token = config['twilio']['token']
+
 bcrypt2 = Bcrypt()
 mail=Mail(app)
 db = MySQL(app)
-client = Client(account_sid, auth_token)
 # dictConfig({
 #     'version': 1,
 #     'disable_existing_loggers': False,
@@ -1634,6 +1633,7 @@ def firstloginstaff():
         encrypted_otp = session['OTP']
         encrypted = (encrypted_otp.encode())
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        #getting key to decrypt session otp
         cursor.execute('SELECT otp_key FROM staff_otp_key WHERE staff_id= %s',[id])
         k = cursor.fetchone()
         key = (k['otp_key'].encode())
@@ -1641,22 +1641,35 @@ def firstloginstaff():
         decrypted_otp = (f.decrypt(encrypted)).decode()
         inputed_otp = form.otp.data
         if inputed_otp == decrypted_otp:
-            session.pop('id', None)
-            session.pop('OTP', None)
-            zero = 1
-            login_time = datetime.utcnow()
-            cursor.execute('SELECT full_name FROM staff_accounts WHERE staff_id= %s',[id])
-            staff = cursor.fetchone()
-            cursor.execute('INSERT INTO staff_login_history (staff_id, login_attempt_no, login_time) VALUES (%s,%s,%s)',(id,zero,login_time))
-            db.connection.commit()
-            session['loggedin2'] = True
-            session['id'] = id  
-            session['name'] = staff['full_name']
-            session['staff_login_no'] = 1
-            flash(f"Successfully logged in as {staff['full_name']}!",category="success")
-            return redirect(url_for('customers'))
+            otp2 = generateOTP()
+            #will use same key
+            #encrypting otp
+            encrypted_otp = f.encrypt(otp2.encode())
+            decoded_otp = encrypted_otp.decode()
+            #otpmessage
+            otpmessage = 'Your OTP is '+otp2
+            session['OTP2'] = decoded_otp
+
+            #getting phone number 
+            cursor.execute('SELECT phone_no FROM staff_accounts WHERE staff_id=%s',[id])
+            num_dict = cursor.fetchone()
+            staff_number = num_dict['phone_no']
+            #For SG number only
+            staff_number2 = '+65'+staff_number
+            #Sending message
+            client = Client(account_sid,auth_token)
+            message = client.messages.create(
+                from_='+12183074015',
+                body = otpmessage,
+                to = staff_number2
+            )
+            return redirect(url_for('firstloginphone'))
+
         elif inputed_otp != decrypted_otp:
             flash('Incorrect OTP!', category='danger')
+            pass
+        else:
+            flash('Please enter a OTP')
             pass
     else:
         flash('You are not allowed on this page',category='danger')
@@ -1664,13 +1677,55 @@ def firstloginstaff():
 
     return render_template('firstloginstaff.html',form=form)
 
-app.route('/phoneotp')
-def phoneotp():
-    message = client.messages.create(
-                              from_='+12183074015',
-                              body ='123456',
-                              to ='+6598994217'
-                          )
+@app.route('/firstloginphone',methods=['GET','POST'])
+def firstloginphone():
+    form = getotpform()
+    if 'OTP' in session and 'OTP2' in session and 'id' in session:
+        encrypted_phoneotp = (session['OTP2']).encode() 
+        id = session['id']
+        #getkey
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute('SELECT otp_key FROM staff_otp_key WHERE staff_id= %s',[id])
+        k = cursor.fetchone()
+        key = (k['otp_key'].encode())
+        f= Fernet(key)
+        decrypted_otp = (f.decrypt(encrypted_phoneotp)).decode()
+        inputed_otp = form.otp.data
+        if decrypted_otp == inputed_otp:
+            return redirect(url_for('firstchangepassword'))
+    else:
+        flash('Something went wrong please relog!',category='danger')
+        return redirect(url_for('login'))  
+    return render_template('firstloginphone.html',form=form)
+
+
+@app.route('/firstchangepassword',methods=['GET','POST'])
+def firstchangepassword():
+    form = ChangePasswordStaffForm()
+    if 'OTP' in session and 'OTP2' in session and 'id' in session:
+        id = session['id']
+        password1 = form.psw.data
+        password2 = form.password2.data
+        if password1 == password2:
+            session.pop('OTP', None)
+            session.pop('OTP2', None)
+            zero = 1
+            login_time = datetime.utcnow()
+            cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+            cursor.execute('SELECT full_name FROM staff_accounts WHERE staff_id= %s',[id])
+            staff = cursor.fetchone()
+            cursor.execute('INSERT INTO staff_login_history (staff_id, login_attempt_no, login_time) VALUES (%s,%s,%s)',(id,zero,login_time))
+            db.connection.commit()
+            session['loggedin2'] = True
+            session['name'] = staff['full_name']
+            session['staff_login_no'] = 1
+            flash(f"Successfully logged in as {staff['full_name']}!",category="success")
+            return redirect(url_for('customers'))
+        return render_template('firstchangepassword.html',form=form)
+    else:
+        flash('Something went wrong please relog!',category='danger')
+        return redirect(url_for('login'))
+
 
 
 if __name__ == '__main__':

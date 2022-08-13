@@ -47,6 +47,11 @@ class getotpform(FlaskForm):
     otp = StringField("OTP",validators=[DataRequired(),Length(min=6,max=6)])
     submit = SubmitField("Submit")
 
+class ChangePasswordStaffForm(FlaskForm):
+    psw = PasswordField("Password:", validators=[DataRequired(), EqualTo('password2'),Length(min=1,max=200)])
+    password2 = PasswordField("Confirm Password", validators=[DataRequired()])
+    submit = SubmitField("Submit")
+
 class UpdateAdminForm(FlaskForm):
     id = IntegerField("Id",validators=[DataRequired()])
     name = StringField("Name", validators=[Length(min=1, max=50),DataRequired()])
