@@ -35,7 +35,7 @@ from logging.config import dictConfig , fileConfig
 import smtplib
 from logging.handlers import SMTPHandler
 from email.message import EmailMessage
-
+from twilio.rest import Client
 
 app = Flask(__name__)
 #properities
@@ -61,11 +61,12 @@ app.config["MAIL_USERNAME"]= 'nathanaeltzw@gmail.com'
 app.config['MAIL_PASSWORD']= 'mxdbfpagawywnxgu'
 app.config['MAIL_USE_TLS']=False
 app.config['MAIL_USE_SSL']=True
-
+account_sid = 'AC4b097493ecb42f35f5b0d02e420aeed5'
+auth_token = 'bceaef1a0777ba782d22699ea1371cbf'
 bcrypt2 = Bcrypt()
 mail=Mail(app)
 db = MySQL(app)
-
+client = Client(account_sid, auth_token)
 # dictConfig({
 #     'version': 1,
 #     'disable_existing_loggers': False,
@@ -1662,6 +1663,15 @@ def firstloginstaff():
         return redirect(url_for('login'))
 
     return render_template('firstloginstaff.html',form=form)
+
+app.route('/phoneotp')
+def phoneotp():
+    message = client.messages.create(
+                              from_='+12183074015',
+                              body ='123456',
+                              to ='+6598994217'
+                          )
+
 
 if __name__ == '__main__':
     app.run(debug=True)
