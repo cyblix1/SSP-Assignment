@@ -44,7 +44,7 @@ class VerifyStaffOtp2(FlaskForm):
     submit = SubmitField("Verify")
 
 class getotpform(FlaskForm):
-    otp = StringField('OTP',validators=[DataRequired(),Length(min=6,max=6)])
+    otp = StringField("OTP",validators=[DataRequired(),Length(min=6,max=6)])
     submit = SubmitField("Submit")
 
 class UpdateAdminForm(FlaskForm):

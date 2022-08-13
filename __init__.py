@@ -1625,38 +1625,38 @@ def error403(e):
     db.connection.commit()
     return render_template('403.html'), 403
 
-@app.route('/firstloginstaff')
+@app.route('/firstloginstaff',methods=['GET','POST'])
 def firstloginstaff():
     form = getotpform()
-    if 'encrypted_otp' in session:
-        if request.form == 'POST' and form.validate_on_submit():
-            id = session['id']
-            encrypted_otp = session['OTP']
-            cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-            cursor.execute('SELECT otp_key FROM staff_otp_key WHERE staff_id= %s',[id])
-            k = cursor.fetchone()
-            key = (k['otp_key']).encode()
-            f= Fernet(key)
-            decrypted_otp = f.decrypt(encrypted_otp.encode())
-            inputed_otp = form.otp.data
-            if inputed_otp == decrypted_otp:
-                session.pop('id', None)
-                session.pop('encrypted_otp', None)
-                zero = 1
-                login_time = datetime.utcnow()
-                cursor.execute('SELECT * FROM staff_accounts WHERE staff_id= %s',[id])
-                staff = cursor.fetchone()
-                cursor.execute('INSERT INTO staff_login_history (staff_id, login_attempt_no, login_time) VALUES (%s,%s,%s)',(id,zero,login_time))
-                db.connection.commit()
-                session['loggedin2'] = True
-                session['id'] = id  
-                session['name'] = staff['full_name']
-                session['staff_login_no'] = 1
-                flash(f"Successfully logged in as {staff['full_name']}!",category="success")
-                return redirect(url_for('customers'))
-            else:
-                flash('Incorrect OTP!', category='danger')
-                pass
+    if 'OTP' in session:
+        id = session['id']
+        encrypted_otp = session['OTP']
+        encrypted = (encrypted_otp.encode())
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute('SELECT otp_key FROM staff_otp_key WHERE staff_id= %s',[id])
+        k = cursor.fetchone()
+        key = (k['otp_key'].encode())
+        f= Fernet(key)
+        decrypted_otp = (f.decrypt(encrypted)).decode()
+        inputed_otp = form.otp.data
+        if inputed_otp == decrypted_otp:
+            session.pop('id', None)
+            session.pop('OTP', None)
+            zero = 1
+            login_time = datetime.utcnow()
+            cursor.execute('SELECT full_name FROM staff_accounts WHERE staff_id= %s',[id])
+            staff = cursor.fetchone()
+            cursor.execute('INSERT INTO staff_login_history (staff_id, login_attempt_no, login_time) VALUES (%s,%s,%s)',(id,zero,login_time))
+            db.connection.commit()
+            session['loggedin2'] = True
+            session['id'] = id  
+            session['name'] = staff['full_name']
+            session['staff_login_no'] = 1
+            flash(f"Successfully logged in as {staff['full_name']}!",category="success")
+            return redirect(url_for('customers'))
+        elif inputed_otp != decrypted_otp:
+            flash('Incorrect OTP!', category='danger')
+            pass
     else:
         flash('You are not allowed on this page',category='danger')
         return redirect(url_for('login'))

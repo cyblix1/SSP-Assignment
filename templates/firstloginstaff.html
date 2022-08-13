@@ -9,18 +9,19 @@
 <link href="css/sb-admin-2.min.css" rel="stylesheet">
 {% block content %}
 <body class="bg-gradient-primary">
-    {% with messages = get_flashed_messages() %}
-        {% if messages %}
-            {% for message in messages %}
-                <div class="alert alert-success alert-dismissable" role="alert">
-                    <button type="button" class="close" data-dismiss="alert" aria-label="close">
-                        <span aria-hidden="true">x</span>
-                    </button>
-                    {{message}}
-                </div> 
-            {% endfor %}
-        {% endif %}
-    {% endwith%}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+        <div class="alert alert-{{category}} alert-dismissable" role="alert">
+            <button type="button" class="close" data-dismiss="alert" aria-label="close">
+                <span aria-hidden="true">x</span>
+            </button>
+            {{message}}
+        </div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+   
     <div class="container">
 
 
@@ -34,11 +35,13 @@
                             <div class="text-center">
                                 <h1 class="h4 text-gray-900 mb-4">Email Verfication</h1>
                             </div>
-                            <form action="{{ url_for('firstloginstaff')}}" method="POST">
+                            <form action="#" method="POST">
                                 <div class="form-group row">
                                     {{ form.otp(class='form-control form-control-user', placeholder='ENTER OTP') }}
                                 </div>
-                                {{ form.submit(class="btn btn-secondary btn-user btn-block" ,type="submit") }}
+                                <div class="form-group row">
+                                    {{ form.submit(class="btn btn-secondary btn-user btn-block" ,type="submit") }}
+                                </div>
                             </form>
                             <br>
                 
