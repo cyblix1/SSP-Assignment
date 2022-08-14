@@ -31,7 +31,7 @@ class CreateAdminForm(FlaskForm):
     email = EmailField("Email", validators=[Length(min=5, max=100),DataRequired()])
     phone = StringField("Phone No", validators=[Length(min=8, max=8, message='Please enter a real number'),DataRequired()])
     description = TextAreaField("description",validators=[Length(max=200)])
-    psw = PasswordField("Password:", validators=[DataRequired(), EqualTo('password2'),Length(min=1,max=200)])
+    psw = PasswordField("Password:", validators=[DataRequired(),Length(min=1,max=200)])
     password2 = PasswordField("Confirm Password", validators=[DataRequired()])
     submit = SubmitField("Add Employee")
 
