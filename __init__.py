@@ -64,8 +64,8 @@ app.config["MAIL_USERNAME"]= 'nathanaeltzw@gmail.com'
 app.config['MAIL_PASSWORD']= 'mxdbfpagawywnxgu'
 app.config['MAIL_USE_TLS']=False
 app.config['MAIL_USE_SSL']=True
-account_sid = config['twilio']['account']
-auth_token = config['twilio']['token']
+# account_sid = config['twilio']['account']
+# auth_token = config['twilio']['token']
 
 bcrypt2 = Bcrypt()
 mail=Mail(app)
@@ -246,6 +246,7 @@ def register():
 
     return render_template('register.html',form=form)
 
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     form = LoginForm(request.form)
@@ -254,209 +255,242 @@ def login():
         email = form.email.data
         password = form.password1.data
         login_time = datetime.utcnow()
-        #check if its staff account
+        # check if its staff account
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        #decryption later + salted hashing + login history
+        # decryption later + salted hashing + login history
         # Check if account exists using MySQL
-        cursor.execute('SELECT * FROM customer_accounts WHERE email = %s',[email])
+        cursor.execute('SELECT * FROM customer_accounts WHERE email = %s', [email])
         # Fetch one record and return result
         account = cursor.fetchone()
-        if account: 
-            user_hashpwd = account['hashed_pw']
-            if bcrypt2.check_password_hash(user_hashpwd, password):
-                id = account['customer_id']
-                # Create session data, we can access this data in other routes
-                cursor.execute('SELECT max(login_attempt_no) AS last_login FROM customer_login_history WHERE customer_id = %s',[id])
-                acc_login = cursor.fetchone()
-                #means first login
-                if acc_login['last_login'] is None:
-                    #means first login
 
-                    zero = 1
-                    cursor.execute('INSERT INTO customer_login_history (customer_id, login_attempt_no, login_time) VALUES (%s,%s,%s)',(id,zero,login_time))
-
+        if account:
+            id = account['customer_id']
+            cursor.execute(
+                'SELECT max(failed_attempt_tries) AS failed_try from login_limitations where customer_id = %s ', [id])
+            check_tries = cursor.fetchone()
+            if check_tries['failed_try'] is None:
+                user_hashpwd = account['hashed_pw']
+                if bcrypt2.check_password_hash(user_hashpwd, password):
+                    id = account['customer_id']
+                    # Create session data, we can access this data in other routes
+                    cursor.execute(
+                        'SELECT max(login_attempt_no) AS last_login FROM customer_login_history WHERE customer_id = %s',
+                        [id])
+                    acc_login = cursor.fetchone()
+                    # means first login
                     if acc_login['last_login'] is None:
-                        #means first login
+                        # means first login
                         zero = 1
-                        cursor.execute('INSERT INTO customer_login_history (customer_id, login_attempt_no, login_time) VALUES (%s,%s,%s)',(id,zero,login_time))
+                        cursor.execute(
+                            'INSERT INTO customer_login_history (customer_id, login_attempt_no, login_time) VALUES (%s,%s,%s)',
+                            (id, zero, login_time))
                         db.connection.commit()
                         session['loggedin'] = True
                         session['id'] = account['customer_id']
                         session['name'] = account['full_name']
-                        session['email']= account['email']
+                        session['email'] = account['email']
                         session['customer_login_no'] = 1
                         session.permanent = True
-                        app.permanent_session_lifetime = timedelta(minutes = 15)
+                        app.permanent_session_lifetime = timedelta(minutes=15)
                         # Redirect to home page
-                        cursor.execute('INSERT INTO logs_info (log_id ,date_created,customer_id,description) VALUES (NULL,%s,%s,concat("authn_login_success : User ID (",%s,")"))',(login_time, id, id))
+                        cursor.execute(
+                            'INSERT INTO logs_info (log_id ,date_created,customer_id, description) VALUES (NULL,%s,%s,concat("authn_login_success : User ID (",%s,")"))',
+                            (login_time, id, id))
                         db.connection.commit()
                         return redirect(url_for('market'))
                     # elif acc_login['last_login'] == 3 :
                     #     flash('TOO MANY LOGIN ATTEMPTS', category='danger')
                     #     return redirect(url_for('logout'))
-                    #means not first login
-                        
+                    # means not first login
+
                     else:
-                            next_login_attempt = acc_login['last_login'] +1
-                            cursor.execute('INSERT INTO customer_login_history (customer_id, login_attempt_no, login_time) VALUES (%s,%s,%s)',(id,next_login_attempt,login_time))
+                        next_login_attempt = acc_login['last_login'] + 1
+                        cursor.execute(
+                            'INSERT INTO customer_login_history (customer_id, login_attempt_no, login_time) VALUES (%s,%s,%s)',
+                            (id, next_login_attempt, login_time))
+                        db.connection.commit()
+                        session['loggedin'] = True
+                        session['id'] = account['customer_id']
+                        session['name'] = account['full_name']
+                        session['customer_login_no'] = int(next_login_attempt)
+                        # Redirect to home page
+                        cursor.execute(
+                            'INSERT INTO logs_info (log_id ,date_created,customer_id, description) VALUES (NULL,%s,%s,concat("authn_login_success : User ID (",%s,")"))',
+                            (login_time, id, id))
+                        db.connection.commit()
+
+                        return redirect(url_for('market'))
+                else:
+                    flash("Incorrect E-mail or Password, 3 tries remaining ",category='danger')
+                    failed_tries = 1
+                    attempt_time = datetime.utcnow()
+                    cursor.execute(
+                        'INSERT INTO login_limitations (customer_id, failed_attempt_tries, attempt_time, locked_time) VALUES (%s,%s,%s,NULL)',
+                        (id, failed_tries, attempt_time))
+                    db.connection.commit()
+                    return redirect(url_for('login'))
+
+
+            elif check_tries['failed_try'] < 3:
+                user_hashpwd = account['hashed_pw']
+                if bcrypt2.check_password_hash(user_hashpwd, password):
+                    id = account['customer_id']
+                    # Create session data, we can access this data in other routes
+                    cursor.execute(
+                        'SELECT max(login_attempt_no) AS last_login FROM customer_login_history WHERE customer_id = %s',
+                        [id])
+                    acc_login = cursor.fetchone()
+                    # means first login
+                    if acc_login['last_login'] is None:
+                        # means first login
+                        zero = 1
+                        cursor.execute(
+                            'INSERT INTO customer_login_history (customer_id, login_attempt_no, login_time) VALUES (%s,%s,%s)',
+                            (id, zero, login_time))
+                        db.connection.commit()
+                        session['loggedin'] = True
+                        session['id'] = account['customer_id']
+                        session['name'] = account['full_name']
+                        session['email'] = account['email']
+                        session['customer_login_no'] = 1
+                        session.permanent = True
+                        app.permanent_session_lifetime = timedelta(minutes=15)
+                        # Redirect to home page
+                        cursor.execute(
+                            'INSERT INTO logs_info (log_id ,date_created,customer_id, description) VALUES (NULL,%s,%s,concat("authn_login_success : User ID (",%s,")"))',
+                            (login_time, id, id))
+                        cursor.execute('DELETE FROM login_limitations WHERE customer_id = %s', [id])
+                        db.connection.commit()
+                        return redirect(url_for('market'))
+                    # elif acc_login['last_login'] == 3 :
+                    #     flash('TOO MANY LOGIN ATTEMPTS', category='danger')
+                    #     return redirect(url_for('logout'))
+                    # means not first login
+
+                    else:
+                        next_login_attempt = acc_login['last_login'] + 1
+                        cursor.execute(
+                            'INSERT INTO customer_login_history (customer_id, login_attempt_no, login_time) VALUES (%s,%s,%s)',
+                            (id, next_login_attempt, login_time))
+                        db.connection.commit()
+                        session['loggedin'] = True
+                        session['id'] = account['customer_id']
+                        session['name'] = account['full_name']
+                        session['customer_login_no'] = int(next_login_attempt)
+                        # Redirect to home page
+                        cursor.execute(
+                            'INSERT INTO logs_info (log_id ,date_created,customer_id, description) VALUES (NULL,%s,%s,concat("authn_login_success : User ID (",%s,")"))',
+                            (login_time, id, id))
+                        cursor.execute('DELETE FROM login_limitations WHERE customer_id = %s', [id])
+                        db.connection.commit()
+
+                        return redirect(url_for('market'))
+                else:
+                    customer_id = account['customer_id']
+                    cursor.execute(
+                        'SELECT max(failed_attempt_tries) AS failed_attempt_tries FROM login_limitations WHERE customer_id = %s',
+                        [customer_id])
+                    failed_attempt = cursor.fetchone()
+
+                    if failed_attempt['failed_attempt_tries'] is None:
+                        flash("Incorrect E-mail or Password, 3 tries remaining ", category='danger')
+                        failed_tries = 1
+                        attempt_time = datetime.utcnow()
+                        cursor.execute(
+                            'INSERT INTO login_limitations (customer_id, failed_attempt_tries, attempt_time, locked_time) VALUES (%s,%s,%s,NULL)',
+                            (customer_id, failed_tries, attempt_time))
+                        db.connection.commit()
+                        return redirect(url_for('login'))
+
+                    elif failed_attempt['failed_attempt_tries'] < 2:
+                        flash("Incorrect E-mail or Password, 2 tries remaining",category='danger')
+                        failed_tries = 1
+                        attempt_time = datetime.utcnow()
+                        cursor.execute(
+                            'INSERT INTO login_limitations (customer_id, failed_attempt_tries, attempt_time, locked_time) VALUES (%s,%s,%s,NULL)',
+                            (customer_id, failed_tries, attempt_time))
+                        db.connection.commit()
+                        return redirect(url_for('login'))
+
+
+                    elif failed_attempt['failed_attempt_tries'] < 3:
+                        flash("Incorrect E-mail or Password, this is your last try",category='danger')
+                        failed_tries = 3
+                        attempt_time = datetime.utcnow()
+                        retry_time2 = datetime.utcnow() + timedelta(seconds=30)
+                        cursor.execute(
+                            'INSERT INTO login_limitations (customer_id, failed_attempt_tries, attempt_time, locked_time) VALUES (%s,%s,%s,%s)',
+                            (customer_id, failed_tries, attempt_time, retry_time2))
+                        db.connection.commit()
+
+
+
+            else:
+                attempt_time = datetime.utcnow()
+                cursor.execute(
+                    'UPDATE login_limitations SET attempt_time = %s WHERE customer_id = %s and failed_attempt_tries = %s',
+                    (attempt_time, id, 3))
+                db.connection.commit()
+                cursor.execute('SELECT * from login_limitations where attempt_time > locked_time and customer_id = %s',
+                               [id])
+                check_time = cursor.fetchone()
+                db.connection.commit()
+                if check_time is not None:
+                    # current time has not exceeded 5mins
+                    cursor.execute('DELETE FROM login_limitations WHERE customer_id = %s', [id])
+                    db.connection.commit()
+                    user_hashpwd = account['hashed_pw']
+                    if bcrypt2.check_password_hash(user_hashpwd, password):
+                        id = account['customer_id']
+
+                        # Create session data, we can access this data in other routes
+                        cursor.execute(
+                            'SELECT max(login_attempt_no) AS last_login FROM customer_login_history WHERE customer_id = %s',
+                            [id])
+                        acc_login = cursor.fetchone()
+                        # means first login
+                        if acc_login['last_login'] is None:
+                            # means first login
+                            zero = 1
+                            cursor.execute(
+                                'INSERT INTO customer_login_history (customer_id, login_attempt_no, login_time) VALUES (%s,%s,%s)',
+                                (id, zero, login_time))
+                            db.connection.commit()
+                            session['loggedin'] = True
+                            session['id'] = account['customer_id']
+                            session['name'] = account['full_name']
+                            session['email'] = account['email']
+                            session['customer_login_no'] = 1
+                            session.permanent = True
+                            app.permanent_session_lifetime = timedelta(minutes=15)
+                            # Redirect to home page
+                            cursor.execute(
+                                'INSERT INTO logs_info (log_id ,date_created,customer_id, description) VALUES (NULL,%s,%s,concat("authn_login_success : User ID (",%s,")"))',
+                                (login_time, id, id))
+                            db.connection.commit()
+                            return redirect(url_for('market'))
+                        # elif acc_login['last_login'] == 3 :
+                        #     flash('TOO MANY LOGIN ATTEMPTS', category='danger')
+                        #     return redirect(url_for('logout'))
+                        # means not first login
+
+                        else:
+                            next_login_attempt = acc_login['last_login'] + 1
+                            cursor.execute(
+                                'INSERT INTO customer_login_history (customer_id, login_attempt_no, login_time) VALUES (%s,%s,%s)',
+                                (id, next_login_attempt, login_time))
                             db.connection.commit()
                             session['loggedin'] = True
                             session['id'] = account['customer_id']
                             session['name'] = account['full_name']
                             session['customer_login_no'] = int(next_login_attempt)
                             # Redirect to home page
-                            cursor.execute('INSERT INTO logs_info (log_id ,date_created,customer_id, description) VALUES (NULL,%s,%s,concat("authn_login_success : User ID (",%s,")"))',(login_time, id, id))
+                            cursor.execute(
+                                'INSERT INTO logs_info (log_id ,date_created,customer_id, description) VALUES (NULL,%s,%s,concat("authn_login_success : User ID (",%s,")"))',
+                                (login_time, id, id))
                             db.connection.commit()
-            
+
                             return redirect(url_for('market'))
-                else:
-                    flash("Incorrect E-mail or Password, 3 tries remaining ", category='danger')
-                    failed_tries = 1
-                    attempt_time = datetime.utcnow()
-                    cursor.execute('INSERT INTO login_limitations (customer_id, failed_attempt_tries, attempt_time, locked_time) VALUES (%s,%s,%s,NULL)', (id, failed_tries, attempt_time))
-                    db.connection.commit()
-                    session['loggedin'] = True
-                    session['id'] = account['customer_id']
-                    session['name'] = account['full_name']
-                    session['email']= account['email']
-                    session['customer_login_no'] = 1
-                    session.permanent = True
-                    app.permanent_session_lifetime = timedelta(minutes = 15)
-                    # Redirect to home page
-                    #cursor.execute('INSERT INTO logs_login (log_id ,description, date_created) VALUES (NULL,concat("User ID (",%s,") has logged in"),%s)',(id,login_time))
-                    db.connection.commit()
-                    return redirect(url_for('market'))
-                # elif acc_login['last_login'] == 3 :
-                #     flash('TOO MANY LOGIN ATTEMPTS', category='danger')
-                #     return redirect(url_for('logout'))
-                #means not first login
-                else:
-                    next_login_attempt = acc_login['last_login'] +1
-                    cursor.execute('INSERT INTO customer_login_history (customer_id, login_attempt_no, login_time) VALUES (%s,%s,%s)',(id,next_login_attempt,login_time))
-                    db.connection.commit()
-                    session['loggedin'] = True
-                    session['id'] = account['customer_id']
-                    session['name'] = account['full_name']
-                    session['customer_login_no'] = int(next_login_attempt)
-                    # Redirect to home page
-                    #cursor.execute('INSERT INTO logs_login (log_id ,description, date_created) VALUES (NULL,concat("User ID (",%s,") has logged in"," (Number of Times: ",%s, ")"),%s)',(id, next_login_attempt ,login_time))
-                    db.connection.commit()
-                    return redirect(url_for('market'))
-        else:
-            #check for staff account
-            cursor.execute('SELECT * FROM staff_email_hash')
-            all_staff = cursor.fetchall()
-            #check if email exists
-            id = 0
-            for staff in all_staff:
-                hash = (staff['email_hash']).encode()
-                if bcrypt.checkpw(email.encode(),hash):
-                    id = staff['staff_id']
-                    break
-            #decryption of email
-            #get key
-            if id == 0:
-                #checks for admin accounts 
-                cursor.execute('SELECT * from admin_accounts')
-                admin = cursor.fetchone()
-                if admin['email'] == email and admin['password'] == password:
-                    session['loggedin3'] = True
-                    session['id'] = admin['admin_id']
-                    session['name'] = admin['full_name']
-                    flash(f"Successfully logged in as {admin['full_name']}!",category="success")
-                    return redirect(url_for('admins'))
-                else:
-
-                    flash('invalid login details',category='danger')
-                    return redirect(url_for('login'))
-
-                    customer_id = account['customer_id']
-                    cursor.execute('SELECT max(failed_attempt_tries) AS failed_attempt_tries FROM login_limitations WHERE customer_id = %s',[customer_id])
-                    failed_attempt = cursor.fetchone()
-                    
-                    
-                    if failed_attempt['failed_attempt_tries'] is None:
-                            flash("Incorrect E-mail or Password, 3 tries remaining " ,category='danger')
-                            failed_tries = 1
-                            attempt_time = datetime.utcnow()
-                            cursor.execute('INSERT INTO login_limitations (customer_id, failed_attempt_tries, attempt_time, locked_time) VALUES (%s,%s,%s,NULL)', (customer_id, failed_tries, attempt_time))
-                            db.connection.commit()
-                            return redirect(url_for('login'))
-                    
-                    elif failed_attempt['failed_attempt_tries'] < 2:
-                        flash("Incorrect E-mail or Password, 2 tries remaining",category='danger')
-                        failed_tries = 2
-                        attempt_time = datetime.utcnow()
-                        cursor.execute('INSERT INTO login_limitations (customer_id, failed_attempt_tries, attempt_time, locked_time) VALUES (%s,%s,%s,NULL)', (customer_id, failed_tries, attempt_time))
-                        db.connection.commit()
-                        return redirect(url_for('login'))
-                    
-
-                    elif failed_attempt['failed_attempt_tries'] < 3:
-                        flash("Incorrect E-mail or Password, this is your last try",category='danger')
-                        failed_tries = 3
-                        attempt_time = datetime.utcnow()
-                        retry_time2 = datetime.utcnow() + timedelta(minutes=5)
-                        cursor.execute('INSERT INTO login_limitations (customer_id, failed_attempt_tries, attempt_time, locked_time) VALUES (%s,%s,%s,%s)', (customer_id, failed_tries, attempt_time, retry_time2))
-                        db.connection.commit()
-                
-                    
-                        
-
-            else:
-                #This is staff account
-                cursor.execute('SELECT staff_key FROM staff_key WHERE staff_id = %s',[id])
-                columns = cursor.fetchone()
-                staff_key = columns['staff_key']
-                #Get account information
-                cursor.execute('SELECT * FROM staff_accounts WHERE staff_id = %s',[id])
-                staff = cursor.fetchone()
-                #check password hash
-                if staff and bcrypt.checkpw(password.encode(),staff['hashed_pw'].encode()):
-                    #decrypt email
-                    f = Fernet(staff_key)
-                    encrypted_email = staff['email']
-                    decrypted = f.decrypt(encrypted_email.encode())
-                    if decrypted:
-                        cursor.execute('SELECT max(login_attempt_no) AS last_login FROM staff_login_history WHERE staff_id = %s',[id])
-                        acc_login = cursor.fetchone()
-                        #means first login so need 3fa
-                        if acc_login['last_login'] is None:
-                            #otp is a string
-                            otp = str(generateOTP())
-                            msg = Message("Hello", sender='tannathanael24@gmail.com',recipients=["nathanaeltzw@gmail.com"])
-                            body = "Your OTP is " + otp
-                            msg.body = body
-                            mail.send(msg)
-                            #Encrypting OTP to put in session
-                            key = Fernet.generate_key()
-                            #storing key
-                            cursor.execute('INSERT INTO staff_otp_key VALUES (%s,%s)',(id,key.decode()))
-                            db.connection.commit()
-                            f= Fernet(key)
-                            encrypted_otp = f.encrypt(otp.encode())
-                            decoded_otp = encrypted_otp.decode()
-                            session['id'] = id
-                            #stored the otp in a session, after need to encode and key in database
-                            session['OTP'] = decoded_otp
-                            return redirect(url_for('firstloginstaff'))
-                        #means not first login
-                        else:
-
-                            next_login_attempt = acc_login['last_login'] +1
-                            cursor.execute('INSERT INTO staff_login_history (staff_id, login_attempt_no, login_time) VALUES (%s,%s,%s)',(id,next_login_attempt,login_time))
-
-                                next_login_attempt = acc_login['last_login'] +1
-                                cursor.execute('INSERT INTO customer_login_history (customer_id, login_attempt_no, login_time) VALUES (%s,%s,%s)',(id,next_login_attempt,login_time))
-                                db.connection.commit()
-                                session['loggedin'] = True
-                                session['id'] = account['customer_id']
-                                session['name'] = account['full_name']
-                                session['customer_login_no'] = int(next_login_attempt)
-                                # Redirect to home pageconcat("User ID (",%s,") has logged in"," (Number of Times: ",%s, ")"),%s)',(id, next_login_attempt ,login_time))
-                                db.connection.commit()
-                
-                                return redirect(url_for('market'))
 
                 else:
                     flash("Please Wait for 5 Minutes, Thank You", category="success")
@@ -533,21 +567,13 @@ def login():
                             cursor.execute(
                                 'INSERT INTO staff_login_history (staff_id, login_attempt_no, login_time) VALUES (%s,%s,%s)',
                                 (id, next_login_attempt, login_time))
-
                             db.connection.commit()
                             session['loggedin2'] = True
                             session['id'] = id
                             session['name'] = staff['full_name']
                             session['staff_login_no'] = int(next_login_attempt)
-
-                            flash(f"Successfully logged in as {staff['full_name']}!",category="success")
-                            return redirect(url_for('customers'))
-        flash('invalid login details!',category='danger')
-        return redirect(url_for('login'))
-
                             flash(f"Successfully logged in as {staff['full_name']}!", category="success")
                             return redirect(url_for('customers'))
-
     return render_template('login.html', form=form)
 
 @app.route('/forgetpassword1', methods=['GET', 'POST'])
