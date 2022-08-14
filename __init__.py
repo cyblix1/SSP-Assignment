@@ -64,8 +64,8 @@ app.config["MAIL_USERNAME"]= 'nathanaeltzw@gmail.com'
 app.config['MAIL_PASSWORD']= 'mxdbfpagawywnxgu'
 app.config['MAIL_USE_TLS']=False
 app.config['MAIL_USE_SSL']=True
-# account_sid = config['twilio']['account']
-# auth_token = config['twilio']['token']
+account_sid = config['twilio']['account']
+auth_token = config['twilio']['token']
 
 bcrypt2 = Bcrypt()
 mail=Mail(app)
