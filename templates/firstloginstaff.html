@@ -36,6 +36,7 @@
                                 <h1 class="h4 text-gray-900 mb-4">Email Verfication</h1>
                             </div>
                             <form action="#" method="POST">
+                                {{ form.csrf_token }}
                                 <div class="form-group row">
                                     {{ form.otp(class='form-control form-control-user', placeholder='ENTER OTP') }}
                                 </div>

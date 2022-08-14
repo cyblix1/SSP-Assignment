@@ -64,8 +64,8 @@ app.config["MAIL_USERNAME"]= 'nathanaeltzw@gmail.com'
 app.config['MAIL_PASSWORD']= 'mxdbfpagawywnxgu'
 app.config['MAIL_USE_TLS']=False
 app.config['MAIL_USE_SSL']=True
-# account_sid = config['twilio']['account']
-# auth_token = config['twilio']['token']
+account_sid = config['twilio']['account']
+auth_token = config['twilio']['token']
 
 bcrypt2 = Bcrypt()
 mail=Mail(app)
@@ -552,7 +552,7 @@ def login():
                             # Encrypting OTP to put in session
                             key = Fernet.generate_key()
                             # storing key
-                            cursor.execute('INSERT INTO staff__otp_key VALUES (%s,%s)', (id, key.decode()))
+                            cursor.execute('INSERT INTO staff_otp_key VALUES (%s,%s)', (id, key.decode()))
                             db.connection.commit()
                             f = Fernet(key)
                             encrypted_otp = f.encrypt(otp.encode())
@@ -1194,7 +1194,7 @@ def logoutstaff():
         session.pop('id', None)
         session.pop('name', None)
         session.pop('staff_login_no', None)
-        flash('Successfully logged out')
+        flash('Successfully logged out',category='success')
         # Redirect to login page
         return redirect(url_for('login'))
     elif 'loggedin3' in session:
@@ -1205,7 +1205,7 @@ def logoutstaff():
         # Redirect to login page
         return redirect(url_for('login'))
     else:
-        flash('Something went wrong!')
+        flash('Something went wrong!',category='danger')
 
 # incomplete need session
 @app.route("/profile/update_gender/<gender>")
@@ -1890,46 +1890,47 @@ def error403(e):
 @app.route('/firstloginstaff',methods=['GET','POST'])
 def firstloginstaff():
     form = getotpform()
-    if 'OTP' in session:
+    if 'OTP' in session and 'id' in session:
         id = session['id']
         encrypted_otp = session['OTP']
         encrypted = (encrypted_otp.encode())
-        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        #getting key to decrypt session otp
-        cursor.execute('SELECT otp_key FROM staff_otp_key WHERE staff_id= %s',[id])
-        k = cursor.fetchone()
-        key = (k['otp_key'].encode())
-        f= Fernet(key)
-        decrypted_otp = (f.decrypt(encrypted)).decode()
-        inputed_otp = form.otp.data
-        if inputed_otp == decrypted_otp:
-            otp2 = generateOTP()
-            #will use same key
-            #encrypting otp
-            encrypted_otp = f.encrypt(otp2.encode())
-            decoded_otp = encrypted_otp.decode()
-            #otpmessage
-            otpmessage = 'Your OTP is '+otp2
-            session['OTP2'] = decoded_otp
+        if form.validate_on_submit():
+            inputed_otp = form.otp.data
+            cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+            #getting key to decrypt session otp
+            cursor.execute('SELECT otp_key FROM staff_otp_key WHERE staff_id= %s',[id])
+            k = cursor.fetchone()
+            key = (k['otp_key'].encode())
+            f= Fernet(key)
+            decrypted_otp = (f.decrypt(encrypted)).decode()
+            if inputed_otp == decrypted_otp:
+                otp2 = generateOTP()
+                #will use same key
+                #encrypting otp
+                encrypted_otp = f.encrypt(otp2.encode())
+                decoded_otp = encrypted_otp.decode()
+                #otpmessage
+                otpmessage = 'Your OTP is '+otp2
+                session['OTP2'] = decoded_otp
 
-            #getting phone number 
-            cursor.execute('SELECT phone_no FROM staff_accounts WHERE staff_id=%s',[id])
-            num_dict = cursor.fetchone()
-            staff_number = num_dict['phone_no']
-            #For SG number only
-            staff_number2 = '+65'+staff_number
-            #Sending message
-            client = Client(account_sid,auth_token)
-            message = client.messages.create(
-                from_='+12183074015',
-                body = otpmessage,
-                to = staff_number2
-            )
-            return redirect(url_for('firstloginphone'))
+                #getting phone number 
+                cursor.execute('SELECT phone_no FROM staff_accounts WHERE staff_id=%s',[id])
+                num_dict = cursor.fetchone()
+                staff_number = num_dict['phone_no']
+                #For SG number only
+                staff_number2 = '+65'+staff_number
+                #Sending message
+                client = Client(account_sid,auth_token)
+                message = client.messages.create(
+                    from_='+12183074015',
+                    body = otpmessage,
+                    to = staff_number2
+                )
+                return redirect(url_for('firstloginphone'))
 
-        elif inputed_otp != decrypted_otp:
-            flash('Incorrect OTP!', category='danger')
-            pass
+            elif inputed_otp != decrypted_otp:
+                flash('Incorrect OTP!', category='danger')
+                pass
         else:
             flash('Please enter a OTP')
             pass
@@ -1946,50 +1947,71 @@ def firstloginphone():
         encrypted_phoneotp = (session['OTP2']).encode() 
         id = session['id']
         #getkey
-        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute('SELECT otp_key FROM staff_otp_key WHERE staff_id= %s',[id])
-        k = cursor.fetchone()
-        key = (k['otp_key'].encode())
-        f= Fernet(key)
-        decrypted_otp = (f.decrypt(encrypted_phoneotp)).decode()
-        inputed_otp = form.otp.data
-        if decrypted_otp == inputed_otp:
-            return redirect(url_for('firstchangepassword'))
+        if form.validate_on_submit():
+            inputed_otp = form.otp.data
+            cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+            cursor.execute('SELECT otp_key FROM staff_otp_key WHERE staff_id= %s',[id])
+            k = cursor.fetchone()
+            key = (k['otp_key'].encode())
+            f= Fernet(key)
+            decrypted_otp = (f.decrypt(encrypted_phoneotp)).decode()
+            if decrypted_otp == inputed_otp:
+                return redirect(url_for('firstchangepassword'))
     else:
         flash('Something went wrong please relog!',category='danger')
         return redirect(url_for('login'))  
     return render_template('firstloginphone.html',form=form)
 
 
-@app.route('/firstchangepassword',methods=['GET','POST'])
+@app.route('/firstchangepassword',methods=['POST','GET'])
 def firstchangepassword():
+    form = ChangePasswordStaffForm()
     if 'OTP' in session and 'OTP2' in session and 'id' in session:
         id = session['id']
-        form = ChangePasswordStaffForm()
-        password1 = form.psw.data
-        password2 = form.password2.data
-        flash(password1,category='success')
-        if password1 == password2:
-            session.pop('OTP', None)
-            session.pop('OTP2', None)
-            zero = 1
-            login_time = datetime.utcnow()
-            cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-            cursor.execute('SELECT full_name FROM staff_accounts WHERE staff_id= %s',[id])
-            staff = cursor.fetchone()
-            cursor.execute('INSERT INTO staff_login_history (staff_id, login_attempt_no, login_time) VALUES (%s,%s,%s)',(id,zero,login_time))
-            db.connection.commit()
-            session['loggedin2'] = True
-            session['name'] = staff['full_name']
-            session['staff_login_no'] = 1
-            flash(f"Successfully logged in as {staff['full_name']}!",category="success")
-            return redirect(url_for('customers'))
+        if form.validate_on_submit():
+            password1 = form.psw.data
+            password2 = form.password2.data
+            #validations 
+            if Validations.validate_password(password1) == False:
+                flash('Invalid password',category="danger")
+            elif password1 != password2:
+                flash('passwords do not match',category='danger')
+            elif password1 == None:
+                flash('Please enter a new password')
+            else:
+                #check if password is same as current
+                cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+                cursor.execute('SELECT * FROM staff_accounts WHERE staff_id = %s', [id])
+                staff = cursor.fetchone()
+                # check password hash
+                if staff and (bcrypt.checkpw(password1.encode(), staff['hashed_pw'].encode())) == True:
+                    flash('Previous password cannot be used',category='danger')
+                    return redirect(url_for('firstchangepassword'))
+                else:
+                    salt = bcrypt.gensalt()        
+                    hashedpw = bcrypt.hashpw(password1.encode(),salt)
+                    cursor.execute('UPDATE staff_accounts SET hashed_pw = %s WHERE staff_id = %s',(hashedpw.decode(),id))
+                    db.connection.commit()
+                    session.pop('OTP', None)
+                    session.pop('OTP2', None)
+                    zero = 1
+                    login_time = datetime.utcnow()
+                    cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+                    cursor.execute('SELECT full_name FROM staff_accounts WHERE staff_id= %s',[id])
+                    staff = cursor.fetchone()
+                    cursor.execute('INSERT INTO staff_login_history (staff_id, login_attempt_no, login_time) VALUES (%s,%s,%s)',(id,zero,login_time))
+                    db.connection.commit()
+                    session['loggedin2'] = True
+                    session['name'] = staff['full_name']
+                    session['staff_login_no'] = 1
+                    flash(f"Successfully logged in as {staff['full_name']}, password has been changed!",category="success")
+                    return redirect(url_for('customers'))
         else:
-            flash('Passwords do not match',category='danger')
-        return render_template('firstchangepassword.html',form=form)
+            flash('Something is wrong with the form',category='danger')
     else:
-        flash('Something went wrong please relog!',category='danger')
-        return redirect(url_for('login'))
+        flash('Please enter a new password',category='success')
+    return render_template('firstchangepassword.html',form=form)
+    
     
 
 
