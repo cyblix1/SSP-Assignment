@@ -597,13 +597,12 @@ def forgetpassword1():
         account_forget = cursor.fetchone()
         if account_forget:
             if email_forget == account_forget['email']:
-                id = account_forget['customer_id']
+                session['fp_id'] = account_forget['customer_id']
                 session['forget_pw'] = account_forget['email']
-                cursor.execute('INSERT INTO logs_product (log_id ,description, date_created) VALUES (NULL,concat("User ID (",%s,") has been verififed for Forget Password"),%s)',(id, login_time))
                 db.connection.commit()
                 return redirect(url_for('forgetpassword2'))
         else:
-            flash("Please Verify Again", category="success")
+            flash("Please Verify Again", category="danger")
             return redirect(url_for('login'))
 
     return render_template('forgetpassword.html', form=form)
@@ -611,7 +610,7 @@ def forgetpassword1():
 @app.route('/forgetpassword2', methods=['GET', 'POST'])
 def forgetpassword2():
     try:
-        id = session['id']
+        email = session['forget_pw']
         login_time = datetime.utcnow()
         secret = pyotp.random_base32()
         secret_input = request.form.get("secret")
@@ -1260,23 +1259,32 @@ def products():
 @app.route('/create_products', methods=['POST','GET'])
 def create_products():
     form = Create_Products()
+    time = datetime.utcnow()
+
     try:
         if form.validate_on_submit():
             product_id = uuid.uuid4()
             name = form.product_name.data
             price = form.price.data
             description = form.description.data
-            time = datetime.utcnow()
 
             cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
             cursor.execute('INSERT INTO products VALUES (%s, %s, %s, %s)', (product_id,name,price,description))
-            # cursor.execute('INSERT INTO logs_product (log_id ,description, date_created) VALUES (NULL,concat("Admin has created product (ID :",%s," )"),%s)',(product_id, time))
+            cursor.execute('INSERT INTO logs_info (log_id ,date_created,customer_id,description) VALUES (NULL,%s,NULL,concat("product_added_success : Product ID (",%s,")"))',(time, product_id))
             db.connection.commit()
             flash("Product Added Successfully!",category="success")
             return redirect(url_for('products'))
 
     except Exception :
         flash("Error Adding Products", category="error")
+        time = datetime.utcnow()
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute(
+            'INSERT INTO logs_warning (log_id ,date_created,customer_id,description) VALUES (NULL,%s,NULL,concat("product_added_failed : Admin ID (",%s,")"))',
+            (time, 0))
+
+        db.connection.commit()
+
         return redirect(url_for('products'))
 
     return render_template('AddItem.html', add_item_form=form)
@@ -1290,7 +1298,7 @@ def delete_products(id):
         if account:
             time = datetime.utcnow()
             cursor.execute('DELETE FROM products WHERE product_id = %s', [id])
-            cursor.execute('INSERT INTO logs_product (log_id ,description, date_created) VALUES (NULL,concat("Admin has deleted product from shopping cart (ID :",%s," )"),%s)',(id, time))
+            cursor.execute('INSERT INTO logs_warning (log_id ,date_created,customer_id,description) VALUES (NULL,%s,NULL,concat("product_deleted_success : Admin ID (",%s,")"))',(time, 0))
 
             db.connection.commit()
             flash("Product deleted successfully",category="success")
@@ -1318,7 +1326,7 @@ def update_products(id):
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
         if cursor:
             cursor.execute('UPDATE products SET product_name = %s, price = %s, description =%s WHERE product_id = %s', (name,price,description,id))
-            cursor.execute('INSERT INTO logs_product (log_id ,description, date_created) VALUES (NULL,concat("Admin has updated product from shopping cart (ID :",%s," )"),%s)',(id, time))
+            cursor.execute('INSERT INTO logs_warning (log_id ,date_created,customer_id,description) VALUES (NULL,%s,NULL,concat("product_updated_success : Admin ID (",%s,")"))',(time, 0))
 
             db.connection.commit()
             flash("Products updated successfully", category="success")
@@ -1387,18 +1395,23 @@ def add_to_checkout():
             name = i['product_name']
             price = i['price']
             description = i['description']
-        cursor.execute('INSERT INTO shopping_cart (product_id, product_name, price , description, customer_id, verify_num) VALUES (%s,%s,%s,%s,%s,NULL)',(product_id, name, price, description, customer_id))
-        cursor.execute('INSERT INTO logs_info (log_id ,date_created,customer_id,description) VALUES (NULL,%s,%s,concat("authn_add_sc_success : User ID (",%s,")"))',(time, customer_id, customer_id))
-
+        cursor.execute('INSERT INTO shopping_cart (product_id, product_name, price , description, customer_id) VALUES (%s,%s,%s,%s,%s)',(product_id, name, price, description, customer_id))
+        cursor.execute('INSERT INTO logs_info (log_id ,date_created,customer_id,description) VALUES (NULL,%s,%s,concat("authn_add_sc_success : Product ID (",%s,")"))',(time, customer_id, product_id))
         db.connection.commit()
+        flash("Product Added Successfully", category="success")
+
     except:
-        flash("NO", category="error")
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute('INSERT INTO logs_warning (log_id ,date_created,customer_id,description) VALUES (NULL,%s,%s,concat("authn_add_sc_fail : Product ID (",%s,")"))',(time, customer_id, product_id))
+        db.connection.commit()
+        flash("Product Added Unsuccessfully", category="danger")
 
 
     return redirect(url_for('market'))
 
-@app.route('/check_sc', methods=['POST','GET'])
-def check_sc():
+
+@app.route('/check_shopping_cart')
+def check_shopping_cart():
     if 'loggedin' in session:
         try:
             cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
@@ -1407,295 +1420,331 @@ def check_sc():
             for i in total:
                 if i['price'] > 1000:
                     flash('Please do a Verification as Amount is too big', category="success")
-                    return redirect(url_for('checkout_verification2'))
+                    session.pop('sc_verified_1', None)
+                    session.pop('sc_verified_2', None)
+                    session.pop('sc_ready', None)
+                    return redirect(url_for('checkout_verification'))
                 else:
-                    return redirect(url_for('checkout'))
+                    session['sc_verified_2'] = 1
+                    return redirect(url_for('checkout_verification'))
         except IOError:
             print('Database problem!')
         except Exception as e:
-            print(f'Error while connecting to MySQL,{e}')
-        except:
+            # print(f'Error while connecting to MySQL,{e}')
+            flash("No Items in Shopping Cart", category="danger")
             return redirect(url_for('market'))
     else:
-        flash("Please LOG IN!", category="error")
+        flash("Please LOG IN!", category="danger")
         return redirect(url_for('login'))
 
 @app.route('/checkout', methods=['POST', 'GET'])
 def checkout():
     customer_id = session['id']
-    if 'loggedin' in session:
-        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute('SELECT max(verify_num) as verify_id FROM shopping_cart WHERE customer_id = %s ', [customer_id])
-        checkcart = cursor.fetchall()
+    try:
+        verification = session['sc_verified_1']
+        if verification == 1:
+            if 'loggedin' in session:
+                cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
 
-        for i in checkcart:
-            checkagain = i['verify_id']
+            # session_checkout = stripe.checkout.Session.create(
+                #     payment_method_types=['card'],
+                #     line_items=[{
+                #         'price': 'price_1LMQn6JDutS1IqmOYxizfOAB',
+                #         'quantity': 1,
+                #     }],
+                #     mode='payment',
+                #     success_url=url_for('orders', _external=True),
+                #     cancel_url=url_for('market', _external=True),
+                # )
+                try:
+                    cursor.execute('SELECT * FROM shopping_cart WHERE customer_id = %s ', [customer_id])
+                    products = cursor.fetchall()
+                    cursor.execute('SELECT sum(price) as price FROM shopping_cart')
+                    total = cursor.fetchall()
+                    session['sc_ready'] = 1
 
-        if checkagain is None:
-            flash("Shopping Cart Currently Empty", category="error")
-            return redirect(url_for('market'))
+                    db.connection.commit()
+                except IOError:
+                    print('Database problem!')
+                except Exception as e:
+                    print(f'Error while connecting to MySQL,{e}')
+                finally:
+                    if cursor:
+                        cursor.close()
+                return render_template('checkout.html', cart_items=products , total = total )
+                # checkout_session_id = session_checkout['id'],
+                # checkout_public_key = app.config['STRIPE_PUBLIC_KEY']
+            else:
+                flash("Please LOG IN!", category="danger")
+                return redirect(url_for('login'))
         else:
+            flash("DO", category="danger")
+            return redirect(url_for('checkout_verification'))
+    except:
+        flash("Please do verification", category="danger")
+        return redirect(url_for('page_not_found'))
 
-    # session_checkout = stripe.checkout.Session.create(
-        #     payment_method_types=['card'],
-        #     line_items=[{
-        #         'price': 'price_1LMQn6JDutS1IqmOYxizfOAB',
-        #         'quantity': 1,
-        #     }],
-        #     mode='payment',
-        #     success_url=url_for('orders', _external=True),
-        #     cancel_url=url_for('market', _external=True),
-        # )
-            try:
-                cursor.execute('SELECT * FROM shopping_cart WHERE customer_id = %s ', [customer_id])
-                products = cursor.fetchall()
-                cursor.execute('SELECT sum(price) as price FROM shopping_cart')
-                total = cursor.fetchall()
-
-
-
-            except IOError:
-                print('Database problem!')
-            except Exception as e:
-                print(f'Error while connecting to MySQL,{e}')
-            finally:
-                if cursor:
-                    cursor.close()
-            return render_template('checkout.html', cart_items=products , total = total )
-            # checkout_session_id = session_checkout['id'],
-            # checkout_public_key = app.config['STRIPE_PUBLIC_KEY']
-    else:
-        flash("Please LOG IN!", category="error")
-        return redirect(url_for('login'))
 
 @app.route('/payment', methods=['POST','GET'])
 def payment():
     customer_id = session['id']
     form = Add_Card_Details()
     cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-    cursor.execute('SELECT max(verify_num) as verify_id FROM shopping_cart WHERE customer_id = %s ', [customer_id])
-    checkcart = cursor.fetchall()
+    try:
+        verification = session['sc_verified_1']
+        if verification == 1:
+            if request.method == 'POST':
+                card_number = form.card_number.data
+                card_name = form.card_name.data
+                card_date = form.card_date.data
+                card_cvc = form.card_cvc.data
 
-    for i in checkcart:
-        checkagain = i['verify_id']
+                # cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+                # cursor.execute('INSERT INTO payment VALUES (%s, %s, %s, %s)', (card_number,card_date,card_name,card_cvc))
+                # db.connection.commit()
+                flash("Card Added Successfully!", category="success")
+                return redirect(url_for('checkout'))
+            return render_template('payment.html', form=form)
 
-    if checkagain is None:
-        flash("Shopping Cart Currently Empty", category="error")
-        return redirect(url_for('market'))
-    else:
-
-        if request.method == 'POST':
-            card_number = form.card_number.data
-            card_name = form.card_name.data
-            card_date = form.card_date.data
-            card_cvc = form.card_cvc.data
-
-            # cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-            # cursor.execute('INSERT INTO payment VALUES (%s, %s, %s, %s)', (card_number,card_date,card_name,card_cvc))
-            # db.connection.commit()
-            flash("Card Added Successfully!", category="success")
-            return redirect(url_for('checkout_verification2'))
+    except:
+        flash("Please do verification", category="danger")
+        return redirect(url_for('page_not_found'))
 
 
-    return render_template('payment.html', form =form)
 
 @app.route('/checkout_verification', methods=['POST','GET'])
 def checkout_verification():
     form = LoginForm(request.form)
     customer_id = session['id']
-    if request.method == 'POST':
-        password = form.password1.data
-        email = form.email.data
-        login_time = datetime.utcnow()
-        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute('SELECT * FROM customer_accounts WHERE customer_id = %s', [customer_id])
-        account = cursor.fetchone()
-        if email == account['email']:
-            user_hashpwd = account['hashed_pw']
-            if bcrypt2.check_password_hash(user_hashpwd, password):
-                cursor.execute('INSERT INTO logs_product (log_id ,description, date_created) VALUES (NULL,concat("User ID (",%s,") has been verififed for checkout"),%s)',(customer_id, login_time))
-                cursor.execute('UPDATE shopping_cart SET verify_num = %s WHERE customer_id = %s', (1, customer_id))
-                db.connection.commit()
-                return redirect(url_for('checkout'))
-            else:
-                flash("Please Verify Again", category="danger")
-                return redirect(url_for('market'))
-        else:
-            flash("Please Verify Again", category="danger")
-            return redirect(url_for('market'))
+    try:
+        verification = session['sc_verified_1']
+        return redirect(url_for('checkout'))
+    except:
+        try:
+            verification = session['sc_verified_1']
+            return redirect(url_for('checkout'))
+        except:
+            if request.method == 'POST':
+                password = form.password1.data
+                email = form.email.data
+                login_time = datetime.utcnow()
+                cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+                cursor.execute('SELECT * FROM customer_accounts WHERE customer_id = %s', [customer_id])
+                account = cursor.fetchone()
+                if email == account['email']:
+                    user_hashpwd = account['hashed_pw']
+                    if bcrypt2.check_password_hash(user_hashpwd, password):
+                        cursor.execute(
+                            'INSERT INTO logs_info (log_id ,date_created,customer_id,description) VALUES (NULL,%s,%s,concat("checkout_verf_1_success : User ID (",%s,")"))',
+                            (login_time, customer_id, customer_id))
+                        db.connection.commit()
+                        session['sc_verified_1'] = 1
+                        return redirect(url_for('checkout'))
+                    else:
+                        flash("Please Verify Again", category="danger")
+                        cursor.execute(
+                            'INSERT INTO logs_warning (log_id ,date_created,customer_id,description) VALUES (NULL,%s,%s,concat("checkout_verf_1_fail : User ID (",%s,")"))',
+                            (login_time, customer_id, customer_id))
+                        db.connection.commit()
+                        return redirect(url_for('market'))
+                else:
+                    flash("Please Verify Again", category="danger")
+                    return redirect(url_for('market'))
 
-    return render_template('checkout_verification.html', form=form)
-
+            return render_template('checkout_verification.html', form=form)
 @app.route('/checkout_verification2', methods=['POST','GET'])
 def checkout_verification2():
-    form = ShoppingCart_Validation(request.form)
-    password_sc = form.password.data
-    login_time = datetime.utcnow()
-    customer_id = session['id']
-    cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-    cursor.execute('SELECT email FROM customer_accounts WHERE customer_id = %s',[customer_id])
-    # Fetch one record and return result
-    user_email = cursor.fetchone()
-    cursor.execute('SELECT max(sc_status) as sc_status FROM sc_attempts WHERE customer_id = %s',[customer_id])
-    status_sc = cursor.fetchone()
-    cursor.execute('SELECT max(attempts) AS attempts FROM sc_attempts WHERE customer_id = %s',[customer_id])
-    acc_sc = cursor.fetchone()
-    cursor.execute('SELECT * from sc_attempts where attempt_time > otp_time and customer_id = %s', [customer_id])
-    otp_check_time = cursor.fetchone()
-    db.connection.commit()
-
-    if otp_check_time is None:
-
-        if status_sc['sc_status'] is None:
-            attempted = 1
-            user_checkout_id = random.randint(00000000,99999999)
-            # otp_time = datetime.utcnow() + timedelta(minutes=15)
-            otp_time = datetime.utcnow() + timedelta(minutes=15)
-            cursor.execute('INSERT INTO sc_attempts (unique_otp ,attempts,customer_id,sc_status,attempt_time,otp_time) VALUES (%s,%s,%s,%s,%s,%s)',(user_checkout_id, attempted, customer_id, 0,login_time,otp_time))
+    try:
+        verification = session['sc_ready']
+        if verification == 1:
+            form = ShoppingCart_Validation(request.form)
+            password_sc = form.password.data
+            login_time = datetime.utcnow()
+            customer_id = session['id']
+            cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+            cursor.execute('SELECT email FROM customer_accounts WHERE customer_id = %s',[customer_id])
+            # Fetch one record and return result
+            user_email = cursor.fetchone()
+            cursor.execute('SELECT max(sc_status) as sc_status FROM sc_attempts WHERE customer_id = %s',[customer_id])
+            status_sc = cursor.fetchone()
+            cursor.execute('SELECT max(attempts) AS attempts FROM sc_attempts WHERE customer_id = %s',[customer_id])
+            acc_sc = cursor.fetchone()
+            cursor.execute('SELECT * from sc_attempts where attempt_time > otp_time and customer_id = %s', [customer_id])
+            otp_check_time = cursor.fetchone()
             db.connection.commit()
-            cursor.execute('SELECT unique_otp FROM sc_attempts WHERE customer_id = %s',[customer_id])
-            unique_otp_sc = cursor.fetchone()
-            msg = EmailMessage()
-            msg.set_content("This is your OTP {}".format(unique_otp_sc['unique_otp']))
-            msg["Subject"] = "An Email Alert"
-            msg["From"] = "chamsamuel01@gmail.com"
-            msg["To"] = user_email['email']
 
-            with smtplib.SMTP("smtp.gmail.com", port=587) as smtp:
-                smtp.starttls()
-                smtp.login(msg["From"], "giyvimnfxcmvszsr")
-                # smtp.login(msg["From"], "boktzsjhixxajuix")
-                smtp.send_message(msg)
+            if otp_check_time is None:
 
-            if request.method == 'POST':
-                    if password_sc == unique_otp_sc['unique_otp']:
-                        # cursor.execute('INSERT INTO sc_attempts (unique_id ,product_attempts,customer_id,sc_status) VALUES (%s,%s,%s,%s)',(unique_id_sc['unique_id'], attempted, customer_id, 1))
-                        cursor.execute('UPDATE sc_attempts SET unique_otp =%s ,attempts =%s ,customer_id =%s ,sc_status =%s ,attempt_time= %s WHERE customer_id = %s and unique_id = %s',(1, customer_id))
-                        db.connection.commit()
-                        return redirect(url_for('orders'))
-
-                    else:
-                        # cursor.execute('INSERT INTO sc_attempts (unique_id ,product_attempts,customer_id,sc_status) VALUES (%s,%s,%s,%s)',
-                        #     (user_checkout_id, attempted, customer_id, 0))
-                        cursor.execute('INSERT INTO logs_warning (log_id ,date_created,description) VALUES (NULL,%s,concat("authn_checkout_fail : User ID (",%s,")"))',(login_time, customer_id))
-                        flash("OTP Unsuccessfully, Try Again!", category="success")
-                        db.connection.commit()
-                        return redirect(url_for('checkout_verification2'))
-            else:
-                return render_template('checkout_verification2.html', form=form)
-
-        elif status_sc['sc_status'] == 0:
-                cursor.execute('SELECT max(otp_time) AS otp_time FROM sc_attempts WHERE customer_id = %s',[customer_id])
-                max_otp_time = cursor.fetchone()
-
-                if acc_sc['attempts'] < 4:
-                    cursor.execute('SELECT unique_otp FROM sc_attempts WHERE customer_id = %s', [customer_id])
-                    acc_uuid = cursor.fetchone()
+                if status_sc['sc_status'] is None:
+                    attempted = 1
+                    user_checkout_id = random.randint(00000000,99999999)
+                    # otp_time = datetime.utcnow() + timedelta(minutes=15)
+                    otp_time = datetime.utcnow() + timedelta(minutes=15)
+                    cursor.execute('INSERT INTO sc_attempts (unique_otp ,attempts,customer_id,sc_status,attempt_time,otp_time) VALUES (%s,%s,%s,%s,%s,%s)',(user_checkout_id, attempted, customer_id, 0,login_time,otp_time))
                     db.connection.commit()
+                    cursor.execute('SELECT unique_otp FROM sc_attempts WHERE customer_id = %s',[customer_id])
+                    unique_otp_sc = cursor.fetchone()
+                    msg = EmailMessage()
+                    msg.set_content("This is your OTP {}".format(unique_otp_sc['unique_otp']))
+                    msg["Subject"] = "An Email Alert"
+                    msg["From"] = "chamsamuel01@gmail.com"
+                    msg["To"] = user_email['email']
+
+                    with smtplib.SMTP("smtp.gmail.com", port=587) as smtp:
+                        smtp.starttls()
+                        smtp.login(msg["From"], "giyvimnfxcmvszsr")
+                        # smtp.login(msg["From"], "boktzsjhixxajuix")
+                        smtp.send_message(msg)
+
                     if request.method == 'POST':
-                        next_sc_attempt = acc_sc['attempts'] + 1
-                        if password_sc == acc_uuid['unique_otp']:
-                            cursor.execute('INSERT INTO sc_attempts (unique_otp ,attempts,customer_id,sc_status,attempt_time,otp_time) VALUES (%s,%s,%s,%s,%s,%s)', (acc_uuid['unique_otp'],next_sc_attempt,customer_id,1,login_time,max_otp_time['otp_time']))
-                            cursor.execute('INSERT INTO sc_logs (unique_otp ,attempts,customer_id,attempt_time) VALUES (%s,%s,%s,%s)', (acc_uuid['unique_otp'],next_sc_attempt,customer_id,login_time))
-                            db.connection.commit()
-                            return redirect(url_for('orders'))
-                        else:
-                            cursor.execute('INSERT INTO sc_attempts (unique_otp ,attempts,customer_id,sc_status,attempt_time,otp_time) VALUES (%s,%s,%s,%s,%s,%s)', (acc_uuid['unique_otp'],next_sc_attempt,customer_id,0,login_time,max_otp_time['otp_time']))
-                            cursor.execute('INSERT INTO sc_logs (unique_otp ,attempts,customer_id,attempt_time) VALUES (%s,%s,%s,%s)', (acc_uuid['unique_otp'],next_sc_attempt,customer_id,login_time))
-                            cursor.execute('INSERT INTO logs_warning (log_id ,date_created,description) VALUES (NULL,%s,concat("authn_checkout_fail : User ID (",%s,")"))',(login_time, customer_id))
-                            db.connection.commit()
-                            flash("OTP Unsuccessfully, Try Again AGAIN!", category="success")
-                            db.connection.commit()
+                            if password_sc == unique_otp_sc['unique_otp']:
+                                # cursor.execute('INSERT INTO sc_attempts (unique_id ,product_attempts,customer_id,sc_status) VALUES (%s,%s,%s,%s)',(unique_id_sc['unique_id'], attempted, customer_id, 1))
+                                cursor.execute('UPDATE sc_attempts SET unique_otp =%s ,attempts =%s ,customer_id =%s ,sc_status =%s ,attempt_time= %s WHERE customer_id = %s and unique_id = %s',(1, customer_id))
+                                cursor.execute(
+                                    'INSERT INTO logs_info (log_id ,date_created,customer_id,description) VALUES (NULL,%s,%s,concat("checkout_verf_2_success : User ID (",%s,")"))',
+                                    (login_time, customer_id, customer_id))
+                                db.connection.commit()
+                                session['orders_verified'] = 1
+                                return redirect(url_for('orders'))
 
-                            return redirect(url_for('checkout_verification2'))
-                    else:
-                        return render_template('checkout_verification2.html', form=form)
-                elif acc_sc['attempts'] == 4:
-                    flash("This is your Last Attempt", category="success")
-                    cursor.execute('SELECT unique_otp FROM sc_attempts WHERE customer_id = %s', [customer_id])
-                    acc_uuid = cursor.fetchone()
-                    db.connection.commit()
-                    if request.method == 'POST':
-                        next_sc_attempt = acc_sc['attempts'] + 1
-                        if password_sc == acc_uuid['unique_otp']:
-                            cursor.execute('INSERT INTO sc_attempts (unique_otp ,attempts,customer_id,sc_status,attempt_time) VALUES (%s,%s,%s,%s,%s)',(acc_uuid['unique_otp'], next_sc_attempt, customer_id, 1, login_time))
-                            cursor.execute('INSERT INTO sc_logs (unique_otp ,attempts,customer_id,attempt_time) VALUES (%s,%s,%s,%s)', (acc_uuid['unique_otp'],next_sc_attempt,customer_id,login_time))
-
-                            db.connection.commit()
-                            return redirect(url_for('orders'))
-                        else:
-                            cursor.execute(
-                                'INSERT INTO sc_attempts (unique_otp ,attempts,customer_id,sc_status,attempt_time) VALUES (%s,%s,%s,%s,%s)',
-                                (acc_uuid['unique_otp'], next_sc_attempt, customer_id, 0, login_time))
-                            cursor.execute('INSERT INTO sc_logs (unique_otp ,attempts,customer_id,attempt_time) VALUES (%s,%s,%s,%s)', (acc_uuid['unique_otp'],next_sc_attempt,customer_id,login_time))
-                            # retry_time = datetime.utcnow() + timedelta(minutes=30)
-                            cursor.execute('SELECT now_time as a_time from sc_time where customer_id = %s',[customer_id])
-                            a_time = cursor.fetchone()
-                            db.connection.commit()
-
-                            if a_time is None:
-                                # retry_time = datetime.utcnow() + timedelta(minutes=30)
-                                retry_time = datetime.utcnow() + timedelta(seconds=15)
-                                cursor.execute('INSERT INTO sc_time (sc_status ,customer_id,now_time, attempt_time) VALUES (%s,%s,NULL,%s)',(0, customer_id, retry_time))
+                            else:
+                                # cursor.execute('INSERT INTO sc_attempts (unique_id ,product_attempts,customer_id,sc_status) VALUES (%s,%s,%s,%s)',
+                                #     (user_checkout_id, attempted, customer_id, 0))
                                 cursor.execute('INSERT INTO logs_warning (log_id ,date_created,description) VALUES (NULL,%s,concat("authn_checkout_fail : User ID (",%s,")"))',(login_time, customer_id))
                                 flash("OTP Unsuccessfully, Try Again!", category="success")
                                 db.connection.commit()
                                 return redirect(url_for('checkout_verification2'))
-                            else:
-                                cursor.execute('DELETE FROM sc_time WHERE customer_id = %s', [customer_id])
-                                db.connection.commit()
-                                # retry_time = datetime.utcnow() + timedelta(minutes=30)
-                                retry_time = datetime.utcnow() + timedelta(seconds=15)
-                                cursor.execute(
-                                    'INSERT INTO sc_time (sc_status ,customer_id,now_time, attempt_time) VALUES (%s,%s,NULL,%s)',
-                                    (0, customer_id, retry_time))
-                                flash("OTP Unsuccessfully, Try Again AGAIN!", category="success")
-                                cursor.execute('INSERT INTO logs_warning (log_id ,date_created,description) VALUES (NULL,%s,concat("authn_checkout_fail : User ID (",%s,")"))',(login_time, customer_id))
-                                db.connection.commit()
-                                return redirect(url_for('checkout_verification2'))
-
-
                     else:
                         return render_template('checkout_verification2.html', form=form)
-                elif acc_sc['attempts'] > 4:
 
-                    cursor.execute('UPDATE sc_time SET now_time = %s WHERE customer_id = %s',(login_time, customer_id))
-                    db.connection.commit()
+                elif status_sc['sc_status'] == 0:
+                        cursor.execute('SELECT max(otp_time) AS otp_time FROM sc_attempts WHERE customer_id = %s',[customer_id])
+                        max_otp_time = cursor.fetchone()
 
-                    cursor.execute('SELECT * from sc_time where now_time > attempt_time and customer_id = %s',[customer_id])
-                    check_time = cursor.fetchone()
-                    db.connection.commit()
-
-                    cursor.execute('SELECT count(attempts) as attempts from sc_logs where customer_id = %s and attempts = 5', [customer_id])
-                    attempt_check = cursor.fetchone()
-                    db.connection.commit()
-
-                    if check_time is not None:
-                        if attempt_check['attempts'] <= 3 :
-                            # current time has exceeded 30mins
-                            cursor.execute('DELETE FROM sc_attempts WHERE customer_id = %s', [customer_id])
+                        if acc_sc['attempts'] < 4:
+                            cursor.execute('SELECT unique_otp FROM sc_attempts WHERE customer_id = %s', [customer_id])
+                            acc_uuid = cursor.fetchone()
                             db.connection.commit()
-                            return redirect(url_for('checkout_verification2'))
-                        else:
-                            flash("Please Contact Admin", category="danger")
-                            cursor.execute('INSERT INTO logs_warning (log_id ,date_created,description) VALUES (NULL,%s,concat("authn_checkout_fail_max : User ID (",%s,")"))',(login_time, customer_id))
+                            if request.method == 'POST':
+                                next_sc_attempt = acc_sc['attempts'] + 1
+                                if password_sc == acc_uuid['unique_otp']:
+                                    cursor.execute('INSERT INTO sc_attempts (unique_otp ,attempts,customer_id,sc_status,attempt_time,otp_time) VALUES (%s,%s,%s,%s,%s,%s)', (acc_uuid['unique_otp'],next_sc_attempt,customer_id,1,login_time,max_otp_time['otp_time']))
+                                    cursor.execute('INSERT INTO sc_logs (unique_otp ,attempts,customer_id,attempt_time) VALUES (%s,%s,%s,%s)', (acc_uuid['unique_otp'],next_sc_attempt,customer_id,login_time))
+                                    cursor.execute(
+                                        'INSERT INTO logs_info (log_id ,date_created,customer_id,description) VALUES (NULL,%s,%s,concat("checkout_verf_2_success : User ID (",%s,")"))',
+                                        (login_time, customer_id, customer_id))
+                                    db.connection.commit()
+                                    session['orders_verified'] = 1
+                                    return redirect(url_for('orders'))
+                                else:
+                                    cursor.execute('INSERT INTO sc_attempts (unique_otp ,attempts,customer_id,sc_status,attempt_time,otp_time) VALUES (%s,%s,%s,%s,%s,%s)', (acc_uuid['unique_otp'],next_sc_attempt,customer_id,0,login_time,max_otp_time['otp_time']))
+                                    cursor.execute('INSERT INTO sc_logs (unique_otp ,attempts,customer_id,attempt_time) VALUES (%s,%s,%s,%s)', (acc_uuid['unique_otp'],next_sc_attempt,customer_id,login_time))
+                                    cursor.execute('INSERT INTO logs_warning (log_id ,date_created,description) VALUES (NULL,%s,concat("authn_checkout_fail : User ID (",%s,")"))',(login_time, customer_id))
+                                    db.connection.commit()
+                                    flash("OTP Unsuccessfully, Try Again AGAIN!", category="success")
+                                    db.connection.commit()
+
+                                    return redirect(url_for('checkout_verification2'))
+                            else:
+                                return render_template('checkout_verification2.html', form=form)
+                        elif acc_sc['attempts'] == 4:
+                            flash("This is your Last Attempt", category="success")
+                            cursor.execute('SELECT unique_otp FROM sc_attempts WHERE customer_id = %s', [customer_id])
+                            acc_uuid = cursor.fetchone()
                             db.connection.commit()
-                            # implement message here
-                            return redirect(url_for('messages'))
-                    else:
-                        flash("Please Wait for 30 Minutes, Thank You", category="success")
-                        return redirect(url_for('market'))
+                            if request.method == 'POST':
+                                next_sc_attempt = acc_sc['attempts'] + 1
+                                if password_sc == acc_uuid['unique_otp']:
+                                    cursor.execute('INSERT INTO sc_attempts (unique_otp ,attempts,customer_id,sc_status,attempt_time) VALUES (%s,%s,%s,%s,%s)',(acc_uuid['unique_otp'], next_sc_attempt, customer_id, 1, login_time))
+                                    cursor.execute('INSERT INTO sc_logs (unique_otp ,attempts,customer_id,attempt_time) VALUES (%s,%s,%s,%s)', (acc_uuid['unique_otp'],next_sc_attempt,customer_id,login_time))
+                                    cursor.execute(
+                                        'INSERT INTO logs_info (log_id ,date_created,customer_id,description) VALUES (NULL,%s,%s,concat("checkout_verf_2_success : User ID (",%s,")"))',
+                                        (login_time, customer_id, customer_id))
+                                    session['orders_verified'] = 1
+                                    db.connection.commit()
+                                    return redirect(url_for('orders'))
+                                else:
+                                    cursor.execute(
+                                        'INSERT INTO sc_attempts (unique_otp ,attempts,customer_id,sc_status,attempt_time) VALUES (%s,%s,%s,%s,%s)',
+                                        (acc_uuid['unique_otp'], next_sc_attempt, customer_id, 0, login_time))
+                                    cursor.execute('INSERT INTO sc_logs (unique_otp ,attempts,customer_id,attempt_time) VALUES (%s,%s,%s,%s)', (acc_uuid['unique_otp'],next_sc_attempt,customer_id,login_time))
+                                    # retry_time = datetime.utcnow() + timedelta(minutes=30)
+                                    cursor.execute('SELECT now_time as a_time from sc_time where customer_id = %s',[customer_id])
+                                    a_time = cursor.fetchone()
+                                    db.connection.commit()
+
+                                    if a_time is None:
+                                        # retry_time = datetime.utcnow() + timedelta(minutes=30)
+                                        retry_time = datetime.utcnow() + timedelta(seconds=15)
+                                        cursor.execute('INSERT INTO sc_time (sc_status ,customer_id,now_time, attempt_time) VALUES (%s,%s,NULL,%s)',(0, customer_id, retry_time))
+                                        cursor.execute('INSERT INTO logs_warning (log_id ,date_created,description) VALUES (NULL,%s,concat("authn_checkout_fail : User ID (",%s,")"))',(login_time, customer_id))
+                                        flash("OTP Unsuccessfully, Try Again!", category="success")
+                                        db.connection.commit()
+                                        return redirect(url_for('checkout_verification2'))
+                                    else:
+                                        cursor.execute('DELETE FROM sc_time WHERE customer_id = %s', [customer_id])
+                                        db.connection.commit()
+                                        # retry_time = datetime.utcnow() + timedelta(minutes=30)
+                                        retry_time = datetime.utcnow() + timedelta(seconds=15)
+                                        cursor.execute(
+                                            'INSERT INTO sc_time (sc_status ,customer_id,now_time, attempt_time) VALUES (%s,%s,NULL,%s)',
+                                            (0, customer_id, retry_time))
+                                        flash("OTP Unsuccessfully, Try Again AGAIN!", category="success")
+                                        cursor.execute('INSERT INTO logs_warning (log_id ,date_created,description) VALUES (NULL,%s,concat("authn_checkout_fail : User ID (",%s,")"))',(login_time, customer_id))
+                                        db.connection.commit()
+                                        return redirect(url_for('checkout_verification2'))
 
 
+                            else:
+                                return render_template('checkout_verification2.html', form=form)
+                        elif acc_sc['attempts'] > 4:
+
+                            cursor.execute('UPDATE sc_time SET now_time = %s WHERE customer_id = %s',(login_time, customer_id))
+                            db.connection.commit()
+
+                            cursor.execute('SELECT * from sc_time where now_time > attempt_time and customer_id = %s',[customer_id])
+                            check_time = cursor.fetchone()
+                            db.connection.commit()
+
+                            cursor.execute('SELECT count(attempts) as attempts from sc_logs where customer_id = %s and attempts = 5', [customer_id])
+                            attempt_check = cursor.fetchone()
+                            db.connection.commit()
+
+                            if check_time is not None:
+                                if attempt_check['attempts'] <= 3 :
+                                    # current time has exceeded 30mins
+                                    cursor.execute('DELETE FROM sc_attempts WHERE customer_id = %s', [customer_id])
+                                    db.connection.commit()
+                                    return redirect(url_for('checkout_verification2'))
+                                else:
+                                    flash("Please Contact Admin", category="danger")
+                                    cursor.execute('INSERT INTO logs_warning (log_id ,date_created,description) VALUES (NULL,%s,concat("authn_checkout_fail_max : User ID (",%s,")"))',(login_time, customer_id))
+                                    db.connection.commit()
+                                    # implement message here
+                                    return redirect(url_for('messages'))
+                            else:
+                                flash("Please Wait for 30 Minutes, Thank You", category="success")
+                                return redirect(url_for('market'))
+
+
+                else:
+                    session['orders_verified'] = 1
+                    cursor.execute(
+                        'INSERT INTO logs_info (log_id ,date_created,customer_id,description) VALUES (NULL,%s,%s,concat("checkout_verf_2_success : User ID (",%s,")"))',
+                        (login_time, customer_id, customer_id))
+                    db.connection.commit()
+                    return redirect(url_for('orders'))
+            else:
+                cursor.execute('DELETE FROM sc_attempts WHERE customer_id = %s', [customer_id])
+                db.connection.commit()
+                flash("OTP has expired, Request Again", category="danger")
+                return redirect(url_for('market'))
         else:
-            return redirect(url_for('checkout'))
-        # cursor.execute('INSERT INTO logs_product (log_id ,description,date_created) VALUES (NULL,concat("User ID (",%s,") has been verififed for products"),%s)',(customer_id, login_time))
-        # db.connection.commit()
-    else:
-        cursor.execute('DELETE FROM sc_attempts WHERE customer_id = %s', [customer_id])
-        db.connection.commit()
-        flash("OTP has expired, Request Again", category="success")
-        return redirect(url_for('market'))
+            flash("Please Verify Again", category="danger")
+            return redirect(url_for('market'))
+    except:
+        flash("Please Verify Again", category="danger")
+        return redirect(url_for('page_not_found'))
 
 @app.route('/messages',methods=['GET','POST'])
 def messages():
@@ -1814,58 +1863,8 @@ def delete_checkout_products(id):
             flash("Product deleted successfully",category="success")
         else:
             flash("Something went wrong, please try again!",category="danger")
-    except IOError:
-        print('Database problem!')
-    except Exception as e:
-        print(f'Error while connecting to MySQL,{e}')
-    finally:
-        cursor.close()
-        db.connection.close()
-        return redirect(url_for('checkout'))
+            return redirect(url_for('checkout'))
 
-@app.route('/orders')
-def orders():
-    customer_id = session['id']
-    # global payment
-    global shopping
-    global total_products
-    try:
-        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute('SELECT * FROM shopping_cart WHERE customer_id = %s',[customer_id])
-
-        shopping = cursor.fetchall()
-        # cursor.execute('SELECT * FROM payment')
-        # payment = cursor.fetchall()
-        cursor.execute('SELECT sum(price) as price FROM shopping_cart WHERE customer_id = %s',[customer_id])
-        total_products = cursor.fetchall()
-    except IOError:
-        print('Database problem!')
-    except Exception as e:
-        print(f'Error while connecting to MySQL,{e}')
-    finally:
-        if cursor:
-            cursor.close()
-
-    return render_template('receipt.html',shopping=shopping, total=total_products)
-
-@app.route('/orders/delete_order',  methods=['POST'])
-def delete_order():
-    customer_id = session['id']
-    id = request.form['product-checkout']
-    time = datetime.utcnow()
-
-    try:
-        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute('SELECT * FROM shopping_cart WHERE product_id = %s', [id])
-        account = cursor.fetchone()
-        if account:
-            cursor.execute('INSERT INTO orders (order_id , product_id ,order_date, quantity) VALUES (NULL, %s , %s , %s)',(id, time, 1))
-            cursor.execute('DELETE FROM shopping_cart WHERE customer_id = %s',[customer_id])
-            cursor.execute('INSERT INTO logs_product (log_id ,description, date_created) VALUES (NULL,concat("User has purchased product (ID :",%s," )"),%s)',(id, time))
-            db.connection.commit()
-            flash(id,category="success")
-        else:
-            flash("Something went wrong, please try again!",category="danger")
     except IOError:
         print('Database problem!')
     except Exception as e:
@@ -1875,37 +1874,98 @@ def delete_order():
         db.connection.close()
         return redirect(url_for('market'))
 
+@app.route('/orders')
+def orders():
+    try:
+        customer_id = session['id']
+        verified = session['orders_verified']
+        if verified == 1:
+            session.pop('orders_verified', None)
+            cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+            cursor.execute('SELECT * FROM shopping_cart WHERE customer_id = %s', [customer_id])
+            shopping = cursor.fetchall()
+            db.connection.commit()
+            cursor.execute('SELECT sum(price) as price FROM shopping_cart WHERE customer_id = %s', [customer_id])
+            total_products = cursor.fetchall()
+            db.connection.commit()
+            return render_template('receipt.html', shopping=shopping, total=total_products)
+        else:
+            flash("Please Verify Again", category="danger")
+            return redirect(url_for('market'))
+    # global payment
+    except IOError:
+        print('Database problem!')
+    except Exception as e:
+        print(f'Error while connecting to MySQL,{e}')
+    flash("Please Verify Again", category="danger")
+    return redirect(url_for('checkout'))
+
+
+@app.route('/orders/delete_order',  methods=['POST'])
+def delete_order():
+    customer_id = session['id']
+    id = request.form['product-checkout']
+    time = datetime.utcnow()
+    session.pop('orders_verified', None)
+
+    try:
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute('INSERT INTO orders (order_id , product_id ,order_date, quantity) VALUES (NULL, %s , %s , %s)',(id, time, 1))
+        cursor.execute('DELETE FROM shopping_cart WHERE customer_id = %s',[customer_id])
+        cursor.execute('DELETE FROM sc_attempts WHERE customer_id = %s', [customer_id])
+        cursor.execute(
+            'INSERT INTO logs_info (log_id ,date_created,customer_id,description) VALUES (NULL,%s,%s,concat("checkout_success : User ID (",%s,")"))',
+            (time, customer_id, customer_id))
+        db.connection.commit()
+        session.pop('sc_ready', None)
+        session.pop('sc_verified_1', None)
+        flash("Item Added Successfully",category="success")
+        return redirect(url_for('market'))
+
+
+    except IOError:
+        print('Database problem!')
+    except Exception as e:
+        print(f'Error while connecting to MySQL,{e}')
+    finally:
+        flash("Something went wrong, please try again!", category="danger")
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute(
+            'INSERT INTO logs_warning (log_id ,date_created,customer_id,description) VALUES (NULL,%s,%s,concat("checkout_fail: User ID (",%s,")"))',
+            (time, customer_id, customer_id))
+        db.connection.commit()
+        return redirect(url_for('checkout'))
+
 # Invalid URL
 @app.errorhandler(404)
 def page_not_found(e):
-    id = session['id']
-    login_time = datetime.utcnow()
-    cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-    cursor.execute('INSERT INTO logs_error (log_id ,description, date_created) VALUES (NULL,concat("ERROR 404 has Occured, User ID = ",%s),%s)',(id,login_time))
-    db.connection.commit()
     return render_template('404.html'), 404
 
+@app.route('/error')
+def page_not_found():
+    id = session['id']
+    time = datetime.utcnow()
+    cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor.execute('INSERT INTO logs_warning (log_id ,date_created,customer_id,description) VALUES (NULL,%s,%s,concat("Error 404: User ID (",%s,")"))',(time, id, id))
+    db.connection.commit()
+    return render_template('404.html'), 404
 # Internal Server Error
 @app.errorhandler(500)
 def error500(e):
     id = session['id']
-    login_time = datetime.utcnow()
+    time = datetime.utcnow()
     cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-    cursor.execute(
-        'INSERT INTO logs_error (log_id ,description, date_created) VALUES (NULL,concat("ERROR 505 (Internal Server Error) has Occured, User ID = ",%s),%s)',
-        (id, login_time))
+    cursor.execute('INSERT INTO logs_warning (log_id ,date_created,customer_id,description) VALUES (NULL,%s,%s,concat("Error 505: User ID (",%s,")"))',(time, id, id))
     db.connection.commit()
-    return render_template('500.html'), 500 
+    return render_template('500.html'), 500
 
 # Internal Server Error
 @app.errorhandler(403)
 def error403(e):
     id = session['id']
-    login_time = datetime.utcnow()
+    time = datetime.utcnow()
     cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-    cursor.execute(
-        'INSERT INTO logs_error (log_id ,description, date_created) VALUES (NULL,concat("ERROR 403 (Internal Server Error) has Occured, User ID = ",%s),%s)',
-        (id, login_time))
+    cursor.execute('INSERT INTO logs_warning (log_id ,date_created,customer_id,description) VALUES (NULL,%s,%s,concat("Error 403: User ID (",%s,")"))',(time, id, id))
     db.connection.commit()
     return render_template('403.html'), 403
 
