@@ -121,7 +121,7 @@
                             <td>{{employee.phone_no}}</td>
                             <td>
                                 <button type="button" class="btn btn-info btn-sm" data-toggle="modal" data-target="#admininfo{{employee.staff_id}}">Info</button>
-                                <button type="button" class="btn btn-warning btn-sm">History</button>
+                                <button type="button" class="btn btn-warning btn-sm" data-toggle="modal" data-target="#staffhistory{{employee.staff_id}}">History</button>
                                 <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#adminedit{{employee.staff_id}}" >Edit</button>
                                 
                                 <form action="{{ url_for('delete_admin',id=employee.staff_id)}}", method="POST">
@@ -195,7 +195,31 @@
                         </div>
                         <!-- End of modal -->
 
-                        
+                        <!-- start of modal (SHistory) -->
+                        <div class="modal fade" style="margin-top:100px;" id="staffhistory{{employee.staff_id}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-scrollable" role="document">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">cus Information</h5>
+                                        <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                                            <span aria-hidden="true">×</span>
+                                        </button>
+                                    </div>
+                                        <div class="modal-body">
+                                            {% for item in employee.history %}
+                                                <p><em>No.</em><b>{{item.login_attempt_no}}</b></p>
+                                                <p><em>Login time:</em><b>{{item.login_time}}</b></p>
+                                                <p><em>Logout time:</em><b>{{item.logout_time}}</b></p>
+                                                <br>
+                                            {% endfor %}
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button class="btn btn-secondary" type="button" data-dismiss="modal">Close</button>
+                                        </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- End of modal -->
 
                         {% endfor %}
                     </tbody>

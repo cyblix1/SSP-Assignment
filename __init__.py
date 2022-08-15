@@ -868,6 +868,10 @@ def admins():
                 fernet = Fernet(key_staff)    
                 decrypted = fernet.decrypt(staff['email'].encode())
                 staff['email'] = decrypted.decode()
+                #staff login history
+                cursor.execute('SELECT login_attempt_no,login_time,logout_time FROM staff_login_history WHERE staff_id=%s',[staff['staff_id']])
+                login_logs = cursor.fetchall()
+                staff['history'] = login_logs
             if request.form == 'POST' and form2.validate_on_submit():
                 return redirect(url_for('update_admin'))
             elif request.form == 'POST' and form.validate_on_submit():
