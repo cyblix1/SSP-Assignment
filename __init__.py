@@ -3,6 +3,7 @@ from distutils import ccompiler
 from distutils.util import byte_compile
 from email.message import Message
 from mimetypes import init
+
 from pydoc import render_doc
 from tkinter import Image
 from tkinter.tix import Tree
@@ -818,7 +819,7 @@ def home():
         logintime = cursor.fetchone()
         return render_template('home.html',id=session['id'], name=session['name'],logintime=logintime)
 # User is not loggedin redirect to login page
-    flash('Session timeout')
+    flash('Session timeout',category='danger')
     return redirect(url_for('login'))
 
 
@@ -910,10 +911,18 @@ def create_admin():
         if cursor:
             cursor.execute('SELECT * FROM staff_email_hash')
             all_staff = cursor.fetchall()
-            #check if email exists
+            #check if email exists ofr staff accounts
             for staff in all_staff:
                 if bcrypt.checkpw(email.encode(),staff['email_hash'].encode()):
                     flash('Email exists!',category="danger")
+                    return redirect(url_for('admins'))
+                continue
+            #checks if email exists in customer side 
+            cursor.execute('SELECT email from customer_accounts')
+            all_customers = cursor.fetchall()
+            for customer in all_customers:
+                if customer['email'] == email:
+                    flash('Email exists as a customer!',category='danger')
                     return redirect(url_for('admins'))
                 continue
             if password != password2:
@@ -1095,7 +1104,7 @@ def profile():
         account = cursor.fetchone()
         return render_template('profile.html',account=account,name_form=name_form,email_form=email_form,gender_form=gender_form)
     elif 'loggedin' not in session:
-        flash('Session timeout')
+        flash('Session timeout',category='danger')
     return redirect(url_for('login'))
 
 
