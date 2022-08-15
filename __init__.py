@@ -1207,10 +1207,6 @@ def logoutstaff():
     else:
         flash('Something went wrong!',category='danger')
 
-# incomplete need session
-@app.route("/profile/update_gender/<gender>")
-def update_gender(gender):
-    pass
 
 
 @app.route('/products')
@@ -1977,35 +1973,36 @@ def firstchangepassword():
             elif password1 != password2:
                 flash('passwords do not match',category='danger')
             elif password1 == None:
-                flash('Please enter a new password')
+                flash('Please enter a new password',category='danger')
             else:
                 #check if password is same as current
                 cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-                cursor.execute('SELECT * FROM staff_accounts WHERE staff_id = %s', [id])
-                staff = cursor.fetchone()
-                # check password hash
-                if staff and (bcrypt.checkpw(password1.encode(), staff['hashed_pw'].encode())) == True:
-                    flash('Previous password cannot be used',category='danger')
-                    return redirect(url_for('firstchangepassword'))
-                else:
-                    salt = bcrypt.gensalt()        
-                    hashedpw = bcrypt.hashpw(password1.encode(),salt)
-                    cursor.execute('UPDATE staff_accounts SET hashed_pw = %s WHERE staff_id = %s',(hashedpw.decode(),id))
-                    db.connection.commit()
-                    session.pop('OTP', None)
-                    session.pop('OTP2', None)
-                    zero = 1
-                    login_time = datetime.utcnow()
-                    cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-                    cursor.execute('SELECT full_name FROM staff_accounts WHERE staff_id= %s',[id])
+                if cursor:
+                    cursor.execute('SELECT * FROM staff_accounts WHERE staff_id = %s', [id])
                     staff = cursor.fetchone()
-                    cursor.execute('INSERT INTO staff_login_history (staff_id, login_attempt_no, login_time) VALUES (%s,%s,%s)',(id,zero,login_time))
-                    db.connection.commit()
-                    session['loggedin2'] = True
-                    session['name'] = staff['full_name']
-                    session['staff_login_no'] = 1
-                    flash(f"Successfully logged in as {staff['full_name']}, password has been changed!",category="success")
-                    return redirect(url_for('customers'))
+                    # check password hash
+                    if staff and (bcrypt.checkpw(password1.encode(), staff['hashed_pw'].encode())) == True:
+                        flash('Previous password cannot be used',category='danger')
+                        return redirect(url_for('firstchangepassword'))
+                    else:
+                        salt = bcrypt.gensalt()        
+                        hashedpw = bcrypt.hashpw(password1.encode(),salt)
+                        cursor.execute('UPDATE staff_accounts SET hashed_pw = %s WHERE staff_id = %s',(hashedpw.decode(),id))
+                        db.connection.commit()
+                        session.pop('OTP', None)
+                        session.pop('OTP2', None)
+                        zero = 1
+                        login_time = datetime.utcnow()
+                        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+                        cursor.execute('SELECT full_name FROM staff_accounts WHERE staff_id= %s',[id])
+                        staff = cursor.fetchone()
+                        cursor.execute('INSERT INTO staff_login_history (staff_id, login_attempt_no, login_time) VALUES (%s,%s,%s)',(id,zero,login_time))
+                        db.connection.commit()
+                        session['loggedin2'] = True
+                        session['name'] = staff['full_name']
+                        session['staff_login_no'] = 1
+                        flash(f"Successfully logged in as {staff['full_name']}, password has been changed!",category="success")
+                        return redirect(url_for('customers'))
         else:
             flash('Something is wrong with the form',category='danger')
     else:
