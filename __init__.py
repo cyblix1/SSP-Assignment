@@ -4,6 +4,7 @@ from distutils.util import byte_compile
 from email.message import Message
 from mimetypes import init
 
+
 from pydoc import render_doc
 from tkinter import Image
 from tkinter.tix import Tree
@@ -331,7 +332,7 @@ def login():
 
                         return redirect(url_for('market'))
                 else:
-                    flash("Incorrect E-mail or Password, 3 tries remaining ",category='danger')
+                    flash("Incorrect E-mail or Password, 2 tries remaining ",category='danger')
                     failed_tries = 1
                     attempt_time = datetime.utcnow()
                     cursor.execute(
@@ -403,7 +404,7 @@ def login():
                     failed_attempt = cursor.fetchone()
 
                     if failed_attempt['failed_attempt_tries'] is None:
-                        flash("Incorrect E-mail or Password, 3 tries remaining ", category='danger')
+                        flash("Incorrect E-mail or Password, 2 tries remaining ", category='danger')
                         failed_tries = 1
                         attempt_time = datetime.utcnow()
                         cursor.execute(
@@ -413,7 +414,7 @@ def login():
                         return redirect(url_for('login'))
 
                     elif failed_attempt['failed_attempt_tries'] < 2:
-                        flash("Incorrect E-mail or Password, 2 tries remaining",category='danger')
+                        flash("Incorrect E-mail or Password, this is your last try!",category='danger')
                         failed_tries = 1
                         attempt_time = datetime.utcnow()
                         cursor.execute(
@@ -424,7 +425,7 @@ def login():
 
 
                     elif failed_attempt['failed_attempt_tries'] < 3:
-                        flash("Incorrect E-mail or Password, this is your last try",category='danger')
+                        flash("Please try again in 5 minutes",category='danger')
                         failed_tries = 3
                         attempt_time = datetime.utcnow()
                         retry_time2 = datetime.utcnow() + timedelta(seconds=30)
@@ -547,8 +548,7 @@ def login():
                     decrypted = f.decrypt(encrypted_email.encode())
                     if decrypted:
                         cursor.execute(
-                            'SELECT max(login_attempt_no) AS last_login FROM staff_login_history WHERE staff_id = %s',
-                            [id])
+                            'SELECT max(login_attempt_no) AS last_login FROM staff_login_history WHERE staff_id = %s',[id])
                         acc_login = cursor.fetchone()
                         # means first login so need 3fa
                         if acc_login['last_login'] is None:
@@ -771,7 +771,11 @@ def updatePassword():
     user_hashpwd = account['hashed_pw']
     time = datetime.utcnow()
 
+
     if request.method == 'POST':
+        if newpassword == oldpassword:
+            flash('passwords cannot be equal',category='danger')
+            return redirect(url_for('updatePassword'))
         if newpassword == confirmpassword:
             if bcrypt2.check_password_hash(user_hashpwd, oldpassword):
                 update_hashpassword = bcrypt2.generate_password_hash(newpassword)
@@ -784,9 +788,9 @@ def updatePassword():
                 db.connection.commit()
                 flash("Successful", category="success")
 
-                cursor.execute('SELECT full_name from customer_accounts WHERE customer_id = %s', id)
+                cursor.execute('SELECT full_name from customer_accounts WHERE customer_id = %s', [id])
                 customer_name = cursor.fetchall()
-                cursor.execute('SELECT email from customer_accounts WHERE customer_id = %s', id)
+                cursor.execute('SELECT email from customer_accounts WHERE customer_id = %s', [id])
                 customer_email = cursor.fetchall()
                 db.connection.commit()
 
@@ -800,7 +804,7 @@ def updatePassword():
                 msg.set_content("News from VALA TEAM! \n {}".format(user_content))
                 msg["Subject"] = "Critical Security Alert"
                 msg["From"] = "chamsamuel01@gmail.com"
-                msg["To"] = session['forget_pw']
+                msg["To"] = email
 
                 with smtplib.SMTP("smtp.gmail.com", port=587) as smtp:
                     smtp.starttls()
@@ -814,8 +818,8 @@ def updatePassword():
                 flash("Same Password as Old , Try Again", category="success")
                 return redirect(url_for('updatePassword'))
 
-    else:
-        return render_template('updatePassword.html', form=form)
+    
+    return render_template('updatePassword.html', form=form)
 
 @app.route('/')
 def home():
@@ -1266,7 +1270,7 @@ def create_products():
 
             cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
             cursor.execute('INSERT INTO products VALUES (%s, %s, %s, %s)', (product_id,name,price,description))
-            cursor.execute('INSERT INTO logs_product (log_id ,description, date_created) VALUES (NULL,concat("Admin has created product (ID :",%s," )"),%s)',(product_id, time))
+            # cursor.execute('INSERT INTO logs_product (log_id ,description, date_created) VALUES (NULL,concat("Admin has created product (ID :",%s," )"),%s)',(product_id, time))
             db.connection.commit()
             flash("Product Added Successfully!",category="success")
             return redirect(url_for('products'))

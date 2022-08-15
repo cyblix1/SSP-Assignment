@@ -193,16 +193,7 @@
                         <span aria-hidden="true">×</span>
                     </button>
                 </div>
-                <form method="POST" action="{{url_for('update_gender',id=5,gender=5)}}">
-                    {{ gender_form.hidden_tag() }}
-                <div class="modal-body">
-                    {{gender_form.gender(class='form-control form-control-user')}}
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
-                    {{gender_form.submit(class='btn btn-primary btn-user ')}}
-                </div>
-                </form>
+   
         </div>
 </div>
 </div>
