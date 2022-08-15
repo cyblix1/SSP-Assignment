@@ -237,6 +237,7 @@ def register():
                 customer_id_email = cursor.fetchone()
                 db.connection.commit()
                 cursor.execute('INSERT INTO logs_info (log_id ,date_created,customer_id,description) VALUES (NULL,%s,%s,concat("authn_register_success : User ID (",%s,")"))',(time, customer_id_email["customer_id"], customer_id_email["customer_id"]))
+                cursor.execute('INSERT INTO customer_disable (customer_id,disabled) VALUES (%s,%s)',(customer_id_email['customer_id'],'enabled'))
                 db.connection.commit()
                 flash('Account Successfully Created ',category='success')
                 return redirect(url_for('login'))
@@ -266,6 +267,14 @@ def login():
 
         if account:
             id = account['customer_id']
+            #first checks if account is enabled
+            cursor.execute('SELECT disabled FROM customer_disable WHERE customer_id = %s ', [id])
+            i = cursor.fetchone()
+            if i['disabled'] == 'enabled':
+                pass
+            else:
+                flash('Account is disabled, please contact staff!',category='danger')
+                return redirect(url_for('login'))
             cursor.execute(
                 'SELECT max(failed_attempt_tries) AS failed_try from login_limitations where customer_id = %s ', [id])
             check_tries = cursor.fetchone()
