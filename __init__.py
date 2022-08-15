@@ -1953,9 +1953,12 @@ def firstloginphone():
             decrypted_otp = (f.decrypt(encrypted_phoneotp)).decode()
             if decrypted_otp == inputed_otp:
                 return redirect(url_for('firstchangepassword'))
+            else:
+                flash('Incorrect OTP!',category='danger')
     else:
         flash('Something went wrong please relog!',category='danger')
         return redirect(url_for('login'))  
+
     return render_template('firstloginphone.html',form=form)
 
 
@@ -2004,7 +2007,7 @@ def firstchangepassword():
                         flash(f"Successfully logged in as {staff['full_name']}, password has been changed!",category="success")
                         return redirect(url_for('customers'))
         else:
-            flash('Something is wrong with the form',category='danger')
+            flash('Please enter a valid password!',category='danger')
     else:
         flash('Please enter a new password',category='success')
     return render_template('firstchangepassword.html',form=form)
