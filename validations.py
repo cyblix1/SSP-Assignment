@@ -44,8 +44,6 @@ class Validations:
                 return True
             else:
                 return False
-                print("illegal characters in answer.") 
+         
 
 
-password = "5zbhihcxqxes!>"
-print(Validations.validate_password(password))

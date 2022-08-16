@@ -67,8 +67,6 @@ app.config["MAIL_USERNAME"]= 'nathanaeltzw@gmail.com'
 app.config['MAIL_PASSWORD']= 'mxdbfpagawywnxgu'
 app.config['MAIL_USE_TLS']=False
 app.config['MAIL_USE_SSL']=True
-account_sid = config['twilio']['account']
-auth_token = config['twilio']['token']
 auto_email = 'chamsamuel01@gmail.com'
 email_key = 'giyvimnfxcmvszsr' 
 
@@ -2059,6 +2057,8 @@ def firstloginstaff():
                 #For SG number only
                 staff_number2 = '+65'+staff_number
                 #Sending message
+                account_sid = config['twilio']['account']
+                auth_token = config['twilio']['token']
                 client = Client(account_sid,auth_token)
                 message = client.messages.create(
                     from_='+12183074015',
