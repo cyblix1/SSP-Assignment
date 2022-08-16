@@ -57,6 +57,7 @@
                                 <h1 class="h4 text-gray-900 mb-4">Create an Account!</h1>
                             </div>
                             <form action="{{ url_for('register') }}" method="POST">
+                              {{ form.csrf_token }}
                                 <!--This flask built in tag protects our site
                                 from Cross Site Request Forgery (CSRF) Attack -->
                                 <!--this attack basically may attack or steal

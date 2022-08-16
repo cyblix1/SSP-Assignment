@@ -935,6 +935,9 @@ def create_admin():
         password = form.psw.data
         password2 = form.password2.data
         date_created = datetime.utcnow()
+        if Validations.validate_stuff(name) == True:
+            flash('Character cant be used!',category='danger')
+            return redirect(url_for('admins'))
         #Server side validations
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
         if cursor:
@@ -1283,10 +1286,11 @@ def logoutstaff():
         session.pop('id',None)
         session.pop('name',None)
         flash('Successfully logged out', category='success')
-        # Redirect to login page
+        # Redirect to login page    
         return redirect(url_for('login'))
     else:
         flash('Something went wrong!',category='danger')
+        return redirect(url_for('login'))
 
 
 

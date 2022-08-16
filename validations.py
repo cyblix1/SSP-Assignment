@@ -27,6 +27,12 @@ class Validations:
                 else:
                     return False
 
+    def validate_stuff(stuff):
+        not_allowed = ['<','>','&']
+        if not any(char in not_allowed for char in stuff):
+            return False
+        else:
+            return True
 
     #validate email
     def validate_email(email):
