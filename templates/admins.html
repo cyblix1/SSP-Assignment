@@ -126,6 +126,7 @@
                                 <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#adminedit{{employee.staff_id}}" >Edit</button>
                                 
                                 <form action="{{ url_for('delete_admin',id=employee.staff_id)}}", method="POST">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                     <button type="submit" class="btn btn-danger btn-xs btn-sm" onclick="return confirm('Are you sure to delete?')">Delete</button>
                                 </form>
 
