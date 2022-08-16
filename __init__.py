@@ -40,6 +40,7 @@ from email.message import EmailMessage
 from twilio.rest import Client
 import flask_monitoringdashboard as dashboard_unqiue
 import pyotp
+import qrcode
 
 app = Flask(__name__)
 #properities
@@ -68,6 +69,8 @@ app.config['MAIL_USE_TLS']=False
 app.config['MAIL_USE_SSL']=True
 account_sid = config['twilio']['account']
 auth_token = config['twilio']['token']
+info_number = config['twilio']['from_number']
+
 
 bcrypt2 = Bcrypt()
 mail=Mail(app)
@@ -128,30 +131,6 @@ def generateOTP(otp_size = 6):
             final_otp = final_otp + str(random.randint(0,9))
         return final_otp
 
-file_name = "app.log"
-file = open(file_name, "r")
-data_list = []
-order = ["date", "url", "type", "message"]
-
-for line in file.readlines():
-    details = line.split("|")
-    details = [x.strip() for x in details]
-    structure = {key: value for key, value in zip(order, details)}
-    data_list.append(structure)
-
-
-
-# @app.route("/logs")
-# def main():
-#     app.logger.debug("debug")
-#     app.logger.info("info")
-#     app.logger.warning("warning")
-#     app.logger.error("error")
-#     app.logger.critical("critical")
-#     return ""
-
-# logger = logging.getLogger('dev')
-# logger.info('This is an information message')
 
 @app.before_first_request
 def before_first_request():
@@ -609,10 +588,39 @@ def forgetpassword1():
 
 @app.route('/forgetpassword2', methods=['GET', 'POST'])
 def forgetpassword2():
-    try:
+    # try:
         email = session['forget_pw']
         login_time = datetime.utcnow()
         secret = pyotp.random_base32()
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute('SELECT customer_id FROM customer_accounts WHERE email = %s', [email])
+        # Fetch one record and return result
+        id = cursor.fetchone()
+        db.connection.commit()
+
+        cursor.execute('SELECT google_otp FROM fp_google WHERE customer_id = %s', [id['customer_id']])
+        secret_otp = cursor.fetchone()
+        if secret_otp is None:
+            cursor.execute('INSERT INTO fp_google (customer_id, google_otp) VALUES (%s,%s)', (id['customer_id'],secret))
+            db.connection.commit()
+        else:
+            cursor.execute('UPDATE fp_google SET google_otp = %s WHERE customer_id = %s', (secret,id['customer_id']))
+            db.connection.commit()
+        db.connection.commit()
+
+        data = pyotp.totp.TOTP(secret_otp['google_otp']).provisioning_uri(name=email)
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(data)
+        qr.make(fit=True)
+
+        img = qr.make_image(fill_color="black", back_color="white")
+        img.save('./static/images/hehe.jpg', 'JPEG')
+
         secret_input = request.form.get("secret")
         # getting OTP provided by user
         otp = str(request.form.get("otp"))
@@ -635,10 +643,10 @@ def forgetpassword2():
                 flash("You have supplied an invalid 2FA token!", "danger")
                 return redirect(url_for("forgetpassword2"))
         else:
-            return render_template('forgetpassword2.html',secret=secret)
-    except:
-        flash("Please do Verification!", category="danger")
-        return redirect(url_for('login'))
+            return render_template('forgetpassword2.html',secret=secret_otp['google_otp'])
+    # except:
+    #     flash("Please do Verification!", category="danger")
+    #     return redirect(url_for('login'))
 
 @app.route('/resetpassword', methods=['GET', 'POST'])
 def resetpassword():
@@ -651,7 +659,7 @@ def resetpassword():
         if request.method == 'POST':
             if newpassword != confirmpassword:
                     flash('passwords do not match',category='danger')
-                    return redirect(url_for('register'))
+                    return redirect(url_for('resetpassword'))
 
             elif newpassword == confirmpassword:
                     time = datetime.utcnow()
@@ -660,7 +668,7 @@ def resetpassword():
                     cursor.execute('UPDATE customer_accounts SET hashed_pw = %s WHERE customer_id = %s',(update_hashpassword, session['id']))
                     cursor.execute('INSERT INTO logs_info (log_id ,date_created,customer_id,description) VALUES (NULL,%s,%s,concat("authn_password_change : User ID (",%s,")"))',(time, session['id'], session['id']))
                     db.connection.commit()
-                    flash("Successful", category="success")
+                    flash("Successful, Passoword Reset", category="success")
                     db.connection.commit()
 
                     cursor.execute('SELECT full_name from customer_accounts WHERE customer_id = %s',[session['id']])
@@ -686,7 +694,7 @@ def resetpassword():
                         smtp.login(msg["From"], "giyvimnfxcmvszsr")
                         smtp.send_message(msg)
 
-
+                    session.pop('reset_password',None)
                     return redirect(url_for('login'))
     except:
         flash("Please do Verification!", category="danger")
