@@ -1,11 +1,11 @@
 import re
-import phonenumbers
 
 #input validations
 class Validations:
     #using regex
     def validate_password(password):
-        reg = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!#%*?&]{8,20}$"
+        #Minimum eight characters, at least one uppercase letter, one lowercase letter, one number and one special character:
+        reg = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]){8,20}$"
         # compiling regex
         pat = re.compile(reg)
         # searching regex                 
@@ -14,8 +14,14 @@ class Validations:
         if mat:
             return False
         else:
-            #password meets requirements
-            return True
+            #check for special characters, regex filtering doesnt work
+            special = ['$','@','#','!','*','^','&','%']
+            if not any(char in special for char in password):
+                return False
+            else:
+                return True
+
+
     #validate email
     def validate_email(email):
         regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
@@ -23,6 +29,7 @@ class Validations:
             return True
         else:
             return False
+
     #validate security answer
     def validate_answer(answer):
             regex = re.compile('[@_!#$%^&*()<>?/\|}{~:]')
@@ -34,3 +41,5 @@ class Validations:
                 print("illegal characters in answer.") 
 
 
+password = "5zbhihcxqxeSawdawa2!"
+print(Validations.validate_password(password))

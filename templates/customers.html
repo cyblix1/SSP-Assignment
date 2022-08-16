@@ -49,7 +49,7 @@
                     </tfoot>
                     <tbody>
                         
-                   
+                        {{customers}}
                         {% for cus in customers %}
                         <tr>
                             <td>{{cus.customer_id}}</td>
@@ -59,7 +59,11 @@
                                 <button type="button" class="btn btn-info btn-sm" data-toggle="modal" data-target="#cusinfo{{cus.customer_id}}">Info</button>
                                 <button type="button" class="btn btn-warning btn-sm" data-toggle="modal" data-target="#cushis{{cus.customer_id}}">History</button>
                                 <button type="button" class="btn btn-secondary btn-sm">Orders</button>
-                                <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#" >Disable Account</button>
+                                {% if 'enabled' in cus.status['status'] %}
+                                    <a href="{{ url_for('enable',id=cus.customer_id)}}" method="POST" class="btn btn-primary btn-sm">Enable</a>
+                                {% else %}
+                                    <a href="{{ url_for('disable',id=cus.customer_id)}}" method="POST" class="btn btn-success btn-sm" >Disable</a>
+                                {% endif %}
                                 <a href="" class="btn btn-danger btn-xs btn-sm" onclick="return confirm('Are you sure to delete?')">Delete</a>
 
                             </td>

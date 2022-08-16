@@ -404,6 +404,7 @@
     var capital = document.getElementById("capital");
     var number = document.getElementById("number");
     var length = document.getElementById("length");
+    var symbol = document.getElementById("symbol");
     
     // When the user clicks on the password field, show the message box
     myInput.onfocus = function() {
@@ -446,7 +447,16 @@
         number.classList.remove("valid");
         number.classList.add("invalid");
       }
-      
+      // Validate special characters 
+      var symbols =  /[`!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~]/g;
+      if(myInput.value.match(symbols)) {
+        symbol.classList.remove("invalid");
+        symbol.classList.add("valid");
+      } else {
+        symbol.classList.remove("valid");
+        symbol.classList.add("invalid");
+      }
+
       // Validate length
       if(myInput.value.length >= 8) {
         length.classList.remove("invalid");

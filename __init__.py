@@ -712,7 +712,7 @@ def logout():
         session.pop('id', None)
         session.pop('name', None)
         session.pop('customer_login_no',None)
-        flash('Successfully logged out')
+        flash('Successfully logged out',category='success')
         # Redirect to login page]
         return redirect(url_for('login'))
     else:
@@ -983,10 +983,14 @@ def create_admin():
                 cursor.execute('INSERT INTO staff_email_hash VALUES (%s,%s)',((staff_id['staff_id']),hashed_email.decode()))
                 db.connection.commit()
                 flash("Employee Added Successfully!",category="success")
+                flash(phone)
                 return redirect(url_for('admins'))
                 
 
 
+@app.route('/test')
+def test():
+    return render_template('tes.html')
 
 @app.route('/admins/update_admin', methods=['POST'])
 def update_admin():
@@ -1052,6 +1056,9 @@ def customers():
                     cursor.execute('SELECT login_attempt_no,login_time,logout_time FROM customer_login_history WHERE customer_id=%s',[customer['customer_id']])
                     login_logs= cursor.fetchall()
                     customer['history'] = login_logs
+                    cursor.execute('SELECT status FROM customer_disable WHERE customer_id = %s',[customer['customer_id']])
+                    status = cursor.fetchall()
+                    customer['status'] = status
         except IOError:
             print('Database problem!')
         except Exception as e:
@@ -1091,11 +1098,42 @@ def delete_customer(id):
             db.connection.close()
             return redirect(url_for('login'))
 
-@app.route('/customers/disable/<int:id>/')
+@app.route('/customers/disable/<int:id>/',methods=['POST'])
 def disable(id):
     try:
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        
+        cursor.execute('SELECT status FROM customer_disable WHERE staff_id=%s',[id])
+        status = cursor.fetchone()
+        if status == 'enabled':
+            cursor.execute('UPDATE customer_disable SET status = %s WHERE staff_id = %s',('disabled',id))
+            db.connection.commit()
+            flash('Account has been disabled',category='success')
+            return redirect(url_for('customers'))
+        else:
+            flash('Something went wrong, please try again!',category='danger')
+    except IOError:
+        print('Database problem!')
+    except Exception as e:
+        print(f'Error while connecting to MySQL,{e}')
+    finally:
+        if cursor:
+            cursor.close()
+            db.connection.close()
+    return redirect(url_for('customers'))
+
+@app.route('/customers/enable/<int:id>/',methods=['POST'])
+def enable(id):
+    try:
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute('SELECT status FROM customer_disable WHERE staff_id=%s',[id])
+        status = cursor.fetchone()
+        if status == 'disabled':
+            cursor.execute('UPDATE customer_disable SET status = %s WHERE staff_id = %s',('enabled',id))
+            db.connection.commit()
+            flash('Account has been enabled',category='success')
+            return redirect(url_for('customers'))
+        else:
+            flash('Something went wrong, please try again!',category='danger')
     except IOError:
         print('Database problem!')
     except Exception as e:
