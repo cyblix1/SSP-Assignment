@@ -3,8 +3,6 @@ from distutils import ccompiler
 from distutils.util import byte_compile
 from email.message import Message
 from mimetypes import init
-
-
 from pydoc import render_doc
 from tkinter import Image
 from tkinter.tix import Tree
@@ -41,11 +39,13 @@ from twilio.rest import Client
 import flask_monitoringdashboard as dashboard_unqiue
 import pyotp
 import qrcode
-
+from flask_wtf.csrf import CSRFProtect
 app = Flask(__name__)
 #properities
 dashboard_unqiue.config.init_from(file='config_dashboard.cfg')
 dashboard_unqiue.bind(app)
+csrf = CSRFProtect()
+csrf.init_app(app)
 file = 'config.properties'
 config = ConfigParser()
 config.read(file)
@@ -921,8 +921,9 @@ def admins():
         flash('You are not allowed into this section',category='danger')
         return redirect(url_for('customers'))
     else:
-        flash('Error,you are not logged in')
+        flash('Error,you are not logged in',category='danger')
         return redirect(url_for('login'))
+ 
 
 @app.route('/create_admin', methods=['POST'])
 def create_admin(): 
@@ -2149,7 +2150,7 @@ def firstchangepassword():
                         flash(f"Successfully logged in as {staff['full_name']}, password has been changed!",category="success")
                         return redirect(url_for('customers'))
         else:
-            flash('Please enter a valid password!',category='danger')
+            pass
     else:
         flash('Please enter a new password',category='success')
     return render_template('firstchangepassword.html',form=form)

@@ -15,11 +15,17 @@ class Validations:
             return False
         else:
             #check for special characters, regex filtering doesnt work
-            special = ['$','@','#','!','*','^','&','%']
+            special = ['$','@','#','!','*','^','%']
+            not_allowed = ['<','>','&']
             if not any(char in special for char in password):
                 return False
             else:
-                return True
+                #checks for script tags
+                not_allowed = ['<','>','&']
+                if not any(char in not_allowed for char in password):
+                    return True
+                else:
+                    return False
 
 
     #validate email
@@ -41,5 +47,5 @@ class Validations:
                 print("illegal characters in answer.") 
 
 
-password = "5zbhihcxqxeSawdawa2!"
+password = "5zbhihcxqxes!>"
 print(Validations.validate_password(password))

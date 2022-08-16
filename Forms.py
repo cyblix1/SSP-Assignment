@@ -48,7 +48,7 @@ class getotpform(FlaskForm):
     submit = SubmitField("Submit")
 
 class ChangePasswordStaffForm(FlaskForm):
-    psw = PasswordField("Password:", validators=[DataRequired(), EqualTo('password2'),Length(min=8,max=200)])
+    psw = PasswordField("Password:", validators=[DataRequired(), EqualTo('password2',message="passwords must match"),Length(min=8,max=200)])
     password2 = PasswordField("Confirm Password", validators=[DataRequired()])
     submit = SubmitField("Submit")
 
