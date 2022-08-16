@@ -67,8 +67,8 @@ app.config["MAIL_USERNAME"]= 'nathanaeltzw@gmail.com'
 app.config['MAIL_PASSWORD']= 'mxdbfpagawywnxgu'
 app.config['MAIL_USE_TLS']=False
 app.config['MAIL_USE_SSL']=True
-# account_sid = config['twilio']['account']
-# auth_token = config['twilio']['token']
+account_sid = config['twilio']['account']
+auth_token = config['twilio']['token']
 auto_email = 'chamsamuel01@gmail.com'
 email_key = 'giyvimnfxcmvszsr' 
 
