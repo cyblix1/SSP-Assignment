@@ -20,12 +20,19 @@
 
 
 <section class="section-intro padding-y">
+ {% if data == 0 %}
+ {% else%}
+    <h1 class="h4 text-gray-900 mb-4">Password Expiry</h1>
+    <div class="text-left"><button class="btn btn-outline-dark"><a href="{{ url_for('updatePassword')}}">Update Password</a></button>
+ {% endif %}
 
+<hr>
 <h2>Home Page</h2>
 <p>Welcome back, {{ name }}!</p>
 <p> {{ id }}</p>
 <p> {{ logintime['login_time'] }}</p>
-<a href="{{ url_for('logout')}}">Logout</a>
+<!--<a href="{{ url_for('logout')}}">Logout</a>-->
+
 
 <div class="container">
 <!--    <form>-->
@@ -244,6 +251,8 @@
         </div>
     </div>
 </div>
+
+
 {% endfor %}
 
 {% endblock %}

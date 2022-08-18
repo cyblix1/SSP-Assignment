@@ -6,7 +6,7 @@
 <div class="container-fluid">
 
     <!-- Page Heading -->
-    <h1 class="h5 mb-2 text-gray-800">LOGS INFO RECORDS</h1>
+    <h1 class="h5 mb-2 text-gray-800">LOGS CRITICAL RECORDS</h1>
     <!-- DataTales Example -->
     <div class="card shadow mb-4">
         <div class="card-header py-3">
@@ -58,7 +58,7 @@
                         </tr>
                     </tfoot>
                     <tbody>
-                        {% for p in items %}
+                        {% for p in error %}
                         <tr>
                             <td>{{p.log_id}}</td>
                             <td>{{p.description}}</td>
@@ -106,7 +106,6 @@
     </div>
 
 </div>
-
 <!-- /.container-fluid -->
 
             <!-- Footer -->

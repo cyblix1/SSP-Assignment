@@ -216,7 +216,7 @@ def register():
                 customer_id_email = cursor.fetchone()
                 db.connection.commit()
                 cursor.execute('INSERT INTO logs_info (log_id ,date_created,customer_id,description) VALUES (NULL,%s,%s,concat("authn_register_success : User ID (",%s,")"))',(time, customer_id_email["customer_id"], customer_id_email["customer_id"]))
-                # cursor.execute('INSERT INTO customer_disable (customer_id,disabled) VALUES (%s,%s)',(customer_id_email['customer_id'],'enabled'))
+                cursor.execute('INSERT INTO customer_disable (customer_id,disabled) VALUES (%s,%s)',(customer_id_email['customer_id'],0))
                 db.connection.commit()
                 flash('Account Successfully Created ',category='success')
                 return redirect(url_for('login'))
@@ -247,13 +247,13 @@ def login():
         if account:
             id = account['customer_id']
             #first checks if account is enabled
-            # cursor.execute('SELECT disabled FROM customer_disable WHERE customer_id = %s ', [id])
-            # i = cursor.fetchone()
-            # if i['disabled'] == 'enabled':
-            #     pass
-            # else:
-            #     flash('Account is disabled, please contact staff!',category='danger')
-            #     return redirect(url_for('login'))
+            cursor.execute('SELECT disabled FROM customer_disable WHERE customer_id = %s ', [id])
+            i = cursor.fetchone()
+            if i['disabled'] == 0:
+                pass
+            else:
+                flash('Account is disabled, please contact staff!',category='danger')
+                return redirect(url_for('login'))
             cursor.execute(
                 'SELECT max(failed_attempt_tries) AS failed_try from login_limitations where customer_id = %s ', [id])
             check_tries = cursor.fetchone()
@@ -280,7 +280,9 @@ def login():
                         session['email'] = account['email']
                         session['customer_login_no'] = 1
                         session.permanent = True
-                        app.permanent_session_lifetime = timedelta(minutes=15)
+                        # app.permanent_session_lifetime = timedelta(minutes=15)
+                        app.permanent_session_lifetime = timedelta(seconds=15)
+
                         # Redirect to home page
                         cursor.execute(
                             'INSERT INTO logs_info (log_id ,date_created,customer_id, description) VALUES (NULL,%s,%s,concat("authn_login_success : User ID (",%s,")"))',
@@ -343,7 +345,7 @@ def login():
                         session['email'] = account['email']
                         session['customer_login_no'] = 1
                         session.permanent = True
-                        app.permanent_session_lifetime = timedelta(minutes=15)
+                        app.permanent_session_lifetime = timedelta(seconds=15)
                         # Redirect to home page
                         cursor.execute(
                             'INSERT INTO logs_info (log_id ,date_created,customer_id, description) VALUES (NULL,%s,%s,concat("authn_login_success : User ID (",%s,")"))',
@@ -382,7 +384,7 @@ def login():
                     failed_attempt = cursor.fetchone()
 
                     if failed_attempt['failed_attempt_tries'] is None:
-                        flash("Incorrect E-mail or Password, 2 tries remaining ", category='danger')
+                        flash("Incorrect E-mail or Password, 2 tries remaining ")
                         failed_tries = 1
                         attempt_time = datetime.utcnow()
                         cursor.execute(
@@ -392,8 +394,8 @@ def login():
                         return redirect(url_for('login'))
 
                     elif failed_attempt['failed_attempt_tries'] < 2:
-                        flash("Incorrect E-mail or Password, this is your last try!",category='danger')
-                        failed_tries = 1
+                        flash("Incorrect E-mail or Password, this is your last try")
+                        failed_tries = 2
                         attempt_time = datetime.utcnow()
                         cursor.execute(
                             'INSERT INTO login_limitations (customer_id, failed_attempt_tries, attempt_time, locked_time) VALUES (%s,%s,%s,NULL)',
@@ -403,14 +405,23 @@ def login():
 
 
                     elif failed_attempt['failed_attempt_tries'] < 3:
-                        flash("Please try again in 5 minutes",category='danger')
+                        flash("Please Try Again in 5 Minutes", category="success")
                         failed_tries = 3
                         attempt_time = datetime.utcnow()
-                        retry_time2 = datetime.utcnow() + timedelta(seconds=30)
+                        retry_time2 = datetime.utcnow() + timedelta(minutes=5)
                         cursor.execute(
                             'INSERT INTO login_limitations (customer_id, failed_attempt_tries, attempt_time, locked_time) VALUES (%s,%s,%s,%s)',
                             (customer_id, failed_tries, attempt_time, retry_time2))
                         db.connection.commit()
+                    # flash("Incorrect E-mail or Password, 2 tries remaining ")
+                    # failed_tries = 1
+                    # attempt_time = datetime.utcnow()
+                    # cursor.execute(
+                    #     'INSERT INTO login_limitations (customer_id, failed_attempt_tries, attempt_time, locked_time) VALUES (%s,%s,%s,NULL)',
+                    #     (id, failed_tries, attempt_time))
+                    # db.connection.commit()
+                    # return redirect(url_for('login'))
+
 
 
 
@@ -451,7 +462,7 @@ def login():
                             session['email'] = account['email']
                             session['customer_login_no'] = 1
                             session.permanent = True
-                            app.permanent_session_lifetime = timedelta(minutes=15)
+                            app.permanent_session_lifetime = timedelta(seconds=15)
                             # Redirect to home page
                             cursor.execute(
                                 'INSERT INTO logs_info (log_id ,date_created,customer_id, description) VALUES (NULL,%s,%s,concat("authn_login_success : User ID (",%s,")"))',
@@ -564,6 +575,7 @@ def login():
                             return redirect(url_for('customers'))
     return render_template('login.html', form=form)
 
+
 @app.route('/forgetpassword1', methods=['GET', 'POST'])
 def forgetpassword1():
     form = ForgetPassword(request.form)
@@ -573,6 +585,8 @@ def forgetpassword1():
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute('SELECT * FROM customer_accounts WHERE email = %s', [email_forget])
         account_forget = cursor.fetchone()
+        db.connection.commit()
+
         if account_forget:
             if email_forget == account_forget['email']:
                 session['fp_id'] = account_forget['customer_id']
@@ -599,13 +613,16 @@ def forgetpassword2():
 
         cursor.execute('SELECT google_otp FROM fp_google WHERE customer_id = %s', [id['customer_id']])
         secret_otp = cursor.fetchone()
+        db.connection.commit()
+
         if secret_otp is None:
             cursor.execute('INSERT INTO fp_google (customer_id, google_otp) VALUES (%s,%s)', (id['customer_id'],secret))
             db.connection.commit()
+            pass
         else:
             cursor.execute('UPDATE fp_google SET google_otp = %s WHERE customer_id = %s', (secret,id['customer_id']))
             db.connection.commit()
-        db.connection.commit()
+            pass
 
         data = pyotp.totp.TOTP(secret_otp['google_otp']).provisioning_uri(name=email)
         qr = qrcode.QRCode(
@@ -644,9 +661,8 @@ def forgetpassword2():
                 return redirect(url_for("forgetpassword2"))
         else:
             return render_template('forgetpassword2.html',secret=secret_otp['google_otp'])
-    # except:
-    #     flash("Please do Verification!", category="danger")
-    #     return redirect(url_for('login'))
+
+
 
 @app.route('/resetpassword', methods=['GET', 'POST'])
 def resetpassword():
@@ -854,16 +870,52 @@ def home():
 
 
 #base template
-@app.route('/dashboard')
-def dashboard():
+@app.route('/logs_info')
+def logs_info():
     if 'loggedin2' in session or 'loggedin3' in session:
         try:
             cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
             if cursor:
                 cursor.execute('SELECT * FROM logs_info')
                 login = cursor.fetchall()
+        except IOError:
+            print('Database problem!')
+        except Exception as e:
+            print(f'Error while connecting to MySQL,{e}')
+        finally:
+            if cursor:
+                cursor.close()
+        return render_template('dashboard.html', items=login  )
+    else:
+        flash('You are not allowed to access this page', category='danger')
+        return redirect(url_for('login'))
+
+@app.route('/logs_warning')
+def logs_warning():
+    if 'loggedin2' in session or 'loggedin3' in session:
+        try:
+            cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+            if cursor:
                 cursor.execute('SELECT * FROM logs_warning')
                 products = cursor.fetchall()
+        except IOError:
+            print('Database problem!')
+        except Exception as e:
+            print(f'Error while connecting to MySQL,{e}')
+        finally:
+            if cursor:
+                cursor.close()
+        return render_template('dashboard_warning.html', products = products )
+    else:
+        flash('You are not allowed to access this page', category='danger')
+        return redirect(url_for('login'))
+
+@app.route('/logs_critical')
+def logs_critical():
+    if 'loggedin2' in session or 'loggedin3' in session:
+        try:
+            cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+            if cursor:
                 cursor.execute('SELECT * FROM logs_critical')
                 error = cursor.fetchall()
         except IOError:
@@ -873,12 +925,10 @@ def dashboard():
         finally:
             if cursor:
                 cursor.close()
-        return render_template('dashboard.html', items=login , products = products, error = error  )
+        return render_template('dashboard_critical.html', error = error  )
     else:
         flash('You are not allowed to access this page', category='danger')
         return redirect(url_for('login'))
-
-
 
 @app.route('/admins', methods=['POST','GET'])
 def admins():
@@ -1072,13 +1122,13 @@ def customers():
             if cursor:
                 cursor.execute('SELECT * FROM customer_accounts')
                 customers = cursor.fetchall()
-                for customer in customers:
-                    cursor.execute('SELECT login_attempt_no,login_time,logout_time FROM customer_login_history WHERE customer_id=%s',[customer['customer_id']])
-                    login_logs= cursor.fetchall()
-                    customer['history'] = login_logs
-                    cursor.execute('SELECT status FROM customer_disable WHERE customer_id = %s',[customer['customer_id']])
-                    status = cursor.fetchall()
-                    customer['status'] = status
+                cursor.execute('SELECT * FROM customer_disable')
+                status = cursor.fetchall()
+                cursor.execute('SELECT * FROM customer_login_history')
+                login_logs = cursor.fetchall()
+                db.connection.commit()
+
+
         except IOError:
             print('Database problem!')
         except Exception as e:
@@ -1086,7 +1136,7 @@ def customers():
         finally:
             if cursor:
                 cursor.close()
-        return render_template('customers.html',customers=customers)
+        return render_template('customers.html',customers=customers, status=status, login_logs=login_logs)
     else:
         flash('Error,you are not logged in')
         return redirect(url_for('login'))
@@ -1099,7 +1149,8 @@ def delete_customer(id):
         #checks if exists 
         cursor.execute('SELECT * FROM customer_accounts WHERE customer_id = %s', [id])
         account = cursor.fetchone()
-        if account:
+        if account is not None:
+            cursor.execute('DELETE FROM sc_logs WHERE customer_id = %s', [id])
             cursor.execute('DELETE FROM customer_accounts WHERE customer_id = %s', [id])
             db.connection.commit()
             flash("Employee deleted successfully",category="success")
@@ -1116,41 +1167,22 @@ def delete_customer(id):
         if cursor:
             cursor.close()
             db.connection.close()
-            return redirect(url_for('login'))
+    return redirect(url_for('customers'))
 
-@app.route('/customers/disable/<int:id>/',methods=['POST'])
+@app.route('/customers/disable/<int:id>/',methods=['POST','GET'])
 def disable(id):
     try:
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute('SELECT status FROM customer_disable WHERE staff_id=%s',[id])
+        cursor.execute('SELECT disabled FROM customer_disable WHERE customer_id=%s',[id])
         status = cursor.fetchone()
-        if status == 'enabled':
-            cursor.execute('UPDATE customer_disable SET status = %s WHERE staff_id = %s',('disabled',id))
+        db.connection.commit()
+        if status['disabled'] == 0:
+            cursor.execute('UPDATE customer_disable SET disabled = %s WHERE customer_id=%s',(1,[id]))
             db.connection.commit()
             flash('Account has been disabled',category='success')
             return redirect(url_for('customers'))
-        else:
-            flash('Something went wrong, please try again!',category='danger')
-    except IOError:
-        print('Database problem!')
-    except Exception as e:
-        print(f'Error while connecting to MySQL,{e}')
-    finally:
-        if cursor:
-            cursor.close()
-            db.connection.close()
-    return redirect(url_for('customers'))
-
-@app.route('/customers/enable/<int:id>/',methods=['POST'])
-def enable(id):
-    try:
-        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute('SELECT status FROM customer_disable WHERE staff_id=%s',[id])
-        status = cursor.fetchone()
-        if status == 'disabled':
-            cursor.execute('UPDATE customer_disable SET status = %s WHERE staff_id = %s',('enabled',id))
-            db.connection.commit()
-            flash('Account has been enabled',category='success')
+        elif status['disabled'] == 1 :
+            flash('Customer is already disabled',category='danger')
             return redirect(url_for('customers'))
         else:
             flash('Something went wrong, please try again!',category='danger')
@@ -1162,6 +1194,35 @@ def enable(id):
         if cursor:
             cursor.close()
             db.connection.close()
+    flash('User needs to be re-registered!', category='danger')
+    return redirect(url_for('customers'))
+
+@app.route('/customers/enable/<int:id>/',methods=['POST','GET'])
+def enable(id):
+    try:
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute('SELECT disabled FROM customer_disable WHERE customer_id=%s',[id])
+        status = cursor.fetchone()
+        db.connection.commit()
+        if status['disabled'] == 1:
+            cursor.execute('UPDATE customer_disable SET disabled = %s WHERE customer_id = %s',(0,[id]))
+            db.connection.commit()
+            flash('Account has been enabled',category='success')
+            return redirect(url_for('customers'))
+        elif status['disabled'] == 0:
+            flash('Customer is already enabled', category='danger')
+            return redirect(url_for('customers'))
+        else:
+            flash('Something went wrong, please try again!',category='danger')
+    except IOError:
+        print('Database problem!')
+    except Exception as e:
+        print(f'Error while connecting to MySQL,{e}')
+    finally:
+        if cursor:
+            cursor.close()
+            db.connection.close()
+    flash('User needs to be re-registered!', category='danger')
     return redirect(url_for('customers'))
 
 @app.route('/profile',methods=['GET','POST'])
@@ -1407,8 +1468,19 @@ def update_products(id):
 @app.route('/market')
 def market():
     check_logs()
+
     if 'loggedin' in session:
         id = session['id']
+        data_check = 0
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute('SELECT password_age FROM CUSTOMER_ACCOUNTS WHERE CUSTOMER_ID = %s', [id])
+        expiry = cursor.fetchone()
+        db.connection.commit()
+        if expiry['password_age'] >= 30:
+            data_check += 1
+            flash('Password has expired, please update.', category="danger")
+        else:
+            pass
 
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute('SELECT count(index_id) as index_id FROM messages WHERE customer_id = %s', [id])
@@ -1438,7 +1510,7 @@ def market():
             if cursor:
                 cursor.close()
         return render_template('market.html', items=products, cart=shopping_cart, id=session['id'],
-                               name=session['name'], logintime=logintime, messages=messages, count=messages_count)
+                               name=session['name'], logintime=logintime, messages=messages, count=messages_count,data=data_check)
     else:
         flash("Please LOG IN!", category="danger")
         return redirect(url_for('login'))
@@ -2181,7 +2253,6 @@ def check_logs():
         else:
             pass
     except:
-        flash("Please LOG IN!", category="danger")
         return redirect(url_for('login'))
 
 

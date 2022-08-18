@@ -6,11 +6,11 @@
 <div class="container-fluid">
 
     <!-- Page Heading -->
-    <h1 class="h5 mb-2 text-gray-800">LOGS INFO RECORDS</h1>
+    <h1 class="h5 mb-2 text-gray-800">LOGS WARNING RECORDS</h1>
     <!-- DataTales Example -->
     <div class="card shadow mb-4">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">LOGS</h6>
+            <h6 class="m-0 font-weight-bold text-primary">LOGS </h6>
 
             <!-- start of modal -->
             <div class="modal fade" style="margin-top:100px;" id="createadmin" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
@@ -58,7 +58,7 @@
                         </tr>
                     </tfoot>
                     <tbody>
-                        {% for p in items %}
+                        {% for p in products %}
                         <tr>
                             <td>{{p.log_id}}</td>
                             <td>{{p.description}}</td>
@@ -106,7 +106,6 @@
     </div>
 
 </div>
-
 <!-- /.container-fluid -->
 
             <!-- Footer -->
