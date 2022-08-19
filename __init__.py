@@ -1128,8 +1128,6 @@ def customers():
                 cursor.execute('SELECT * FROM customer_login_history')
                 login_logs = cursor.fetchall()
                 db.connection.commit()
-
-
         except IOError:
             print('Database problem!')
         except Exception as e:
@@ -1139,7 +1137,7 @@ def customers():
                 cursor.close()
         return render_template('customers.html',customers=customers, login_logs=login_logs)
     else:
-        flash('Error,you are not logged in')
+        flash('Error,you are not logged in', category="danger")
         return redirect(url_for('login'))
 
 
@@ -1465,7 +1463,6 @@ def update_products(id):
         db.connection.close()
         return redirect(url_for('products'))
 
-
 @app.route('/market')
 def market():
     check_logs()
@@ -1554,7 +1551,6 @@ def check_shopping_cart():
             for i in total:
                 if i['price'] > 1000:
                     flash('Please do a Verification as Amount is too big', category="success")
-                    session.pop('sc_verified_1', None)
                     session.pop('sc_verified_2', None)
                     session.pop('sc_ready', None)
                     return redirect(url_for('checkout_verification'))
@@ -1612,7 +1608,7 @@ def checkout():
                 flash("Please Log In!", category="danger")
                 return redirect(url_for('login'))
         else:
-            flash("DO", category="danger")
+            flash("Please Try Again", category="danger")
             return redirect(url_for('checkout_verification'))
     except:
         flash("Please do verification", category="danger")
@@ -1651,7 +1647,8 @@ def checkout_verification():
     form = LoginForm(request.form)
     customer_id = session['id']
     try:
-        verification = session['sc_verified_1']
+        verification = session['sc_verified_2']
+        session['sc_verified_1'] = 1
         return redirect(url_for('checkout'))
     except:
         try:
@@ -1686,6 +1683,7 @@ def checkout_verification():
                     return redirect(url_for('market'))
 
             return render_template('checkout_verification.html', form=form)
+
 @app.route('/checkout_verification2', methods=['POST','GET'])
 def checkout_verification2():
     try:
@@ -2051,15 +2049,13 @@ def delete_order():
         db.connection.commit()
         session.pop('sc_ready', None)
         session.pop('sc_verified_1', None)
-        flash("Item Added Successfully",category="success")
+        flash("Order Successfully",category="success")
         return redirect(url_for('market'))
-
 
     except IOError:
         print('Database problem!')
     except Exception as e:
         print(f'Error while connecting to MySQL,{e}')
-    finally:
         flash("Something went wrong, please try again!", category="danger")
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute(
@@ -2243,11 +2239,12 @@ def check_logs():
         if send_notice is None:
             pass
         elif send_notice['warning_num'] > 5 :
-            client = Client('ACda54aec51409765fabb130cc5f9df9b4', 'd54c2306291cd37a9082ca0833bb2ad7')
+            client = Client('ACda54aec51409765fabb130cc5f9df9b4', 'd0f2b2caf8ab917c6a2091dc33c35a92')
             # client = Client(account_sid, auth_token)
             message = client.messages.create(
                 from_= '+12182504569',
-                to="+6588834356",
+                to="",
+                # insert own number for admin not staff
                 body= "User %s has passed warning logs stage, check on user!" % [id]
             )
             print(message)

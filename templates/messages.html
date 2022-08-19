@@ -38,6 +38,7 @@
                             </button>
                         </div>
                         <form action="{{url_for('create_messages')}}" method="POST">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                             <div class="modal-body">
                                     <div class="form-group">
                                         {{ form.description(class='form-control form-control-user', placeholder='Product Description') }}

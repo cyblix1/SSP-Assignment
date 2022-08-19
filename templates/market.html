@@ -229,6 +229,7 @@
                     </button>
                 </div>
                 <form method="POST" action="{{url_for('add_to_checkout')}}" >
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <div class="modal-body">
                     <hr>
                     <p>Name: {{i.product_name}}</p>

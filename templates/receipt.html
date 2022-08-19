@@ -54,6 +54,7 @@
 
 
                         <form method="POST" action="{{ url_for('delete_order')}}">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <button type="submit"  class="btn btn-primary float-md-right"> Confirm Order <i class="fa fa-chevron-right"></i> </button>
                                                 {% for i in shopping %}
 
