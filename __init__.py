@@ -855,6 +855,23 @@ def updatePassword():
     
     return render_template('updatePassword.html', form=form)
 
+
+@app.route('/delete_customer_account', methods=['GET', 'POST'])
+def delete_customer_account():
+    try:
+        id=session['id']
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute('DELETE FROM messages WHERE customer_id = %s', [id])
+        cursor.execute('DELETE FROM sc_logs WHERE customer_id = %s', [id])
+        cursor.execute('DELETE FROM customer_accounts WHERE customer_id = %s', [id])
+        db.connection.commit()
+        flash("Account Has Been Deleted", category='success')
+        return redirect(url_for('login'))
+    except:
+        flash("Please Try Again", category='danger')
+        return redirect(url_for('profile'))
+
+
 @app.route('/')
 def home():
     if 'loggedin' in session:
