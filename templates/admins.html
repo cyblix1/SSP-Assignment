@@ -38,13 +38,10 @@
                             </button>
                         </div>
                         <form action="{{url_for('create_admin')}}" method="POST">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                             <div class="modal-body">
-                                        {{ form.csrf_token(type='hidden') }}
-                                        {% if form.csrf_token.errors %}
-                                            <div class="warning">
-                                                You have submited an invalid csrf token 
-                                            </div>
-                                        {% endif %}
+                                        
+                                    
                                     <div class="form-group">
                                         {{ form.name(class='form-control form-control-user', placeholder='name') }}
                                     </div>
