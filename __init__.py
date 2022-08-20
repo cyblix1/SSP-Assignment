@@ -546,7 +546,7 @@ def login():
                             # otp is a string
                             otp = str(generateOTP())
                             msg = Message("Hello", sender='tannathanael24@gmail.com',
-                                          recipients=["nathanaeltzw@gmail.com"])
+                                          recipients=[email])
                             body = "Your OTP is " + otp
                             msg.body = body
                             mail.send(msg)
