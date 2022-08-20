@@ -29,7 +29,7 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from validations import *
 import random
 from flask_mail import Mail,Message
-# import stripe
+import stripe
 import logging
 from logging.config import dictConfig , fileConfig
 import smtplib
@@ -69,6 +69,7 @@ app.config['MAIL_USE_TLS']=False
 app.config['MAIL_USE_SSL']=True
 auto_email = 'chamsamuel01@gmail.com'
 email_key = 'giyvimnfxcmvszsr' 
+stripe.api_key = app.config['STRIPE_SECRET_KEY']
 
 
 bcrypt2 = Bcrypt()
@@ -1568,6 +1569,7 @@ def check_shopping_cart():
             for i in total:
                 if i['price'] > 1000:
                     flash('Please do a Verification as Amount is too big', category="success")
+                    session.pop('sc_verified_1', None)
                     session.pop('sc_verified_2', None)
                     session.pop('sc_ready', None)
                     return redirect(url_for('checkout_verification'))
@@ -1593,34 +1595,42 @@ def checkout():
             if 'loggedin' in session:
                 cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
 
-            # session_checkout = stripe.checkout.Session.create(
-                #     payment_method_types=['card'],
-                #     line_items=[{
-                #         'price': 'price_1LMQn6JDutS1IqmOYxizfOAB',
-                #         'quantity': 1,
-                #     }],
-                #     mode='payment',
-                #     success_url=url_for('orders', _external=True),
-                #     cancel_url=url_for('market', _external=True),
-                # )
                 try:
                     cursor.execute('SELECT * FROM shopping_cart WHERE customer_id = %s ', [customer_id])
                     products = cursor.fetchall()
                     cursor.execute('SELECT sum(price) as price FROM shopping_cart')
                     total = cursor.fetchall()
                     session['sc_ready'] = 1
+                    cursor.execute('SELECT max(sc_status) as sc_status FROM sc_attempts WHERE customer_id = %s',[customer_id])
+                    status_sc = cursor.fetchone()
 
                     db.connection.commit()
+
+                    session_checkout = stripe.checkout.Session.create(
+                        payment_method_types=['card'],
+                        line_items=[{
+                            'price': 'price_1LYu6pJDutS1IqmODTkbCZan',
+                            'quantity': 1,
+                        }],
+                        mode='payment',
+                        success_url=url_for('orders', _external=True),
+                        cancel_url=url_for('checkout', _external=True),
+                    )
+
+                    if status_sc['sc_status'] == 1 :
+                        session['orders_verified'] = 1
+                        pass
+                    else:
+                        pass
+
+
                 except IOError:
                     print('Database problem!')
                 except Exception as e:
                     print(f'Error while connecting to MySQL,{e}')
-                finally:
-                    if cursor:
-                        cursor.close()
-                return render_template('checkout.html', cart_items=products , total = total )
-                # checkout_session_id = session_checkout['id'],
-                # checkout_public_key = app.config['STRIPE_PUBLIC_KEY']
+
+
+                return render_template('checkout.html', cart_items=products, total = total,status = status_sc, checkout_session_id= session_checkout['id'], checkout_public_key=app.config['STRIPE_PUBLIC_KEY'])
             else:
                 flash("Please Log In!", category="danger")
                 return redirect(url_for('login'))
@@ -1630,34 +1640,6 @@ def checkout():
     except:
         flash("Please do verification", category="danger")
         return redirect(url_for('page_not_found'))
-
-
-@app.route('/payment', methods=['POST','GET'])
-def payment():
-    customer_id = session['id']
-    form = Add_Card_Details()
-    cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-    try:
-        verification = session['sc_verified_1']
-        if verification == 1:
-            if request.method == 'POST':
-                card_number = form.card_number.data
-                card_name = form.card_name.data
-                card_date = form.card_date.data
-                card_cvc = form.card_cvc.data
-
-                # cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-                # cursor.execute('INSERT INTO payment VALUES (%s, %s, %s, %s)', (card_number,card_date,card_name,card_cvc))
-                # db.connection.commit()
-                flash("Card Added Successfully!", category="success")
-                return redirect(url_for('checkout'))
-            return render_template('payment.html', form=form)
-
-    except:
-        flash("Please do verification", category="danger")
-        return redirect(url_for('page_not_found'))
-
-
 
 @app.route('/checkout_verification', methods=['POST','GET'])
 def checkout_verification():
@@ -1752,13 +1734,14 @@ def checkout_verification2():
                                     (login_time, customer_id, customer_id))
                                 db.connection.commit()
                                 session['orders_verified'] = 1
-                                return redirect(url_for('orders'))
+                                flash("Verification Successful, Please Proceed to Payment", category="success")
+                                return redirect(url_for('checkout'))
 
                             else:
                                 # cursor.execute('INSERT INTO sc_attempts (unique_id ,product_attempts,customer_id,sc_status) VALUES (%s,%s,%s,%s)',
                                 #     (user_checkout_id, attempted, customer_id, 0))
                                 cursor.execute('INSERT INTO logs_warning (log_id ,date_created,description) VALUES (NULL,%s,concat("authn_checkout_fail : User ID (",%s,")"))',(login_time, customer_id))
-                                flash("OTP Unsuccessfully, Try Again!", category="success")
+                                flash("OTP Unsuccessfully, Try Again!", category="danger")
                                 db.connection.commit()
                                 return redirect(url_for('checkout_verification2'))
                     else:
@@ -1781,14 +1764,14 @@ def checkout_verification2():
                                         'INSERT INTO logs_info (log_id ,date_created,customer_id,description) VALUES (NULL,%s,%s,concat("checkout_verf_2_success : User ID (",%s,")"))',
                                         (login_time, customer_id, customer_id))
                                     db.connection.commit()
-                                    session['orders_verified'] = 1
-                                    return redirect(url_for('orders'))
+                                    flash("Verification Successful, Please Proceed to Payment", category="success")
+                                    return redirect(url_for('checkout'))
                                 else:
                                     cursor.execute('INSERT INTO sc_attempts (unique_otp ,attempts,customer_id,sc_status,attempt_time,otp_time) VALUES (%s,%s,%s,%s,%s,%s)', (acc_uuid['unique_otp'],next_sc_attempt,customer_id,0,login_time,max_otp_time['otp_time']))
                                     cursor.execute('INSERT INTO sc_logs (unique_otp ,attempts,customer_id,attempt_time) VALUES (%s,%s,%s,%s)', (acc_uuid['unique_otp'],next_sc_attempt,customer_id,login_time))
                                     cursor.execute('INSERT INTO logs_warning (log_id ,date_created,description) VALUES (NULL,%s,concat("authn_checkout_fail : User ID (",%s,")"))',(login_time, customer_id))
                                     db.connection.commit()
-                                    flash("OTP Unsuccessfully, Try Again AGAIN!", category="success")
+                                    flash("OTP Unsuccessfully, Try Again!", category="danger")
                                     db.connection.commit()
 
                                     return redirect(url_for('checkout_verification2'))
@@ -1809,7 +1792,8 @@ def checkout_verification2():
                                         (login_time, customer_id, customer_id))
                                     session['orders_verified'] = 1
                                     db.connection.commit()
-                                    return redirect(url_for('orders'))
+                                    flash("Verification Successful, Please Proceed to Payment", category="success")
+                                    return redirect(url_for('checkout'))
                                 else:
                                     cursor.execute(
                                         'INSERT INTO sc_attempts (unique_otp ,attempts,customer_id,sc_status,attempt_time) VALUES (%s,%s,%s,%s,%s)',
@@ -1825,7 +1809,7 @@ def checkout_verification2():
                                         retry_time = datetime.utcnow() + timedelta(seconds=15)
                                         cursor.execute('INSERT INTO sc_time (sc_status ,customer_id,now_time, attempt_time) VALUES (%s,%s,NULL,%s)',(0, customer_id, retry_time))
                                         cursor.execute('INSERT INTO logs_warning (log_id ,date_created,description) VALUES (NULL,%s,concat("authn_checkout_fail : User ID (",%s,")"))',(login_time, customer_id))
-                                        flash("OTP Unsuccessfully, Try Again!", category="success")
+                                        flash("OTP Unsuccessfully, Try Again!", category="danger")
                                         db.connection.commit()
                                         return redirect(url_for('checkout_verification2'))
                                     else:
@@ -1836,7 +1820,7 @@ def checkout_verification2():
                                         cursor.execute(
                                             'INSERT INTO sc_time (sc_status ,customer_id,now_time, attempt_time) VALUES (%s,%s,NULL,%s)',
                                             (0, customer_id, retry_time))
-                                        flash("OTP Unsuccessfully, Try Again AGAIN!", category="success")
+                                        flash("OTP Unsuccessfully, Try Again!", category="danger")
                                         cursor.execute('INSERT INTO logs_warning (log_id ,date_created,description) VALUES (NULL,%s,concat("authn_checkout_fail : User ID (",%s,")"))',(login_time, customer_id))
                                         db.connection.commit()
                                         return redirect(url_for('checkout_verification2'))
@@ -1870,7 +1854,7 @@ def checkout_verification2():
                                     # implement message here
                                     return redirect(url_for('messages'))
                             else:
-                                flash("Please Wait for 30 Minutes, Thank You", category="success")
+                                flash("Please Wait for 30 Minutes, Thank You", category="danger")
                                 return redirect(url_for('market'))
 
 
@@ -1880,7 +1864,8 @@ def checkout_verification2():
                         'INSERT INTO logs_info (log_id ,date_created,customer_id,description) VALUES (NULL,%s,%s,concat("checkout_verf_2_success : User ID (",%s,")"))',
                         (login_time, customer_id, customer_id))
                     db.connection.commit()
-                    return redirect(url_for('orders'))
+                    flash("Verification Successful, Please Proceed to Payment", category="success")
+                    return redirect(url_for('checkout'))
             else:
                 cursor.execute('DELETE FROM sc_attempts WHERE customer_id = %s', [customer_id])
                 db.connection.commit()

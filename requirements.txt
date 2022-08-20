@@ -1,4 +1,4 @@
-stripe==3.5.0
+stripe==4.1.0
 bcrypt==3.2.2
 certifi==2022.6.15
 cffi==1.15.0
