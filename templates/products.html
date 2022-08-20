@@ -24,6 +24,7 @@
                             </button>
                         </div>
                         <form action="{{url_for('create_products')}}" method="POST">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                             <div class="modal-body">
                                     <div class="form-group">
                                         {{ form.product_name(class='form-control form-control-user', placeholder='Product Name') }}
@@ -92,6 +93,7 @@
                                 <button type="button" class="btn btn-warning btn-sm">History</button>
                                 <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#productsedit{{p.product_id}}" >Edit</button>
                                 <form action="{{ url_for('delete_products',id=p.product_id)}}", method="POST">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                     <button type="submit" class="btn btn-danger btn-xs btn-sm" onclick="return confirm('Are you sure to delete?')">Delete</button>
                                 </form>
                             </td>
@@ -132,7 +134,8 @@
                                         </button>
                                     </div>
                                         <form action="{{url_for('update_products' , id=p.product_id)}}" method="POST">
-
+                                            {{ form.csrf_token }}
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                             <div class="modal-body">
                                                     <div class="form-group">
                                                         {{ form.product_name(class='form-control', placeholder='Product Name', value=p.product_name) }}

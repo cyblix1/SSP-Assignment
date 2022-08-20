@@ -163,6 +163,7 @@ $('.image-upload-wrap').bind('dragleave', function () {
         <h4 class="card-title mb-4" style="margin-bottom: 30px;">Add Product</h4>
        <form method="POST" style="margin-top: 60px;" enctype="multipart/form-data">
        {{ add_item_form.hidden_tag() }}
+           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
 
            <div class="form-group">
                <img src='' class="img-sm rounded-circle border">

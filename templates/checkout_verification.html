@@ -35,6 +35,8 @@
                                 <h1 class="h4 text-gray-900 mb-4">Verification Page</h1>
                             </div>
                             <form action="{{ url_for('checkout_verification') }}" method="POST">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
                                 <div class="form-group row">
                                     <!--userName-->
                                     {{ form.email.label() }}

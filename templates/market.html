@@ -24,10 +24,10 @@
  {% else%}
     <h1 class="h4 text-gray-900 mb-4">Reminder : Password has Expired</h1>
     <a href="{{ url_for('updatePassword')}}" class="btn btn-primary btn">Update Password</a>
-
+    <hr>
  {% endif %}
 
-<hr>
+
     <br>
 <h2>Welcome back, {{ name }}!</h2>
 <p> Thank You for Shopping with VALA</p>
@@ -229,6 +229,7 @@
                     </button>
                 </div>
                 <form method="POST" action="{{url_for('add_to_checkout')}}" >
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <div class="modal-body">
                     <hr>
                     <p>Name: {{i.product_name}}</p>

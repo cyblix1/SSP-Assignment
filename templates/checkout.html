@@ -62,6 +62,7 @@
     </td>
     <td>
     <form action="{{ url_for('delete_checkout_products',id=i.product_id)}}", method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <button type="submit" class="btn btn-danger btn-xs btn-sm" onclick="return confirm('Are you sure to delete?')">Delete</button>
     </form>
     </td>

@@ -208,20 +208,22 @@ def register():
             cursor.execute('SELECT customer_id from customer_accounts where email = %s',[email])
             email_check = cursor.fetchone()
             db.connection.commit()
-            if email_check is None:
-                # print('INSERT INTO customer_accounts VALUES (NULL,%s,%s,%s,%s,%s)',(name,email,hashpassword,password_age,time))
-                cursor.execute('INSERT INTO customer_accounts VALUES (NULL,%s,%s,%s,%s,%s,%s,%s)',(name,email,question_number,answer,hashpassword,password_age,time))
-                db.connection.commit()
-                cursor.execute('SELECT customer_id from customer_accounts WHERE email = %s', [email])
-                customer_id_email = cursor.fetchone()
-                db.connection.commit()
-                cursor.execute('INSERT INTO logs_info (log_id ,date_created,customer_id,description) VALUES (NULL,%s,%s,concat("authn_register_success : User ID (",%s,")"))',(time, customer_id_email["customer_id"], customer_id_email["customer_id"]))
-                cursor.execute('INSERT INTO customer_disable (customer_id,disabled) VALUES (%s,%s)',(customer_id_email['customer_id'],0))
-                db.connection.commit()
-                flash('Account Successfully Created ',category='success')
-                return redirect(url_for('login'))
+            if email != "admin@gmail.com":
+                if email_check is None:
+                    cursor.execute('INSERT INTO customer_accounts VALUES (NULL,%s,%s,%s,%s,%s,%s,%s,%s)',(name,email,question_number,answer,hashpassword,password_age,time,0))
+                    db.connection.commit()
+                    cursor.execute('SELECT customer_id from customer_accounts WHERE email = %s', [email])
+                    customer_id_email = cursor.fetchone()
+                    db.connection.commit()
+                    cursor.execute('INSERT INTO logs_info (log_id ,date_created,customer_id,description) VALUES (NULL,%s,%s,concat("authn_register_success : User ID (",%s,")"))',(time, customer_id_email["customer_id"], customer_id_email["customer_id"]))
+                    db.connection.commit()
+                    flash('Account Successfully Created ',category='success')
+                    return redirect(url_for('login'))
+                else:
+                    flash('Email has been registered before ',category='danger')
+                    return redirect(url_for('register'))
             else:
-                flash('Email has been registered before ',category='danger')
+                flash('Email has been registered before ', category='danger')
                 return redirect(url_for('register'))
 
 
@@ -247,9 +249,9 @@ def login():
         if account:
             id = account['customer_id']
             #first checks if account is enabled
-            cursor.execute('SELECT disabled FROM customer_disable WHERE customer_id = %s ', [id])
+            cursor.execute('SELECT status FROM customer_accounts WHERE customer_id = %s ', [id])
             i = cursor.fetchone()
-            if i['disabled'] == 0:
+            if i['status'] == 0:
                 pass
             else:
                 flash('Account is disabled, please contact staff!',category='danger')
@@ -624,7 +626,11 @@ def forgetpassword2():
             db.connection.commit()
             pass
 
-        data = pyotp.totp.TOTP(secret_otp['google_otp']).provisioning_uri(name=email)
+        cursor.execute('SELECT google_otp FROM fp_google WHERE customer_id = %s', [id['customer_id']])
+        new_otp = cursor.fetchone()
+        db.connection.commit()
+
+        data = pyotp.totp.TOTP(new_otp['google_otp']).provisioning_uri(name=email)
         qr = qrcode.QRCode(
             version=1,
             error_correction=qrcode.constants.ERROR_CORRECT_L,
@@ -660,7 +666,7 @@ def forgetpassword2():
                 cursor.execute('INSERT INTO logs_warning (log_id ,date_created,customer_id,description) VALUES (NULL,%s,%s,concat("authn_password_fail : User ID (",%s,")"))',(login_time, id['customer_id'] , id['customer_id']))
                 return redirect(url_for("forgetpassword2"))
         else:
-            return render_template('forgetpassword2.html',secret=secret_otp['google_otp'])
+            return render_template('forgetpassword2.html',secret=new_otp['google_otp'])
 
 
 
@@ -741,9 +747,6 @@ def logout():
         session.pop('customer_login_no',None)
 
         flash('Successfully logged out',category='success')
-
-        flash('Successfully logged out', category='success')
-
         # Redirect to login page]
         return redirect(url_for('login'))
     else:
@@ -852,6 +855,23 @@ def updatePassword():
     
     return render_template('updatePassword.html', form=form)
 
+
+@app.route('/delete_customer_account', methods=['GET', 'POST'])
+def delete_customer_account():
+    try:
+        id=session['id']
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute('DELETE FROM messages WHERE customer_id = %s', [id])
+        cursor.execute('DELETE FROM sc_logs WHERE customer_id = %s', [id])
+        cursor.execute('DELETE FROM customer_accounts WHERE customer_id = %s', [id])
+        db.connection.commit()
+        flash("Account Has Been Deleted", category='success')
+        return redirect(url_for('login'))
+    except:
+        flash("Please Try Again", category='danger')
+        return redirect(url_for('profile'))
+
+
 @app.route('/')
 def home():
     if 'loggedin' in session:
@@ -863,7 +883,7 @@ def home():
         logintime = cursor.fetchone()
         return render_template('home.html',id=session['id'], name=session['name'],logintime=logintime)
 # User is not loggedin redirect to login page
-    flash('Session timeout',category='danger')
+    flash('Welcome to VALA, Please Log In or Register !',category='success')
     return redirect(url_for('login'))
 
 
@@ -1122,13 +1142,9 @@ def customers():
             if cursor:
                 cursor.execute('SELECT * FROM customer_accounts')
                 customers = cursor.fetchall()
-                cursor.execute('SELECT * FROM customer_disable')
-                status = cursor.fetchall()
                 cursor.execute('SELECT * FROM customer_login_history')
                 login_logs = cursor.fetchall()
                 db.connection.commit()
-
-
         except IOError:
             print('Database problem!')
         except Exception as e:
@@ -1136,9 +1152,9 @@ def customers():
         finally:
             if cursor:
                 cursor.close()
-        return render_template('customers.html',customers=customers, status=status, login_logs=login_logs)
+        return render_template('customers.html',customers=customers, login_logs=login_logs)
     else:
-        flash('Error,you are not logged in')
+        flash('Error,you are not logged in', category="danger")
         return redirect(url_for('login'))
 
 
@@ -1173,15 +1189,15 @@ def delete_customer(id):
 def disable(id):
     try:
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute('SELECT disabled FROM customer_disable WHERE customer_id=%s',[id])
+        cursor.execute('SELECT status FROM customer_accounts WHERE customer_id=%s',[id])
         status = cursor.fetchone()
         db.connection.commit()
-        if status['disabled'] == 0:
-            cursor.execute('UPDATE customer_disable SET disabled = %s WHERE customer_id=%s',(1,[id]))
+        if status['status'] == 0:
+            cursor.execute('UPDATE customer_accounts SET status = %s WHERE customer_id=%s',(1,[id]))
             db.connection.commit()
-            flash('Account has been disabled',category='success')
+            flash('Account has been disabled',category='danger')
             return redirect(url_for('customers'))
-        elif status['disabled'] == 1 :
+        elif status['status'] == 1 :
             flash('Customer is already disabled',category='danger')
             return redirect(url_for('customers'))
         else:
@@ -1201,15 +1217,15 @@ def disable(id):
 def enable(id):
     try:
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute('SELECT disabled FROM customer_disable WHERE customer_id=%s',[id])
+        cursor.execute('SELECT status FROM customer_accounts WHERE customer_id=%s',[id])
         status = cursor.fetchone()
         db.connection.commit()
-        if status['disabled'] == 1:
-            cursor.execute('UPDATE customer_disable SET disabled = %s WHERE customer_id = %s',(0,[id]))
+        if status['status'] == 1:
+            cursor.execute('UPDATE customer_accounts SET status = %s WHERE customer_id = %s',(0,[id]))
             db.connection.commit()
             flash('Account has been enabled',category='success')
             return redirect(url_for('customers'))
-        elif status['disabled'] == 0:
+        elif status['status'] == 0:
             flash('Customer is already enabled', category='danger')
             return redirect(url_for('customers'))
         else:
@@ -1464,7 +1480,6 @@ def update_products(id):
         db.connection.close()
         return redirect(url_for('products'))
 
-
 @app.route('/market')
 def market():
     check_logs()
@@ -1512,7 +1527,7 @@ def market():
         return render_template('market.html', items=products, cart=shopping_cart, id=session['id'],
                                name=session['name'], logintime=logintime, messages=messages, count=messages_count,data=data_check)
     else:
-        flash("Please LOG IN!", category="danger")
+        flash("Please Log In!", category="danger")
         return redirect(url_for('login'))
 
 @app.route('/add_to_checkout', methods=['POST'])
@@ -1553,7 +1568,6 @@ def check_shopping_cart():
             for i in total:
                 if i['price'] > 1000:
                     flash('Please do a Verification as Amount is too big', category="success")
-                    session.pop('sc_verified_1', None)
                     session.pop('sc_verified_2', None)
                     session.pop('sc_ready', None)
                     return redirect(url_for('checkout_verification'))
@@ -1567,7 +1581,7 @@ def check_shopping_cart():
             flash("No Items in Shopping Cart", category="danger")
             return redirect(url_for('market'))
     else:
-        flash("Please LOG IN!", category="danger")
+        flash("Please Log In!", category="danger")
         return redirect(url_for('login'))
 
 @app.route('/checkout', methods=['POST', 'GET'])
@@ -1608,10 +1622,10 @@ def checkout():
                 # checkout_session_id = session_checkout['id'],
                 # checkout_public_key = app.config['STRIPE_PUBLIC_KEY']
             else:
-                flash("Please LOG IN!", category="danger")
+                flash("Please Log In!", category="danger")
                 return redirect(url_for('login'))
         else:
-            flash("DO", category="danger")
+            flash("Please Try Again", category="danger")
             return redirect(url_for('checkout_verification'))
     except:
         flash("Please do verification", category="danger")
@@ -1650,7 +1664,8 @@ def checkout_verification():
     form = LoginForm(request.form)
     customer_id = session['id']
     try:
-        verification = session['sc_verified_1']
+        verification = session['sc_verified_2']
+        session['sc_verified_1'] = 1
         return redirect(url_for('checkout'))
     except:
         try:
@@ -1685,6 +1700,7 @@ def checkout_verification():
                     return redirect(url_for('market'))
 
             return render_template('checkout_verification.html', form=form)
+
 @app.route('/checkout_verification2', methods=['POST','GET'])
 def checkout_verification2():
     try:
@@ -2050,15 +2066,13 @@ def delete_order():
         db.connection.commit()
         session.pop('sc_ready', None)
         session.pop('sc_verified_1', None)
-        flash("Item Added Successfully",category="success")
+        flash("Order Successfully",category="success")
         return redirect(url_for('market'))
-
 
     except IOError:
         print('Database problem!')
     except Exception as e:
         print(f'Error while connecting to MySQL,{e}')
-    finally:
         flash("Something went wrong, please try again!", category="danger")
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute(
@@ -2242,11 +2256,12 @@ def check_logs():
         if send_notice is None:
             pass
         elif send_notice['warning_num'] > 5 :
-            client = Client('ACda54aec51409765fabb130cc5f9df9b4', 'd54c2306291cd37a9082ca0833bb2ad7')
+            client = Client('ACda54aec51409765fabb130cc5f9df9b4', 'd0f2b2caf8ab917c6a2091dc33c35a92')
             # client = Client(account_sid, auth_token)
             message = client.messages.create(
                 from_= '+12182504569',
-                to="+6588834356",
+                to="",
+                # insert own number for admin not staff
                 body= "User %s has passed warning logs stage, check on user!" % [id]
             )
             print(message)
