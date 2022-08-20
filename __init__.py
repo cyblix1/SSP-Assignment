@@ -1709,7 +1709,7 @@ def checkout_verification2():
                 if status_sc['sc_status'] is None:
                     attempted = 1
                     user_checkout_id = random.randint(000000,999999)
-                    otp_time = datetime.utcnow() + timedelta(minutes=15)
+                    otp_time = datetime.utcnow() + timedelta(seconds=30)
                     cursor.execute('INSERT INTO sc_attempts (unique_otp ,attempts,customer_id,sc_status,attempt_time,otp_time) VALUES (%s,%s,%s,%s,%s,%s)',(user_checkout_id, attempted, customer_id, 0,login_time,otp_time))
                     db.connection.commit()
                     cursor.execute('SELECT unique_otp FROM sc_attempts WHERE customer_id = %s',[customer_id])
@@ -1805,8 +1805,8 @@ def checkout_verification2():
                                     db.connection.commit()
 
                                     if a_time is None:
-                                        # retry_time = datetime.utcnow() + timedelta(minutes=30)
-                                        retry_time = datetime.utcnow() + timedelta(seconds=15)
+                                        retry_time = datetime.utcnow() + timedelta(minutes=30)
+                                        # retry_time = datetime.utcnow() + timedelta(seconds=15)
                                         cursor.execute('INSERT INTO sc_time (sc_status ,customer_id,now_time, attempt_time) VALUES (%s,%s,NULL,%s)',(0, customer_id, retry_time))
                                         cursor.execute('INSERT INTO logs_warning (log_id ,date_created,description) VALUES (NULL,%s,concat("authn_checkout_fail : User ID (",%s,")"))',(login_time, customer_id))
                                         flash("OTP Unsuccessfully, Try Again!", category="danger")
@@ -1815,8 +1815,8 @@ def checkout_verification2():
                                     else:
                                         cursor.execute('DELETE FROM sc_time WHERE customer_id = %s', [customer_id])
                                         db.connection.commit()
-                                        # retry_time = datetime.utcnow() + timedelta(minutes=30)
-                                        retry_time = datetime.utcnow() + timedelta(seconds=15)
+                                        retry_time = datetime.utcnow() + timedelta(minutes=30)
+                                        # retry_time = datetime.utcnow() + timedelta(seconds=15)
                                         cursor.execute(
                                             'INSERT INTO sc_time (sc_status ,customer_id,now_time, attempt_time) VALUES (%s,%s,NULL,%s)',
                                             (0, customer_id, retry_time))
@@ -2235,13 +2235,13 @@ def check_logs():
     try:
         id = session['id']
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute("SELECT count(*) as warning_num from logs_info WHERE customer_id = %s" , [id])
+        cursor.execute("SELECT count(*) as warning_num from logs_warning WHERE customer_id = %s" , [id])
         send_notice = cursor.fetchone()
         db.connection.commit()
         if send_notice is None:
             pass
-        elif send_notice['warning_num'] > 5 :
-            client = Client('ACda54aec51409765fabb130cc5f9df9b4', 'd0f2b2caf8ab917c6a2091dc33c35a92')
+        elif send_notice['warning_num'] > 15 :
+            client = Client('ACda54aec51409765fabb130cc5f9df9b4', 'da73d372150aaca65ef44d710aa82acc')
             # client = Client(account_sid, auth_token)
             message = client.messages.create(
                 from_= '+12182504569',
