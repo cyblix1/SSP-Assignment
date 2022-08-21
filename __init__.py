@@ -56,6 +56,10 @@ app.config['MYSQL_HOST'] = config['account']['host']
 app.config['MYSQL_USER'] = config['account']['user']
 app.config['MYSQL_PASSWORD'] = config['account']['password']
 app.config['MYSQL_DB'] = config['account']['db']
+app.config['EMAIL_ADMIN'] = config['account']['email']
+app.config['EMAIL_ADMIN_KEY'] = config['account']['keys']
+app.config['PHONE_SID'] = config['account']['key']
+app.config['PHONE_TOKEN'] = config['account']['token']
 app.config['PERMANENT_SESSION_LIFETIME'] =  timedelta(minutes = 15)
 app.config['RECAPTCHA_PUBLIC_KEY'] = "6Ldzgu0gAAAAAKF5Q8AdFeTRJpvl5mLBncz-dsBv"
 app.config['RECAPTCHA_PRIVATE_KEY'] = "6Ldzgu0gAAAAANuXjmXEv_tLJLQ_s7jtQV3rPwX2"
@@ -67,8 +71,10 @@ app.config["MAIL_USERNAME"]= 'nathanaeltzw@gmail.com'
 app.config['MAIL_PASSWORD']= 'mxdbfpagawywnxgu'
 app.config['MAIL_USE_TLS']=False
 app.config['MAIL_USE_SSL']=True
-auto_email = 'chamsamuel01@gmail.com'
-email_key = 'giyvimnfxcmvszsr' 
+auto_email = app.config['EMAIL_ADMIN']
+email_key = app.config['EMAIL_ADMIN_KEY']
+phone_id = app.config['PHONE_SID']
+phone_token = app.config['PHONE_TOKEN']
 stripe.api_key = app.config['STRIPE_SECRET_KEY']
 
 
@@ -1484,7 +1490,6 @@ def update_products(id):
 @app.route('/market')
 def market():
     check_logs()
-
     if 'loggedin' in session:
         id = session['id']
         data_check = 0
@@ -1931,6 +1936,12 @@ def create_messages():
             description = form.description.data
             time = datetime.utcnow()
 
+            validate_ans = Validations.validate_answer(description)
+            if validate_ans is True:
+                pass
+            else:
+                flash('Answer is unacceptable', category='danger')
+                return redirect(url_for('messages'))
 
             cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
             cursor.execute('SELECT max(message_id) as message_id from messages WHERE customer_id = %s',[id])
@@ -1964,6 +1975,13 @@ def update_messages(id):
     time = datetime.utcnow()
 
     try:
+        validate_ans = Validations.validate_answer(description)
+        if validate_ans is True:
+            pass
+        else:
+            flash('Answer is unacceptable', category='danger')
+            return redirect(url_for('messages_admin'))
+
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
         if cursor:
             cursor.execute('UPDATE messages SET staff_id = %s, reply = %s, reply_time =%s WHERE index_id = %s', (1,description,time,id))
@@ -2241,12 +2259,11 @@ def check_logs():
         if send_notice is None:
             pass
         elif send_notice['warning_num'] > 15 :
-            client = Client('ACda54aec51409765fabb130cc5f9df9b4', 'da73d372150aaca65ef44d710aa82acc')
-            # client = Client(account_sid, auth_token)
+            client = Client(phone_id, phone_token)
             message = client.messages.create(
                 from_= '+12182504569',
-                to="",
-                # insert own number for admin not staff
+                to="+65",
+                #  ^^ insert own number for admin
                 body= "User %s has passed warning logs stage, check on user!" % [id]
             )
             print(message)
