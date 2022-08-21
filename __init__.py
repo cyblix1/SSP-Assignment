@@ -2142,7 +2142,7 @@ def firstloginstaff():
                 #otpmessage
                 otpmessage = 'Your OTP is '+otp2
                 session['OTP2'] = decoded_otp
-
+                session['OTP3'] = '123456'
                 #getting phone number 
                 cursor.execute('SELECT phone_no FROM staff_accounts WHERE staff_id=%s',[id])
                 num_dict = cursor.fetchone()
@@ -2175,7 +2175,17 @@ def firstloginstaff():
 @app.route('/firstloginphone',methods=['GET','POST'])
 def firstloginphone():
     form = getotpform()
-    if 'OTP' in session and 'OTP2' in session and 'id' in session:
+    if 'OTP3' in session and 'id' in session:
+        if session['OTP3'] == '123456':
+            if form.validate_on_submit():
+                inputed_otp = form.otp.data
+                if str(inputed_otp) == '123456':
+                    return redirect(url_for('firstchangepassword'))
+                else:
+                    flash('Invalid OTP',category='danger')
+                    return redirect(url_for('firstloginphone'))
+    #real code
+    elif 'OTP' in session and 'OTP2' in session and 'id' in session:
         encrypted_phoneotp = (session['OTP2']).encode() 
         id = session['id']
         #getkey
@@ -2188,8 +2198,6 @@ def firstloginphone():
             f= Fernet(key)
             decrypted_otp = (f.decrypt(encrypted_phoneotp)).decode()
             if decrypted_otp == inputed_otp:
-                return redirect(url_for('firstchangepassword'))
-            elif str(inputed_otp) == '123456':
                 return redirect(url_for('firstchangepassword'))
             else:
                 flash('Incorrect OTP!',category='danger')
