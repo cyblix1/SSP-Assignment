@@ -2149,15 +2149,16 @@ def firstloginstaff():
                 staff_number = num_dict['phone_no']
                 #For SG number only
                 staff_number2 = '+65'+staff_number
-                #Sending message
-                account_sid = config['twilio']['account']
-                auth_token = config['twilio']['token']
-                client = Client(account_sid,auth_token)
-                message = client.messages.create(
-                    from_='+12183074015',
-                    body = otpmessage,
-                    to = staff_number2
-                )
+                #Sending message(doesnt work)
+                #twilio codes (need to pay for unverified nnunmbers,if number if verified can uncomment this)
+                # account_sid = config['twilio']['account']
+                # auth_token = config['twilio']['token']
+                # client = Client(account_sid,auth_token)
+                # message = client.messages.create(
+                #     from_='+12183074015',
+                #     body = otpmessage,
+                #     to = staff_number2
+                # )
                 return redirect(url_for('firstloginphone'))
 
             elif inputed_otp != decrypted_otp:
