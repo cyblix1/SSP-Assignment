@@ -71,6 +71,7 @@ app.config['MAIL_USE_TLS']=False
 app.config['MAIL_USE_SSL']=True
 auto_email = app.config['EMAIL_ADMIN']
 email_key = app.config['EMAIL_ADMIN_KEY']
+stripe.api_key = app.config['STRIPE_SECRET_KEY']
 
 
 
