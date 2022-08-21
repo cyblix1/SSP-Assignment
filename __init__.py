@@ -39,6 +39,7 @@ import flask_monitoringdashboard as dashboard_unqiue
 import pyotp
 import qrcode
 from flask_wtf.csrf import CSRFProtect
+import stripe
 app = Flask(__name__)
 #properities
 dashboard_unqiue.config.init_from(file='config_dashboard.cfg')
@@ -58,8 +59,6 @@ app.config['MYSQL_PASSWORD'] = config['account']['password']
 app.config['MYSQL_DB'] = config['account']['db']
 app.config['EMAIL_ADMIN'] = config['account']['email']
 app.config['EMAIL_ADMIN_KEY'] = config['account']['keys']
-app.config['PHONE_SID'] = config['account']['key']
-app.config['PHONE_TOKEN'] = config['account']['token']
 app.config['RECAPTCHA_PUBLIC_KEY'] = "6Ldzgu0gAAAAAKF5Q8AdFeTRJpvl5mLBncz-dsBv"
 app.config['RECAPTCHA_PRIVATE_KEY'] = "6Ldzgu0gAAAAANuXjmXEv_tLJLQ_s7jtQV3rPwX2"
 app.config['STRIPE_PUBLIC_KEY'] = 'pk_test_51LM6HwJDutS1IqmOR34Em3mZeuTsaUwAaUp40HLvcwrQJpUR5bR60V1e3kkwugBz0A8xAuXObCpte2Y0M251tBeD00p16YXMgE'
@@ -72,9 +71,8 @@ app.config['MAIL_USE_TLS']=False
 app.config['MAIL_USE_SSL']=True
 auto_email = app.config['EMAIL_ADMIN']
 email_key = app.config['EMAIL_ADMIN_KEY']
-phone_id = app.config['PHONE_SID']
-phone_token = app.config['PHONE_TOKEN']
-stripe.api_key = app.config['STRIPE_SECRET_KEY']
+
+
 
 
 bcrypt2 = Bcrypt()
@@ -2263,7 +2261,9 @@ def check_logs():
         if send_notice is None:
             pass
         elif send_notice['warning_num'] > 15 :
-            client = Client(phone_id, phone_token)
+            account_sid = config['twilio']['account']
+            auth_token = config['twilio']['token']
+            client = Client(account_sid, auth_token)
             message = client.messages.create(
                 from_= '+12182504569',
                 to="+65",
