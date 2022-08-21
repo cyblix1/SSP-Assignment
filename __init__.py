@@ -52,6 +52,7 @@ config.read(file)
 # Conguration stuff
 app.config['SECRET_KEY']= 'SSP Assignment'
 SECRET_KEY = 'SSP Assignment'
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes = 15)
 app.config['MYSQL_HOST'] = config['account']['host']
 app.config['MYSQL_USER'] = config['account']['user']
 app.config['MYSQL_PASSWORD'] = config['account']['password']
@@ -60,7 +61,6 @@ app.config['EMAIL_ADMIN'] = config['account']['email']
 app.config['EMAIL_ADMIN_KEY'] = config['account']['keys']
 app.config['PHONE_SID'] = config['account']['key']
 app.config['PHONE_TOKEN'] = config['account']['token']
-app.config['PERMANENT_SESSION_LIFETIME'] =  timedelta(minutes = 15)
 app.config['RECAPTCHA_PUBLIC_KEY'] = "6Ldzgu0gAAAAAKF5Q8AdFeTRJpvl5mLBncz-dsBv"
 app.config['RECAPTCHA_PRIVATE_KEY'] = "6Ldzgu0gAAAAANuXjmXEv_tLJLQ_s7jtQV3rPwX2"
 app.config['STRIPE_PUBLIC_KEY'] = 'pk_test_51LM6HwJDutS1IqmOR34Em3mZeuTsaUwAaUp40HLvcwrQJpUR5bR60V1e3kkwugBz0A8xAuXObCpte2Y0M251tBeD00p16YXMgE'
@@ -289,8 +289,8 @@ def login():
                         session['email'] = account['email']
                         session['customer_login_no'] = 1
                         session.permanent = True
-                        # app.permanent_session_lifetime = timedelta(minutes=15)
-                        app.permanent_session_lifetime = timedelta(seconds=15)
+                        app.permanent_session_lifetime = timedelta(minutes=15)
+                        # app.permanent_session_lifetime = timedelta(seconds=15)
 
                         # Redirect to home page
                         cursor.execute(
@@ -354,7 +354,7 @@ def login():
                         session['email'] = account['email']
                         session['customer_login_no'] = 1
                         session.permanent = True
-                        app.permanent_session_lifetime = timedelta(seconds=15)
+                        app.permanent_session_lifetime = timedelta(minutes=15)
                         # Redirect to home page
                         cursor.execute(
                             'INSERT INTO logs_info (log_id ,date_created,customer_id, description) VALUES (NULL,%s,%s,concat("authn_login_success : User ID (",%s,")"))',
@@ -471,7 +471,7 @@ def login():
                             session['email'] = account['email']
                             session['customer_login_no'] = 1
                             session.permanent = True
-                            app.permanent_session_lifetime = timedelta(seconds=15)
+                            app.permanent_session_lifetime = timedelta(minutes=15)
                             # Redirect to home page
                             cursor.execute(
                                 'INSERT INTO logs_info (log_id ,date_created,customer_id, description) VALUES (NULL,%s,%s,concat("authn_login_success : User ID (",%s,")"))',
@@ -2060,7 +2060,10 @@ def delete_order():
 
     try:
         cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute('INSERT INTO orders (order_id , product_id ,order_date, quantity) VALUES (NULL, %s , %s , %s)',(id, time, 1))
+        cursor.execute('SELECT count(product_id) as counts FROM shopping_cart WHERE customer_id = %s',[customer_id])
+        count = cursor.fetchone()
+        db.connection.commit()
+        cursor.execute('INSERT INTO orders (order_id , product_id ,order_date, quantity, customer_id) VALUES (NULL, %s , %s , %s,%s)',(id, time, count['counts'],[customer_id]))
         cursor.execute('DELETE FROM shopping_cart WHERE customer_id = %s',[customer_id])
         cursor.execute('DELETE FROM sc_attempts WHERE customer_id = %s', [customer_id])
         cursor.execute(
