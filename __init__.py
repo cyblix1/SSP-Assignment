@@ -2287,7 +2287,9 @@ def check_logs():
         return redirect(url_for('login'))
 
 
-
+@app.route('/homemain')
+def homemain():
+    return render_template('homemain.html')
 
 if __name__ == '__main__':
     app.run(debug=True)
